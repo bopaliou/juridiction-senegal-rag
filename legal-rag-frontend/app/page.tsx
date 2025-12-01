@@ -98,9 +98,14 @@ export default function Home() {
       
       try {
         const storedHistory = localStorage.getItem('lexsenegal_chat_history');
-        const limitedHistory = storedHistory 
-          ? [newHistoryItem, ...JSON.parse(storedHistory).slice(0, 49)]
-          : [newHistoryItem];
+        const parsedHistory = storedHistory ? JSON.parse(storedHistory) : [];
+        
+        // Filtrer les doublons et éviter d'ajouter le même ID
+        const filteredHistory = parsedHistory.filter((item: ChatHistoryItem) => item.id !== sessionId);
+        
+        // Ajouter le nouvel élément en premier et limiter à 50
+        const limitedHistory = [newHistoryItem, ...filteredHistory].slice(0, 50);
+        
         localStorage.setItem('lexsenegal_chat_history', JSON.stringify(limitedHistory));
         setChatHistory(limitedHistory.map((item: any) => ({
           ...item,

@@ -18,6 +18,11 @@ export interface ChatHistoryItem {
 }
 
 const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
+  // Filtrer les doublons basés sur l'ID avant de grouper
+  const uniqueHistory = history.filter((item, index, self) => 
+    index === self.findIndex((t) => t.id === item.id)
+  );
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -26,10 +31,13 @@ const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
   const weekItems: ChatHistoryItem[] = [];
   const olderItems: ChatHistoryItem[] = [];
 
-  history.forEach((item) => {
-    if (item.date >= today) {
+  uniqueHistory.forEach((item) => {
+    // S'assurer que la date est un objet Date valide
+    const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
+    
+    if (itemDate >= today) {
       todayItems.push(item);
-    } else if (item.date >= weekAgo) {
+    } else if (itemDate >= weekAgo) {
       weekItems.push(item);
     } else {
       olderItems.push(item);
