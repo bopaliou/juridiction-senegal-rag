@@ -47,7 +47,11 @@ export default function Home() {
       const storedHistory = localStorage.getItem('lexsenegal_chat_history');
       if (storedHistory) {
         const parsed = JSON.parse(storedHistory);
-        setChatHistory(parsed.map((item: any) => ({
+        // Filtrer les doublons lors du chargement
+        const uniqueHistory = parsed.filter((item: any, index: number, self: any[]) => 
+          index === self.findIndex((t: any) => t.id === item.id)
+        );
+        setChatHistory(uniqueHistory.map((item: any) => ({
           ...item,
           date: new Date(item.date),
         })));
@@ -143,20 +147,31 @@ export default function Home() {
           };
           
           setChatHistory((prevHistory) => {
+            // Filtrer les doublons d'abord
+            const uniqueHistory = prevHistory.filter((item, index, self) => 
+              index === self.findIndex((t) => t.id === item.id)
+            );
+            
             // Vérifier si cette conversation existe déjà
-            const existingIndex = prevHistory.findIndex((item) => item.id === sessionId);
+            const existingIndex = uniqueHistory.findIndex((item) => item.id === sessionId);
             let updatedHistory: ChatHistoryItem[];
             
             if (existingIndex >= 0) {
               // Mettre à jour la conversation existante
-              updatedHistory = [...prevHistory];
+              updatedHistory = [...uniqueHistory];
               updatedHistory[existingIndex] = {
                 ...updatedHistory[existingIndex],
-                date: new Date(), // Mettre à jour la date
+                title: userMessage.content.length > 50 
+                  ? userMessage.content.substring(0, 50) + '...' 
+                  : userMessage.content,
+                date: new Date(),
               };
+              // Déplacer en haut de la liste
+              const [updatedItem] = updatedHistory.splice(existingIndex, 1);
+              updatedHistory.unshift(updatedItem);
             } else {
               // Ajouter la nouvelle conversation en haut
-              updatedHistory = [newHistoryItem, ...prevHistory];
+              updatedHistory = [newHistoryItem, ...uniqueHistory];
             }
             
             // Limiter à 50 conversations maximum
