@@ -40,34 +40,47 @@ const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
 };
 
 export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], onChatClick }: SidebarProps) {
+  // État pour savoir si le composant est monté côté client (évite les erreurs d'hydratation)
+  const [mounted, setMounted] = useState(false);
+  
   // Utiliser l'historique passé en props, ou charger depuis localStorage
-  const [history, setHistory] = useState<ChatHistoryItem[]>(() => {
-    // Vérifier que nous sommes côté client
-    if (typeof window === 'undefined') {
-      return [];
-    }
-    
-    // Charger depuis localStorage au montage
-    try {
-      const stored = localStorage.getItem('lexsenegal_chat_history');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return parsed.map((item: any) => ({
-          ...item,
-          date: new Date(item.date),
-        }));
-      }
-    } catch (e) {
-      console.error('Erreur lors du chargement de l\'historique:', e);
-    }
-    return [];
-  });
+  // Toujours initialiser à un tableau vide pour éviter les erreurs d'hydratation
+  const [history, setHistory] = useState<ChatHistoryItem[]>([]);
 
-  // Mettre à jour l'historique quand chatHistory change
+  // Charger depuis localStorage uniquement après le montage côté client
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
+    setMounted(true);
+    
+    // Si chatHistory est fourni en props, l'utiliser en priorité
+    if (chatHistory && chatHistory.length > 0) {
+      setHistory(chatHistory);
+      // Sauvegarder dans localStorage
+      try {
+        localStorage.setItem('lexsenegal_chat_history', JSON.stringify(chatHistory));
+      } catch (e) {
+        console.error('Erreur lors de la sauvegarde de l\'historique:', e);
+      }
+    } else {
+      // Sinon, charger depuis localStorage
+      try {
+        const stored = localStorage.getItem('lexsenegal_chat_history');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const loadedHistory = parsed.map((item: any) => ({
+            ...item,
+            date: new Date(item.date),
+          }));
+          setHistory(loadedHistory);
+        }
+      } catch (e) {
+        console.error('Erreur lors du chargement de l\'historique:', e);
+      }
     }
+  }, []); // Exécuter uniquement au montage
+
+  // Mettre à jour l'historique quand chatHistory change (après le montage)
+  useEffect(() => {
+    if (!mounted) return;
     
     if (chatHistory && chatHistory.length > 0) {
       setHistory(chatHistory);
@@ -78,7 +91,7 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
         console.error('Erreur lors de la sauvegarde de l\'historique:', e);
       }
     }
-  }, [chatHistory]);
+  }, [chatHistory, mounted]);
 
   const handleDeleteChat = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -134,85 +147,94 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
 
           {/* Liste d'historique */}
           <div className="flex-1 overflow-y-auto p-2">
-            {todayItems.length > 0 && (
-              <div className="mb-4">
-                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Aujourd'hui
-                </h3>
-                <div className="space-y-1">
-                  {todayItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => onChatClick && onChatClick(item.id)}
-                      className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
-                    >
-                      <div className="flex-1 truncate">{item.title}</div>
-                      <button
-                        onClick={(e) => handleDeleteChat(item.id, e)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {weekItems.length > 0 && (
-              <div className="mb-4">
-                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  7 derniers jours
-                </h3>
-                <div className="space-y-1">
-                  {weekItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => onChatClick && onChatClick(item.id)}
-                      className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
-                    >
-                      <div className="flex-1 truncate">{item.title}</div>
-                      <button
-                        onClick={(e) => handleDeleteChat(item.id, e)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {olderItems.length > 0 && (
-              <div className="mb-4">
-                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Plus ancien
-                </h3>
-                <div className="space-y-1">
-                  {olderItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => onChatClick && onChatClick(item.id)}
-                      className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
-                    >
-                      <div className="flex-1 truncate">{item.title}</div>
-                      <button
-                        onClick={(e) => handleDeleteChat(item.id, e)}
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {history.length === 0 && (
+            {!mounted ? (
+              // Pendant le SSR et avant le montage, afficher un état vide cohérent
               <div className="px-3 py-8 text-center text-sm text-gray-500">
                 Aucun historique
               </div>
+            ) : (
+              <>
+                {todayItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      Aujourd'hui
+                    </h3>
+                    <div className="space-y-1">
+                      {todayItems.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => onChatClick && onChatClick(item.id)}
+                          className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
+                        >
+                          <div className="flex-1 truncate">{item.title}</div>
+                          <button
+                            onClick={(e) => handleDeleteChat(item.id, e)}
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {weekItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      7 derniers jours
+                    </h3>
+                    <div className="space-y-1">
+                      {weekItems.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => onChatClick && onChatClick(item.id)}
+                          className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
+                        >
+                          <div className="flex-1 truncate">{item.title}</div>
+                          <button
+                            onClick={(e) => handleDeleteChat(item.id, e)}
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {olderItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      Plus ancien
+                    </h3>
+                    <div className="space-y-1">
+                      {olderItems.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => onChatClick && onChatClick(item.id)}
+                          className="group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800"
+                        >
+                          <div className="flex-1 truncate">{item.title}</div>
+                          <button
+                            onClick={(e) => handleDeleteChat(item.id, e)}
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {history.length === 0 && (
+                  <div className="px-3 py-8 text-center text-sm text-gray-500">
+                    Aucun historique
+                  </div>
+                )}
+              </>
             )}
           </div>
 
