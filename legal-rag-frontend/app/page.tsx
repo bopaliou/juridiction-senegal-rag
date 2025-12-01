@@ -73,6 +73,62 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const parseSources = useCallback((sources: string[]): SourceItem[] => {
+    return sources
+      .map((source, index) => {
+        try {
+          // Essayer de parser comme JSON d'abord
+          const parsed = JSON.parse(source);
+          return {
+            id: parsed.id || `source_${index}`,
+            title: parsed.title || 'Source',
+            url: parsed.url,
+            content: parsed.content || '',
+            page: parsed.page,
+            domain: parsed.domain,
+          };
+        } catch {
+          // Si ce n'est pas du JSON, parser l'ancien format
+          const lines = source.split('\n\n');
+          let title = 'Source';
+          let content = source;
+          let url: string | undefined;
+          let page: number | undefined;
+
+          // Extraire l'URL si présente
+          const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+          if (urlMatch) {
+            url = urlMatch[1];
+          }
+
+          // Si la source commence par un nom de document et page
+          const titleMatch = source.match(/^([^(]+(?:\(page (\d+)\))?)/);
+          if (titleMatch) {
+            title = titleMatch[1].trim();
+            if (titleMatch[2]) {
+              page = parseInt(titleMatch[2], 10);
+            }
+            // Enlever le titre du contenu
+            content = source.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n\\n?`, 'i'), '').trim();
+          }
+
+          // Nettoyer le contenu (enlever les URLs répétées)
+          if (url) {
+            content = content.replace(url, '').trim();
+          }
+
+          return {
+            id: `source_${index}`,
+            title,
+            url,
+            content: content.length > 800 ? content.substring(0, 800) + '...' : content,
+            page,
+          };
+        }
+      })
+      .filter((source) => source.content && source.content.length > 0);
+  }, []);
+
   const handleSubmit = useCallback(async (e: React.FormEvent | string) => {
     let currentInput = '';
     if (typeof e === 'string') {
@@ -256,62 +312,6 @@ export default function Home() {
       }
     }
   }, [input, isLoading, sessionId, messages.length, parseSources]);
-
-  const parseSources = useCallback((sources: string[]): SourceItem[] => {
-    return sources
-      .map((source, index) => {
-        try {
-          // Essayer de parser comme JSON d'abord
-          const parsed = JSON.parse(source);
-          return {
-            id: parsed.id || `source_${index}`,
-            title: parsed.title || 'Source',
-            url: parsed.url,
-            content: parsed.content || '',
-            page: parsed.page,
-            domain: parsed.domain,
-          };
-        } catch {
-          // Si ce n'est pas du JSON, parser l'ancien format
-          const lines = source.split('\n\n');
-          let title = 'Source';
-          let content = source;
-          let url: string | undefined;
-          let page: number | undefined;
-
-          // Extraire l'URL si présente
-          const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
-          if (urlMatch) {
-            url = urlMatch[1];
-          }
-
-          // Si la source commence par un nom de document et page
-          const titleMatch = source.match(/^([^(]+(?:\(page (\d+)\))?)/);
-          if (titleMatch) {
-            title = titleMatch[1].trim();
-            if (titleMatch[2]) {
-              page = parseInt(titleMatch[2], 10);
-            }
-            // Enlever le titre du contenu
-            content = source.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n\\n?`, 'i'), '').trim();
-          }
-
-          // Nettoyer le contenu (enlever les URLs répétées)
-          if (url) {
-            content = content.replace(url, '').trim();
-          }
-
-          return {
-            id: `source_${index}`,
-            title,
-            url,
-            content: content.length > 800 ? content.substring(0, 800) + '...' : content,
-            page,
-          };
-        }
-      })
-      .filter((source) => source.content && source.content.length > 0);
-  }, []);
 
   const formatSourceText = (source: string): { title: string; content: string } => {
     // Extraire le titre (première ligne ou partie avant \n\n)
