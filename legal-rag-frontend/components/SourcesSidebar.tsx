@@ -134,9 +134,14 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                 {visibleSources.map((source, index) => {
                   if (!source) return null;
                   
+                  // Créer une clé unique en combinant plusieurs propriétés
+                  const uniqueKey = source.id 
+                    ? `${source.id}-${index}` 
+                    : `source-${index}-${source.title?.substring(0, 10) || 'unknown'}-${source.url?.substring(0, 10) || 'no-url'}`;
+                  
                   return (
                   <div
-                    key={source.id || `source-${index}`}
+                    key={uniqueKey}
                     className="group animate-fade-in rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
