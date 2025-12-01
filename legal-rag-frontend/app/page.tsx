@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Scale, Loader2, ChevronDown, ChevronUp, Menu } from 'lucide-react';
+import { Send, Scale, Loader2, ChevronDown, ChevronUp, Menu, FileText } from 'lucide-react';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
+import SourcesSidebar, { SourceItem } from '@/components/SourcesSidebar';
 import SuggestedQuestions from '@/components/SuggestedQuestions';
 import EmptyState from '@/components/EmptyState';
 import { askQuestion, ApiError } from '@/lib/api';
@@ -21,6 +22,8 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>('');
   const [expandedSources, setExpandedSources] = useState<{ [key: number]: boolean }>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sourcesSidebarOpen, setSourcesSidebarOpen] = useState(false);
+  const [currentMessageSources, setCurrentMessageSources] = useState<SourceItem[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);

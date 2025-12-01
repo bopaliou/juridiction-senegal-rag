@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from typing import List, TypedDict, Optional
 import os
+import json
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -507,29 +508,48 @@ def generate_node(state: AgentState):
     # Extraire les mots-clés de la question pour trouver les parties pertinentes
     question_words = set(question.lower().split())
     
-    for doc in documents:
+    for idx, doc in enumerate(documents):
         # Extraire les métadonnées
         metadata = doc.metadata if hasattr(doc, 'metadata') and doc.metadata else {}
         source = metadata.get('source', metadata.get('file_path', 'Document juridique'))
-        page = metadata.get('page', metadata.get('page_number', ''))
+        page = metadata.get('page', metadata.get('page_number', None))
         
-        # Nettoyer le nom de la source (enlever le chemin complet si présent)
+        # Détecter le domaine
+        domain = detect_domain_from_source(str(source))
+        
+        # Extraire l'URL si présente
+        url = None
+        source_name = "Document juridique"
+        
         if isinstance(source, str):
-            source_name = os.path.basename(source) if os.path.sep in source else source
-            # Enlever l'extension si présente
-            source_name = os.path.splitext(source_name)[0]
+            # Si c'est une URL, l'extraire
+            if source.startswith('http://') or source.startswith('https://'):
+                url = source
+                # Extraire un nom de document depuis l'URL
+                if 'conseilconstitutionnel' in source.lower():
+                    source_name = "Constitution du Sénégal"
+                elif 'primature' in source.lower():
+                    if 'collectivites' in source.lower():
+                        source_name = "Code des Collectivités Locales"
+                    elif 'aviation' in source.lower():
+                        source_name = "Code de l'Aviation Civile"
+                    else:
+                        source_name = "Document Officiel"
+                else:
+                    source_name = os.path.basename(source)
+            else:
+                # C'est un chemin de fichier
+                source_name = os.path.basename(source) if os.path.sep in source else source
+                # Enlever l'extension si présente
+                source_name = os.path.splitext(source_name)[0]
+                # Nettoyer le nom (enlever les underscores, remplacer par espaces)
+                source_name = source_name.replace('_', ' ').replace('-', ' ').title()
         else:
             source_name = str(source)
         
         # Ajouter le contenu au contexte (sans référence inline)
         if doc.page_content:
             context_parts.append(doc.page_content)
-        
-        # Formater la source pour l'affichage dans la section "📚 Voir les articles de loi sources"
-        if page:
-            source_info = f"{source_name} (page {page})"
-        else:
-            source_info = f"{source_name}"
         
         # Extraire un extrait pertinent du contenu
         content = doc.page_content if doc.page_content else "(Contenu vide)"
@@ -580,9 +600,16 @@ def generate_node(state: AgentState):
                     # Prendre les premiers 500 caractères
                     content = content[:500] + "..."
         
-        # Stocker la source avec le contenu formaté
-        source_text = f"{source_info}\n\n{content}"
-        sources_list.append(source_text)
+        # Formater la source en JSON pour un parsing facile côté frontend
+        source_data = {
+            "id": f"source_{idx}",
+            "title": source_name,
+            "url": url,
+            "content": content,
+            "page": page,
+            "domain": domain
+        }
+        sources_list.append(json.dumps(source_data))
     
     context = "\n\n".join(context_parts)
     
