@@ -24,6 +24,7 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Générer un session_id unique au montage
   useEffect(() => {
@@ -65,36 +66,53 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = useCallback(async (e: React.FormEvent | string) => {
+    let currentInput = '';
+    if (typeof e === 'string') {
+      currentInput = e; // Question from suggestion click
+    } else {
+      e.preventDefault();
+      currentInput = input.trim();
+    }
+
+    if (!currentInput || isLoading) return;
 
     const userMessage: Message = {
       role: 'user',
-      content: input.trim(),
+      content: currentInput,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    try {
-      const response = await fetch('http://127.0.0.1:8000/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: userMessage.content,
-          thread_id: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+    // Mettre à jour l'historique si c'est le premier message
+    if (messages.length === 0 && typeof window !== 'undefined') {
+      const newHistoryItem: ChatHistoryItem = {
+        id: sessionId,
+        title: currentInput.length > 50 
+          ? currentInput.substring(0, 50) + '...' 
+          : currentInput,
+        date: new Date(),
+      };
+      
+      try {
+        const storedHistory = localStorage.getItem('lexsenegal_chat_history');
+        const limitedHistory = storedHistory 
+          ? [newHistoryItem, ...JSON.parse(storedHistory).slice(0, 49)]
+          : [newHistoryItem];
+        localStorage.setItem('lexsenegal_chat_history', JSON.stringify(limitedHistory));
+        setChatHistory(limitedHistory.map((item: any) => ({
+          ...item,
+          date: new Date(item.date),
+        })));
+      } catch (e) {
+        console.error('Erreur lors de la sauvegarde de l\'historique:', e);
       }
+    }
 
-      const data: ApiResponse = await response.json();
+    try {
+      const data = await askQuestion(userMessage.content, sessionId);
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -196,12 +214,16 @@ export default function Home() {
         role: 'assistant',
         content: errorContent,
         sources: [],
+        suggestedQuestions: [],
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     }
-  };
+  }, [input, isLoading, sessionId, messages.length]);
 
   const toggleSources = (messageIndex: number) => {
     setExpandedSources((prev) => ({
@@ -326,142 +348,9 @@ export default function Home() {
     return domainQuestions.sort(() => Math.random() - 0.5).slice(0, 3);
   };
 
-  const handleSuggestionClick = async (question: string) => {
-    // Envoyer directement la question sans passer par l'input
-    if (isLoading) return;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: question,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('http://127.0.0.1:8000/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: question,
-          thread_id: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      const data: ApiResponse = await response.json();
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.reponse,
-        sources: data.sources || [],
-        // Utiliser les questions suggérées de l'API si disponibles, sinon générer localement
-        suggestedQuestions: data.suggested_questions && data.suggested_questions.length > 0
-          ? data.suggested_questions
-          : generateSuggestedQuestions(data.reponse),
-      };
-
-      setMessages((prev) => {
-        const updated = [...prev, assistantMessage];
-        
-        // Mettre à jour l'historique si c'est le premier message de la conversation
-        if (typeof window !== 'undefined' && prev.length === 0) {
-          const newHistoryItem: ChatHistoryItem = {
-            id: sessionId,
-            title: userMessage.content.length > 50 
-              ? userMessage.content.substring(0, 50) + '...' 
-              : userMessage.content,
-            date: new Date(),
-          };
-          
-          setChatHistory((prevHistory) => {
-            // Vérifier si cette conversation existe déjà
-            const existingIndex = prevHistory.findIndex((item) => item.id === sessionId);
-            let updatedHistory: ChatHistoryItem[];
-            
-            if (existingIndex >= 0) {
-              // Mettre à jour la conversation existante
-              updatedHistory = [...prevHistory];
-              updatedHistory[existingIndex] = {
-                ...updatedHistory[existingIndex],
-                date: new Date(), // Mettre à jour la date
-              };
-            } else {
-              // Ajouter la nouvelle conversation en haut
-              updatedHistory = [newHistoryItem, ...prevHistory];
-            }
-            
-            // Limiter à 50 conversations maximum
-            const limitedHistory = updatedHistory.slice(0, 50);
-            
-            // Sauvegarder dans localStorage
-            try {
-              localStorage.setItem('lexsenegal_chat_history', JSON.stringify(limitedHistory));
-            } catch (e) {
-              console.error('Erreur lors de la sauvegarde de l\'historique:', e);
-            }
-            
-            return limitedHistory;
-          });
-        } else if (typeof window !== 'undefined' && prev.length > 0) {
-          // Mettre à jour la date de la conversation existante
-          setChatHistory((prevHistory) => {
-            const existingIndex = prevHistory.findIndex((item) => item.id === sessionId);
-            if (existingIndex >= 0) {
-              const updatedHistory = [...prevHistory];
-              updatedHistory[existingIndex] = {
-                ...updatedHistory[existingIndex],
-                date: new Date(),
-              };
-              // Déplacer en haut de la liste
-              const [updatedItem] = updatedHistory.splice(existingIndex, 1);
-              updatedHistory.unshift(updatedItem);
-              
-              try {
-                localStorage.setItem('lexsenegal_chat_history', JSON.stringify(updatedHistory));
-              } catch (e) {
-                console.error('Erreur lors de la sauvegarde de l\'historique:', e);
-              }
-              return updatedHistory;
-            }
-            return prevHistory;
-          });
-        }
-        
-        return updated;
-      });
-    } catch (error) {
-      console.error('Erreur lors de l\'appel API:', error);
-      
-      let errorContent = '❌ Erreur de connexion au serveur.\n\n';
-      
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        errorContent += '🔍 Vérifications à faire :\n';
-        errorContent += '1. Le serveur FastAPI est-il lancé ? (uvicorn src.server:app --reload)\n';
-        errorContent += '2. Le serveur écoute-t-il sur http://127.0.0.1:8000 ?\n';
-        errorContent += '3. Les CORS sont-ils configurés dans le serveur ?\n\n';
-        errorContent += '💡 Assurez-vous que le serveur FastAPI est démarré avant d\'utiliser l\'application.';
-      } else if (error instanceof Error) {
-        errorContent += `Détails : ${error.message}`;
-      } else {
-        errorContent += 'Une erreur inattendue s\'est produite.';
-      }
-      
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: errorContent,
-        sources: [],
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleSuggestionClick = useCallback((question: string) => {
+    handleSubmit(question); // Directly send the question
+  }, [handleSubmit]);
 
   const handleNewChat = () => {
     setMessages([]);
