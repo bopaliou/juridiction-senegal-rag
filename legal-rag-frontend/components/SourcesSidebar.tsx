@@ -131,9 +131,12 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
               </div>
             ) : (
               <div className="space-y-3">
-                {visibleSources.map((source, index) => (
+                {visibleSources.map((source, index) => {
+                  if (!source) return null;
+                  
+                  return (
                   <div
-                    key={source.id}
+                    key={source.id || `source-${index}`}
                     className="group animate-fade-in rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
@@ -153,13 +156,13 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                             {source.domain}
                           </span>
                         )}
-                        {source.page && (
+                        {source?.page && (
                           <span className="ml-2 text-xs text-gray-500">
                             Page {source.page}
                           </span>
                         )}
                       </div>
-                      {source.url && (
+                      {source?.url && (
                         <a
                           href={source.url}
                           target="_blank"
@@ -175,11 +178,12 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                     {/* Contenu */}
                     <div className="max-h-64 overflow-y-auto">
                       <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
-                        {source.content}
+                        {source?.content || 'Aucun contenu disponible'}
                       </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
 
                 {/* Indicateur de chargement progressif */}
                 {isLoading && visibleSources.length < sources.length && (
