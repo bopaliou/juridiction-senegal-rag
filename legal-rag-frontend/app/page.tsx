@@ -126,6 +126,9 @@ export default function Home() {
     try {
       const data = await askQuestion(userMessage.content, sessionId);
 
+      // Parser les sources
+      const parsedSources = parseSources(data.sources || []);
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.reponse,
@@ -246,14 +249,63 @@ export default function Home() {
         inputRef.current.focus();
       }
     }
-  }, [input, isLoading, sessionId, messages.length]);
+  }, [input, isLoading, sessionId, messages.length, parseSources]);
 
-  const toggleSources = (messageIndex: number) => {
-    setExpandedSources((prev) => ({
-      ...prev,
-      [messageIndex]: !prev[messageIndex],
-    }));
-  };
+  const parseSources = useCallback((sources: string[]): SourceItem[] => {
+    return sources
+      .map((source, index) => {
+        try {
+          // Essayer de parser comme JSON d'abord
+          const parsed = JSON.parse(source);
+          return {
+            id: parsed.id || `source_${index}`,
+            title: parsed.title || 'Source',
+            url: parsed.url,
+            content: parsed.content || '',
+            page: parsed.page,
+            domain: parsed.domain,
+          };
+        } catch {
+          // Si ce n'est pas du JSON, parser l'ancien format
+          const lines = source.split('\n\n');
+          let title = 'Source';
+          let content = source;
+          let url: string | undefined;
+          let page: number | undefined;
+
+          // Extraire l'URL si présente
+          const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+          if (urlMatch) {
+            url = urlMatch[1];
+          }
+
+          // Si la source commence par un nom de document et page
+          const titleMatch = source.match(/^([^(]+(?:\(page (\d+)\))?)/);
+          if (titleMatch) {
+            title = titleMatch[1].trim();
+            if (titleMatch[2]) {
+              page = parseInt(titleMatch[2], 10);
+            }
+            // Enlever le titre du contenu
+            content = source.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n\\n?`, 'i'), '').trim();
+          }
+
+          // Nettoyer le contenu (enlever les URLs répétées)
+          if (url) {
+            content = content.replace(url, '').trim();
+          }
+
+          return {
+            id: `source_${index}`,
+            title,
+            url,
+            content: content.length > 800 ? content.substring(0, 800) + '...' : content,
+            page,
+          };
+        }
+      })
+      .filter((source) => source.content && source.content.length > 0);
+  }, []);
 
   const formatSourceText = (source: string): { title: string; content: string } => {
     // Extraire le titre (première ligne ou partie avant \n\n)
@@ -397,7 +449,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Sidebar */}
+      {/* Sidebar gauche (historique) */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -405,9 +457,17 @@ export default function Home() {
         chatHistory={chatHistory}
         onChatClick={handleChatClick}
       />
+      
+      {/* Sidebar droite (sources) */}
+      <SourcesSidebar
+        isOpen={sourcesSidebarOpen}
+        onClose={() => setSourcesSidebarOpen(false)}
+        sources={currentMessageSources}
+        isLoading={isLoading}
+      />
 
       {/* Zone principale */}
-      <div className="flex flex-1 flex-col lg:ml-0">
+      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} ${sourcesSidebarOpen ? 'lg:mr-96' : 'lg:mr-0'}`}>
         {/* Header fixe */}
         <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white shadow-sm">
           <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-4 sm:px-6">
@@ -462,43 +522,23 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* Affichage des sources */}
+                  {/* Bouton pour ouvrir le sidebar des sources */}
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-3">
                       <button
-                        onClick={() => toggleSources(index)}
-                        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        onClick={() => {
+                          const parsedSources = parseSources(message.sources || []);
+                          setCurrentMessageSources(parsedSources);
+                          setSourcesSidebarOpen(true);
+                        }}
+                        className="group flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-all hover:border-blue-300 hover:bg-blue-100 hover:shadow-sm"
                       >
-                        <span>📚 Voir les {message.sources.length} source{message.sources.length > 1 ? 's' : ''}</span>
-                        {expandedSources[index] ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
+                        <FileText className="h-4 w-4" />
+                        <span>
+                          {message.sources.length} source{message.sources.length > 1 ? 's' : ''} référencée{message.sources.length > 1 ? 's' : ''}
+                        </span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </button>
-
-                      {expandedSources[index] && (
-                        <div className="mt-3 space-y-3">
-                          {message.sources.map((source, sourceIndex) => {
-                            const { title, content } = formatSourceText(source);
-                            return (
-                              <div
-                                key={sourceIndex}
-                                className="overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-                              >
-                                <h4 className="mb-3 font-semibold text-slate-900">
-                                  {title}
-                                </h4>
-                                <div className="max-h-96 overflow-y-auto">
-                                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
-                                    {content}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   )}
 
