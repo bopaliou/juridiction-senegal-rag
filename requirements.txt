@@ -16,6 +16,7 @@ python-dotenv>=1.2.1
 requests>=2.32.5
 requirements-py>=1.0.1
 sentence-transformers>=5.1.2
+sentencepiece>=0.2.0
 streamlit>=1.51.0
 tiktoken>=0.12.0
 transformers>=4.57.3

@@ -72,7 +72,7 @@ class BGEReranker:
                 self._model = AutoModelForSequenceClassification.from_pretrained(
                     self.model_name,
                     low_cpu_mem_usage=True,
-                    torch_dtype=torch.float32 if self.device == "cpu" else torch.float16
+                    dtype=torch.float32 if self.device == "cpu" else torch.float16
                 )
                 self._model.to(self.device)
                 self._model.eval()
