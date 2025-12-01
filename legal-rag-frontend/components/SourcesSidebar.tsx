@@ -20,7 +20,9 @@ interface SourcesSidebarProps {
 }
 
 const getDomainIcon = (domain?: string) => {
-  switch (domain?.toLowerCase()) {
+  if (!domain) return <FileText className="h-4 w-4" />;
+  
+  switch (domain.toLowerCase()) {
     case 'constitution':
       return <BookOpen className="h-4 w-4" />;
     case 'travail':
@@ -32,7 +34,9 @@ const getDomainIcon = (domain?: string) => {
 };
 
 const getDomainColor = (domain?: string) => {
-  switch (domain?.toLowerCase()) {
+  if (!domain) return 'bg-gray-100 text-gray-700 border-gray-200';
+  
+  switch (domain.toLowerCase()) {
     case 'constitution':
       return 'bg-blue-100 text-blue-700 border-blue-200';
     case 'travail':
@@ -137,12 +141,12 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                     <div className="mb-3 flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="mb-2 flex items-center gap-2">
-                          {getDomainIcon(source.domain)}
+                          {getDomainIcon(source?.domain)}
                           <h3 className="font-semibold text-gray-900 line-clamp-2">
-                            {source.title}
+                            {source?.title || 'Source'}
                           </h3>
                         </div>
-                        {source.domain && (
+                        {source?.domain && (
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getDomainColor(source.domain)}`}
                           >
