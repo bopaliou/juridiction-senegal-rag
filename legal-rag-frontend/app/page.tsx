@@ -129,6 +129,9 @@ export default function Home() {
       // Parser les sources
       const parsedSources = parseSources(data.sources || []);
 
+      // Parser les sources
+      const parsedSources = parseSources(data.sources || []);
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.reponse,
@@ -219,6 +222,12 @@ export default function Home() {
         
         return updated;
       });
+      
+      // Ouvrir le sidebar des sources si des sources sont disponibles
+      if (parsedSources.length > 0) {
+        setCurrentMessageSources(parsedSources);
+        setSourcesSidebarOpen(true);
+      }
     } catch (error) {
       console.error('Erreur lors de l\'appel API:', error);
       
