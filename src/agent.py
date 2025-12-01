@@ -156,29 +156,98 @@ load_dotenv()
 
 # Utiliser un chemin absolu pour éviter les problèmes de chemin relatif
 from pathlib import Path
+import os
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DB_PATH = BASE_DIR / "data" / "chroma_db"
 
-embedding_function = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-db=Chroma(
-    persist_directory=str(CHROMA_DB_PATH), 
-    embedding_function=embedding_function,
-    collection_name="juridiction_senegal"  # Même nom de collection que dans ingestion.py
-)
+# Configuration depuis les variables d'environnement
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY n'est pas définie dans les variables d'environnement")
 
-# Vérifier que la base de données contient des documents
+# Initialiser l'embedding function (lazy loading pour optimiser le démarrage)
+_embedding_function = None
+_db = None
+_retriever = None
+
+def get_embedding_function():
+    """Lazy loading de l'embedding function."""
+    global _embedding_function
+    if _embedding_function is None:
+        _embedding_function = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={'device': 'cpu'},  # Utiliser CPU par défaut pour éviter les problèmes GPU
+            encode_kwargs={'normalize_embeddings': True}  # Normaliser pour de meilleures performances
+        )
+    return _embedding_function
+
+def get_db():
+    """Lazy loading de la base de données Chroma."""
+    global _db
+    if _db is None:
+        if not CHROMA_DB_PATH.exists():
+            raise FileNotFoundError(
+                f"Base de données Chroma introuvable: {CHROMA_DB_PATH}\n"
+                "Exécutez: python src/ingestion.py"
+            )
+        
+        _db = Chroma(
+            persist_directory=str(CHROMA_DB_PATH),
+            embedding_function=get_embedding_function(),
+            collection_name="juridiction_senegal"
+        )
+        
+        # Vérifier que la base de données contient des documents
+        try:
+            collection = _db._collection
+            count = collection.count() if collection else 0
+            if count == 0:
+                print("⚠️  ATTENTION: La base de données Chroma est vide! Exécutez: python src/ingestion.py")
+            else:
+                print(f"✅ Base de données Chroma chargée: {count} documents disponibles")
+        except Exception as e:
+            print(f"⚠️  Erreur lors de la vérification de la base de données: {e}")
+    
+    return _db
+
+def get_retriever():
+    """Lazy loading du retriever."""
+    global _retriever
+    if _retriever is None:
+        db = get_db()
+        _retriever = db.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 5}  # Limiter à 5 documents pour de meilleures performances
+        )
+    return _retriever
+
+# Initialiser au démarrage (peut être commenté pour un vrai lazy loading)
 try:
-    collection = db._collection
-    count = collection.count() if collection else 0
-    if count == 0:
-        print("⚠️  ATTENTION: La base de données Chroma est vide! Exécutez: python src/ingestion.py")
+    db = get_db()
+    retriever = get_retriever()
 except Exception as e:
-    print(f"⚠️  Erreur lors de la vérification de la base de données: {e}")
+    print(f"⚠️  Erreur lors de l'initialisation de la base de données: {e}")
+    db = None
+    retriever = None
 
-retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":5})
-
-router_llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0) # Nouveau LLM pour le routage
-generation_llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0) # LLM de génération
+# Configuration des LLMs avec gestion d'erreur
+try:
+    router_llm = ChatGroq(
+        model_name="llama-3.1-8b-instant",
+        temperature=0,
+        max_tokens=100,  # Limiter pour le routage
+        timeout=30,  # Timeout de 30 secondes
+    )
+    generation_llm = ChatGroq(
+        model_name="llama-3.1-8b-instant",
+        temperature=0,
+        max_tokens=2000,  # Limiter la longueur des réponses
+        timeout=60,  # Timeout de 60 secondes
+    )
+except Exception as e:
+    print(f"❌ Erreur lors de l'initialisation des LLMs: {e}")
+    raise
 
 # Initialiser le checkpointer pour la mémoire des conversations
 memory = MemorySaver()

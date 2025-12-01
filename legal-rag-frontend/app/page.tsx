@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Scale, Loader2, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
 import SuggestedQuestions from '@/components/SuggestedQuestions';
 import EmptyState from '@/components/EmptyState';
+import { askQuestion, ApiError } from '@/lib/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,12 +13,6 @@ interface Message {
   sources?: string[];
   suggestedQuestions?: string[];
 }
-
-  interface ApiResponse {
-    reponse: string;
-    sources: string[];
-    suggested_questions?: string[]; // Questions suggérées depuis l'API
-  }
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
