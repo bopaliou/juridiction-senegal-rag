@@ -122,15 +122,16 @@ async def ask_question(request: SecureQueryRequest):
         # Les sources sont déjà extraites dans les nœuds (generate_node ou handle_non_juridique)
         sources = final_state.get("sources", ["Aucune source disponible"])
         
-        # Sanitize les sources avant de les retourner
-        sanitized_sources = [
-            sanitize_input(source, max_length=10000) 
+        # Ne pas sanitizer les sources (React les sécurise automatiquement)
+        # Seulement filtrer les sources vides et limiter la longueur
+        filtered_sources = [
+            source[:10000] if len(source) > 10000 else source
             for source in sources 
             if source and source != "Aucune source disponible"
         ]
         
-        if not sanitized_sources:
-            sanitized_sources = ["Aucune source disponible"]
+        if not filtered_sources:
+            filtered_sources = ["Aucune source disponible"]
         
         # Extraire et formater l'historique (les 5 derniers messages)
         messages = final_state.get("messages", [])
@@ -141,29 +142,31 @@ async def ask_question(request: SecureQueryRequest):
         
         for msg in recent_messages:
             if isinstance(msg, HumanMessage):
-                content = sanitize_input(msg.content, max_length=5000)
+                # Limiter la longueur mais ne pas encoder HTML (React le gère)
+                content = msg.content[:5000] if len(msg.content) > 5000 else msg.content
                 history.append(MessageHistory(role="user", content=content))
             elif isinstance(msg, AIMessage):
-                content = sanitize_input(msg.content, max_length=10000)
+                # Limiter la longueur mais ne pas encoder HTML (React le gère)
+                content = msg.content[:10000] if len(msg.content) > 10000 else msg.content
                 history.append(MessageHistory(role="assistant", content=content))
         
-        # Récupérer les questions suggérées depuis l'état et les sanitizer
+        # Récupérer les questions suggérées depuis l'état
         suggested_questions_raw = final_state.get("suggested_questions", [])
         suggested_questions = [
-            sanitize_input(q, max_length=200) 
+            q[:200] if len(q) > 200 else q
             for q in suggested_questions_raw[:5]  # Limiter à 5 questions max
             if q and len(q.strip()) > 0
         ]
         
-        # Sanitize la réponse
-        answer = sanitize_input(
-            final_state.get("answer", "Aucune réponse générée"),
-            max_length=50000  # Limite très élevée pour les réponses longues
-        )
+        # Ne pas sanitizer la réponse (React la sécurise automatiquement)
+        # Seulement limiter la longueur
+        answer = final_state.get("answer", "Aucune réponse générée")
+        if len(answer) > 50000:
+            answer = answer[:50000]
         
         return QueryResponse(
             reponse=answer,
-            sources=sanitized_sources,
+            sources=filtered_sources,
             history=history,
             suggested_questions=suggested_questions
         )
