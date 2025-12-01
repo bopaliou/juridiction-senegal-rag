@@ -329,104 +329,137 @@ def detect_domain_from_source(source_path: str) -> str:
         return 'general'
 
 def generate_suggested_questions(question: str, documents: List[Document], answer: str) -> List[str]:
-    """Génère des questions suggérées basées sur les documents réels et leur domaine."""
-    if not documents:
+    """Génère des questions suggérées basées sur les documents réels et la réponse générée."""
+    if not documents or not answer or answer.strip() == "Je ne trouve pas l'information dans les textes fournis.":
         return []
     
-    # Détecter les domaines des documents retournés
-    domains = set()
-    for doc in documents:
-        metadata = doc.metadata if hasattr(doc, 'metadata') and doc.metadata else {}
-        source = metadata.get('source', metadata.get('file_path', ''))
-        domain = detect_domain_from_source(str(source))
-        domains.add(domain)
+    try:
+        # Extraire les concepts clés des documents récupérés
+        document_concepts = []
+        for doc in documents[:3]:  # Utiliser les 3 premiers documents
+            if doc.page_content:
+                # Extraire les premières phrases qui contiennent des concepts juridiques
+                sentences = doc.page_content.split('.')[:5]
+                document_concepts.extend([s.strip() for s in sentences if len(s.strip()) > 20])
+        
+        # Limiter la longueur pour éviter les tokens excessifs
+        context_text = ' '.join(document_concepts[:10])[:1000]
+        
+        # Utiliser le LLM pour générer des questions pertinentes basées sur le contenu réel
+        prompt_template = """Tu es un assistant juridique. Basé sur la question posée, la réponse donnée et le contexte des documents juridiques, génère exactement 3 questions de suivi pertinentes et spécifiques qui explorent des aspects connexes du sujet traité.
+
+QUESTION POSÉE: {question}
+
+RÉPONSE DONNÉE: {answer}
+
+CONTEXTE DES DOCUMENTS: {context}
+
+Règles importantes:
+- Les questions doivent être spécifiques au contexte juridique sénégalais
+- Elles doivent explorer des aspects connexes mais différents de la question initiale
+- Elles doivent être formulées de manière naturelle et compréhensible
+- Chaque question doit être sur une seule ligne
+- Ne génère QUE les 3 questions, une par ligne, sans numérotation ni préfixe
+
+Questions suggérées:"""
+
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+        chain = prompt | router_llm  # Utiliser router_llm qui est plus rapide
+        
+        response = chain.invoke({
+            "question": question[:200],  # Limiter la longueur
+            "answer": answer[:500],  # Limiter la longueur
+            "context": context_text
+        })
+        
+        # Extraire les questions de la réponse du LLM
+        questions_text = response.content.strip()
+        
+        # Parser les questions (une par ligne)
+        suggested_questions = []
+        for line in questions_text.split('\n'):
+            line = line.strip()
+            # Enlever les numéros, tirets, puces si présents
+            line = line.lstrip('0123456789.-• ').strip()
+            if line and len(line) > 10 and '?' in line:
+                # S'assurer que la question se termine par un point d'interrogation
+                if not line.endswith('?'):
+                    line = line.rstrip('.') + '?'
+                suggested_questions.append(line)
+        
+        # Si on n'a pas assez de questions ou si le LLM a échoué, utiliser un fallback
+        if len(suggested_questions) < 3:
+            # Fallback: générer des questions basées sur les concepts extraits
+            fallback_questions = generate_fallback_questions(question, answer, document_concepts)
+            suggested_questions.extend(fallback_questions)
+        
+        # Retourner exactement 3 questions uniques
+        unique_questions = []
+        seen = set()
+        for q in suggested_questions:
+            q_lower = q.lower()
+            if q_lower not in seen and len(q) > 15:
+                unique_questions.append(q)
+                seen.add(q_lower)
+                if len(unique_questions) >= 3:
+                    break
+        
+        return unique_questions[:3]
+        
+    except Exception as e:
+        print(f"⚠️  Erreur lors de la génération des questions suggérées: {e}")
+        # Fallback en cas d'erreur
+        return generate_fallback_questions(question, answer, [])
+
+
+def generate_fallback_questions(question: str, answer: str, concepts: List[str]) -> List[str]:
+    """Génère des questions de fallback basées sur des patterns simples."""
+    fallback = []
     
-    # Déterminer le domaine principal (le plus fréquent ou le premier)
-    primary_domain = list(domains)[0] if domains else 'general'
-    
-    # Extraire des mots-clés de la question et de la réponse
-    question_lower = question.lower()
+    # Extraire des mots-clés de la réponse
     answer_lower = answer.lower()
+    question_lower = question.lower()
     
-    # Questions suggérées par domaine basées sur les documents réels
-    domain_questions = {
-        'travail': [
-            'Quelle est la durée légale du préavis de démission ?',
-            'Comment sont calculés les congés payés ?',
-            'Quels sont mes droits en cas de licenciement abusif ?',
-            'Quelles sont les conditions d\'un CDD ?',
-            'Quelle est la durée maximale du temps de travail ?',
-            'Comment fonctionne la retraite au Sénégal ?',
-            'Quels sont les droits des travailleurs en cas de grève ?',
-        ],
-        'penal': [
-            'Quelles sont les peines encourues pour cette infraction ?',
-            'Quel est le délai de prescription en droit pénal ?',
-            'Comment se déroule la procédure pénale ?',
-            'Quels sont les recours possibles en droit pénal ?',
-            'Quelles sont les conditions de suspension des délais de prescription ?',
-        ],
-        'finance': [
-            'Quels sont les principes budgétaires de l\'État ?',
-            'Comment est organisée la nomenclature budgétaire ?',
-            'Quelles sont les voies et moyens de l\'État ?',
-            'Comment fonctionne le budget vert ?',
-            'Quelle est la stratégie de gestion de la dette ?',
-        ],
-        'administration': [
-            'Quelle est l\'organisation de la fonction publique ?',
-            'Comment sont structurées les administrations centrales ?',
-            'Quels sont les pouvoirs du Président de la République ?',
-            'Comment fonctionne la répartition des services de l\'État ?',
-        ],
-        'constitution': [
-            'Quels sont les droits fondamentaux garantis par la Constitution ?',
-            'Comment est organisée la séparation des pouvoirs ?',
-            'Quels sont les pouvoirs du Président de la République ?',
-            'Comment fonctionne le Parlement ?',
-            'Quelle est la procédure de révision constitutionnelle ?',
-        ],
-        'collectivites': [
-            'Quels sont les pouvoirs des collectivités territoriales ?',
-            'Quelle est l\'organisation territoriale du Sénégal ?',
-            'Quels sont les budgets des collectivités locales ?',
-            'Comment fonctionnent les élections locales ?',
-        ],
-        'aviation': [
-            'Quelles sont les règles de sécurité aérienne ?',
-            'Quels sont les droits des passagers aériens ?',
-            'Quelle est la responsabilité du transporteur aérien ?',
-            'Quels sont les documents requis pour un vol international ?',
-        ],
-        'general': [
-            'Quels sont les délais applicables ?',
-            'Quelle est la procédure à suivre ?',
-            'Quels sont les recours possibles ?',
-            'Y a-t-il des exceptions prévues ?',
+    # Patterns de questions basés sur les concepts juridiques communs
+    patterns = [
+        "Quels sont les délais applicables dans ce cas ?",
+        "Quelle est la procédure à suivre ?",
+        "Quels sont les recours possibles ?",
+        "Y a-t-il des exceptions prévues ?",
+        "Quels sont les documents requis ?",
+        "Quelles sont les sanctions prévues ?",
+    ]
+    
+    # Adapter les patterns selon le domaine détecté dans la réponse
+    if any(word in answer_lower for word in ['travail', 'employeur', 'salarié', 'contrat', 'licenciement']):
+        patterns = [
+            "Quelle est la durée du préavis ?",
+            "Comment sont calculées les indemnités ?",
+            "Quels sont les droits en cas de litige ?",
         ]
-    }
+    elif any(word in answer_lower for word in ['pénal', 'penal', 'infraction', 'sanction', 'peine']):
+        patterns = [
+            "Quel est le délai de prescription ?",
+            "Quelle est la procédure pénale ?",
+            "Quels sont les recours possibles ?",
+        ]
+    elif any(word in answer_lower for word in ['constitution', 'président', 'parlement', 'pouvoirs']):
+        patterns = [
+            "Quels sont les droits fondamentaux garantis ?",
+            "Comment fonctionne la séparation des pouvoirs ?",
+            "Quelle est la procédure de révision ?",
+        ]
     
-    # Obtenir les questions du domaine principal
-    available_questions = domain_questions.get(primary_domain, domain_questions['general'])
+    # Filtrer les questions trop similaires à la question initiale
+    for pattern in patterns:
+        pattern_lower = pattern.lower()
+        similarity = sum(1 for word in question_lower.split() if word in pattern_lower and len(word) > 3)
+        if similarity < 2:
+            fallback.append(pattern)
+        if len(fallback) >= 3:
+            break
     
-    # Filtrer les questions qui sont trop similaires à la question actuelle
-    filtered_questions = []
-    for q in available_questions:
-        # Éviter les questions trop similaires
-        q_lower = q.lower()
-        similarity = sum(1 for word in question_lower.split() if word in q_lower and len(word) > 3)
-        if similarity < 3:  # Moins de 3 mots en commun
-            filtered_questions.append(q)
-    
-    # Si on n'a pas assez de questions, compléter avec des questions générales
-    while len(filtered_questions) < 3 and len(available_questions) > len(filtered_questions):
-        for q in available_questions:
-            if q not in filtered_questions:
-                filtered_questions.append(q)
-                break
-    
-    # Prendre 3 questions au maximum
-    return filtered_questions[:3]
+    return fallback[:3]
 
 def retrieve_noeud(state: AgentState):
 
