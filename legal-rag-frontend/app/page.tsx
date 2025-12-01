@@ -129,9 +129,6 @@ export default function Home() {
       // Parser les sources
       const parsedSources = parseSources(data.sources || []);
 
-      // Parser les sources
-      const parsedSources = parseSources(data.sources || []);
-
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.reponse,
