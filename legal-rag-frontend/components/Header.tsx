@@ -40,7 +40,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </span>
               </div>
               <p className="text-xs font-medium text-slate-600">
-                Assistant Juridique Intelligent
+                L'expertise juridique sénégalaise à votre service
               </p>
             </div>
           </div>

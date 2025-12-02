@@ -97,13 +97,18 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
         </div>
 
         {/* Message de Bienvenue */}
-        <h2 className="mb-3 text-2xl font-bold text-slate-900 sm:text-3xl">
-          Assistant Juridique Sénégalais
+        <h2 className="mb-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+          Bienvenue sur YoonAssist AI
         </h2>
+        
+        {/* Slogan */}
+        <p className="mb-3 text-sm font-semibold text-blue-600 sm:text-base">
+          L'expertise juridique sénégalaise à votre service
+        </p>
 
         {/* Sous-titre */}
         <p className="mb-8 text-base text-slate-600 sm:text-lg">
-          Je peux vous aider avec le Code du Travail, la Constitution et le Code Pénal.
+          Je peux vous aider avec le Code du Travail, la Constitution, le Code Pénal et bien plus encore.
           <br />
           Posez-moi une question ou choisissez un exemple ci-dessous.
         </p>

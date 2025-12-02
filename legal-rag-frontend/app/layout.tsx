@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "YoonAssist AI - Assistant Juridique Intelligent",
-  description: "YoonAssist AI - Assistant juridique intelligent basé sur RAG pour le droit sénégalais. YoonAssist combine l'expertise juridique avec l'intelligence artificielle pour répondre à vos questions sur le droit sénégalais.",
+  description: "YoonAssist AI - L'expertise juridique sénégalaise à votre service. Assistant juridique intelligent basé sur RAG pour le droit sénégalais. Accédez facilement aux informations sur la Constitution, le Code du Travail, le Code Pénal et bien plus encore.",
 };
 
 export default function RootLayout({
