@@ -162,7 +162,8 @@ export async function askQuestion(
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error('Erreur de connexion au serveur');
+    // Ne pas exposer les détails techniques
+    throw new Error('Impossible de se connecter au service');
   }
 }
 

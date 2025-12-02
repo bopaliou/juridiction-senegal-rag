@@ -346,18 +346,39 @@ export default function Home() {
     } catch (error) {
       console.error('Erreur lors de l\'appel API:', error);
       
-      let errorContent = '❌ Erreur de connexion au serveur.\n\n';
+      let errorContent = '❌ Impossible de se connecter au service.\n\n';
       
+      // Vérifier si c'est une erreur de connexion réseau
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        errorContent += '🔍 Vérifications à faire :\n';
-        errorContent += '1. Le serveur FastAPI est-il lancé ? (uvicorn src.server:app --reload)\n';
-        errorContent += '2. Le serveur écoute-t-il sur http://127.0.0.1:8000 ?\n';
-        errorContent += '3. Les CORS sont-ils configurés dans le serveur ?\n\n';
-        errorContent += '💡 Assurez-vous que le serveur FastAPI est démarré avant d\'utiliser l\'application.';
-      } else if (error instanceof Error) {
-        errorContent += `Détails : ${error.message}`;
-      } else {
-        errorContent += 'Une erreur inattendue s\'est produite.';
+        errorContent += 'Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.\n\n';
+        errorContent += '💡 Si le problème persiste, vérifiez votre connexion internet ou contactez le support.';
+      } 
+      // Vérifier si c'est une ApiError (objet avec propriété status)
+      else if (error && typeof error === 'object' && 'status' in error) {
+        const apiError = error as ApiError;
+        if (apiError.status === 504) {
+          errorContent += '⏱️ La requête a pris trop de temps. Veuillez reformuler votre question ou réessayer plus tard.';
+        } else if (apiError.status === 429) {
+          errorContent += '⏸️ Trop de requêtes. Veuillez patienter quelques instants avant de réessayer.';
+        } else if (apiError.status && apiError.status >= 500) {
+          errorContent += '🔧 Le service rencontre des difficultés techniques. Veuillez réessayer dans quelques instants.';
+        } else {
+          errorContent += 'Une erreur s\'est produite. Veuillez réessayer.';
+        }
+      } 
+      // Erreur générique
+      else if (error instanceof Error) {
+        // Ne pas exposer les détails techniques de l'erreur
+        // Vérifier si c'est un timeout
+        if (error.message.includes('temps') || error.message.includes('timeout')) {
+          errorContent += '⏱️ La requête a pris trop de temps. Veuillez réessayer.';
+        } else {
+          errorContent += 'Une erreur s\'est produite lors du traitement de votre demande. Veuillez réessayer.';
+        }
+      } 
+      // Erreur inconnue
+      else {
+        errorContent += 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
       }
       
       const errorMessage: Message = {
