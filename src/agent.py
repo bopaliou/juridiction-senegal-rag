@@ -43,24 +43,35 @@ class BGEReranker:
     
     @property
     def model(self):
-        """Lazy loading du modèle."""
+        """Lazy loading du modèle avec optimisation mémoire."""
         if self._model is None:
             try:
                 print(f"🔄 Chargement du modèle BGE Reranker ({self.model_name})...")
+                # Utiliser torch_dtype=torch.float16 pour réduire la mémoire de moitié
+                # et low_cpu_mem_usage=True pour optimiser le chargement
                 self._model = AutoModelForSequenceClassification.from_pretrained(
                     self.model_name,
-                    dtype=torch.float32,  # Utiliser float32 pour éviter les problèmes de compatibilité
+                    torch_dtype=torch.float16 if self.device == "cpu" else torch.float32,
+                    low_cpu_mem_usage=True,
                 )
                 self._model.eval()
                 self._model.to(self.device)
+                # Forcer le garbage collection après le chargement
+                gc.collect()
+                if self.device == "cpu":
+                    torch.set_num_threads(1)  # Limiter les threads CPU
                 print(f"✅ Modèle BGE Reranker chargé sur {self.device}")
             except Exception as e:
                 print(f"⚠️  Erreur lors du chargement du modèle: {e}")
                 # Si erreur, essayer sans spécifier dtype
                 try:
-                    self._model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+                    self._model = AutoModelForSequenceClassification.from_pretrained(
+                        self.model_name,
+                        low_cpu_mem_usage=True
+                    )
                     self._model.eval()
                     self._model.to(self.device)
+                    gc.collect()
                 except Exception as e2:
                     print(f"❌ Erreur critique lors du chargement du modèle: {e2}")
                 raise
@@ -143,14 +154,22 @@ _db = None
 _retriever = None
 
 def get_embedding_function():
-    """Lazy loading de l'embedding function."""
+    """Lazy loading de l'embedding function avec optimisation mémoire."""
     global _embedding_function
     if _embedding_function is None:
         _embedding_function = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={'device': 'cpu'},  # Utiliser CPU par défaut pour éviter les problèmes GPU
-            encode_kwargs={'normalize_embeddings': True}  # Normaliser pour de meilleures performances
+            model_kwargs={
+                'device': 'cpu',
+                'trust_remote_code': False,
+            },
+            encode_kwargs={
+                'normalize_embeddings': True,
+                'batch_size': 32,  # Traiter par batch pour optimiser la mémoire
+            }
         )
+        # Forcer le garbage collection après le chargement
+        gc.collect()
     return _embedding_function
 
 def get_db():

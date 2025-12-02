@@ -12,11 +12,14 @@ CHROMA_DB_PATH="data/chroma_db"
 # Vérifier si Chroma DB existe et lancer l'ingestion en arrière-plan si nécessaire
 if [ ! -d "$CHROMA_DB_PATH" ] || [ -z "$(ls -A $CHROMA_DB_PATH 2>/dev/null)" ]; then
     echo "📚 Chroma DB introuvable ou vide. Lancement de l'ingestion en arrière-plan..."
-    # Lancer l'ingestion en arrière-plan immédiatement (sans attendre)
-    python -u src/ingestion.py > ingestion.log 2>&1 &
+    # Lancer l'ingestion en arrière-plan avec limite de mémoire
+    # Utiliser nice pour réduire la priorité et limiter l'utilisation CPU
+    nice -n 10 python -u src/ingestion.py > ingestion.log 2>&1 &
     INGESTION_PID=$!
     echo "✅ Ingestion lancée en arrière-plan (PID: $INGESTION_PID)"
     echo "📝 Les logs d'ingestion seront disponibles dans ingestion.log"
+    echo "⏳ Attente de 5 secondes pour que l'ingestion démarre avant le serveur..."
+    sleep 5
 else
     echo "✅ Chroma DB trouvée. Pas besoin d'ingestion."
 fi
