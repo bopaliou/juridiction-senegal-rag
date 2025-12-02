@@ -24,130 +24,100 @@ class BGEReranker:
     """Custom reranker using BGE reranker model from HuggingFace with lazy loading."""
     
     def __init__(self, model_name: str = "BAAI/bge-reranker-base", top_n: int = 3, device: Optional[str] = None):
-        """
-        Initialize the BGE reranker with lazy loading.
-        
-        Args:
-            model_name: Name of the BGE reranker model from HuggingFace
-            top_n: Number of top documents to return after reranking
-            device: Device to run the model on ('cuda', 'cpu', or None for auto)
-        """
         self.model_name = model_name
         self.top_n = top_n
-        self._tokenizer = None
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self._model = None
-        
-        # Auto-detect device if not specified
-        if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            self.device = device
+        self._tokenizer = None
     
     @property
     def tokenizer(self):
-        """Lazy load tokenizer only when needed."""
+        """Lazy loading du tokenizer."""
         if self._tokenizer is None:
-            # Use use_fast=False to avoid loading the large tokenizer.json if possible
-            # Try to load with memory-efficient settings
             try:
-                self._tokenizer = AutoTokenizer.from_pretrained(
-                    self.model_name,
-                    use_fast=False,  # Use slower but more memory-efficient tokenizer
-                    local_files_only=False
-                )
+                self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             except Exception as e:
-                print(f"Error loading tokenizer: {e}")
-                # Fallback: try with use_fast=True
-                self._tokenizer = AutoTokenizer.from_pretrained(
-                    self.model_name,
-                    use_fast=True,
-                    local_files_only=False
-                )
+                print(f"⚠️  Erreur lors du chargement du tokenizer: {e}")
+                raise
         return self._tokenizer
     
     @property
     def model(self):
-        """Lazy load model only when needed."""
+        """Lazy loading du modèle."""
         if self._model is None:
             try:
-                # Load model with low_cpu_mem_usage if available
+                print(f"🔄 Chargement du modèle BGE Reranker ({self.model_name})...")
                 self._model = AutoModelForSequenceClassification.from_pretrained(
                     self.model_name,
-                    low_cpu_mem_usage=True,
-                    dtype=torch.float32 if self.device == "cpu" else torch.float16
+                    dtype=torch.float32,  # Utiliser float32 pour éviter les problèmes de compatibilité
                 )
-                self._model.to(self.device)
                 self._model.eval()
+                self._model.to(self.device)
+                print(f"✅ Modèle BGE Reranker chargé sur {self.device}")
             except Exception as e:
-                print(f"Error loading reranker model: {e}")
-                raise
+                print(f"⚠️  Erreur lors du chargement du modèle: {e}")
+                # Si erreur, essayer sans spécifier dtype
+                try:
+                    self._model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+                    self._model.eval()
+                    self._model.to(self.device)
+                except Exception as e2:
+                    print(f"❌ Erreur critique lors du chargement du modèle: {e2}")
+                    raise
+
         return self._model
     
     def compress_documents(
         self, documents: List[Document], query: str, batch_size: int = 8
     ) -> List[Document]:
-        """
-        Rerank documents based on relevance to the query.
-        Processes documents in batches to reduce memory usage.
         
-        Args:
-            documents: List of Document objects to rerank
-            query: Query string to rank documents against
-            batch_size: Number of documents to process at once (default: 8)
-            
-        Returns:
-            List of reranked Document objects (top_n)
-        """
         if not documents:
-            return documents
+            return []
         
-        # If we have fewer documents than top_n, just return all
-        if len(documents) <= self.top_n:
-            return documents
-        
-        scored_docs = []
-        
-        # Process in batches to reduce memory usage
         try:
-            with torch.no_grad():
-                for i in range(0, len(documents), batch_size):
-                    batch_docs = documents[i:i + batch_size]
-                    pairs = [[query, doc.page_content] for doc in batch_docs]
-                    
-                    # Tokenize batch
-                    inputs = self.tokenizer(
-                        pairs,
-                        padding=True,
-                        truncation=True,
-                        return_tensors="pt",
-                        max_length=512
-                    ).to(self.device)
-                    
-                    # Get scores for batch
-                    scores = self.model(**inputs, return_dict=True).logits.view(-1).float()
-                    
-                    # Store scores with documents
-                    batch_scores = scores.cpu().tolist()
-                    scored_docs.extend(list(zip(batch_scores, batch_docs)))
-                    
-                    # Clear cache periodically
-                    if self.device == "cuda":
-                        torch.cuda.empty_cache()
-                    
-                    # Force garbage collection every few batches
-                    if i % (batch_size * 4) == 0:
-                        gc.collect()
+            # Préparer les paires (query, document)
+            pairs = [[query, doc.page_content] for doc in documents]
             
-            # Sort by score (descending) and take top_n
-            scored_docs.sort(key=lambda x: x[0], reverse=True)
-            top_docs = [doc for _, doc in scored_docs[:self.top_n]]
+            # Tokeniser et obtenir les scores
+            tokenizer = self.tokenizer
+            model = self.model
             
-            return top_docs
+            # Traiter par batch pour éviter les problèmes de mémoire
+            all_scores = []
+            for i in range(0, len(pairs), batch_size):
+                batch = pairs[i:i + batch_size]
+                inputs = tokenizer(
+                    batch,
+                    padding=True,
+                    truncation=True,
+                    return_tensors="pt",
+                    max_length=512
+                ).to(self.device)
+                
+                with torch.no_grad():
+                    scores = model(**inputs).logits.view(-1).float()
+                    all_scores.extend(scores.cpu().tolist())
             
-        except RuntimeError as e:
-            if "out of memory" in str(e).lower() or "memory" in str(e).lower():
-                print(f"Memory error during reranking: {e}")
-                print("Falling back to returning original documents without reranking.")
+            # Créer une liste de tuples (score, document) et trier
+            scored_docs = list(zip(all_scores, documents))
+            scored_docs.sort(reverse=True, key=lambda x: x[0])
+            
+            # Retourner les top_n documents
+            return [doc for _, doc in scored_docs[:self.top_n]]
+            
+        except torch.cuda.OutOfMemoryError:
+            print("⚠️  Mémoire GPU insuffisante pour le reranking. Retour des documents originaux.")
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            return documents[:self.top_n]
+        except Exception as e:
+            print(f"⚠️  Erreur lors du reranking: {e}")
+            # En cas d'erreur, retourner les documents originaux
+            if "out of memory" in str(e).lower() or "cuda" in str(e).lower():
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
                 # Return original documents if reranking fails due to memory
                 return documents[:self.top_n]
             else:
@@ -158,7 +128,6 @@ load_dotenv()
 
 # Utiliser un chemin absolu pour éviter les problèmes de chemin relatif
 from pathlib import Path
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_DB_PATH = BASE_DIR / "data" / "chroma_db"
@@ -202,12 +171,12 @@ def get_db():
         
         # Vérifier que la base de données contient des documents
         try:
-            collection = _db._collection
+            collection = _db._collection  # type: ignore[attr-defined]
             count = collection.count() if collection else 0
             if count == 0:
-                print("⚠️  ATTENTION: La base de données Chroma est vide! Exécutez: python src/ingestion.py")
-            else:
-                print(f"✅ Base de données Chroma chargée: {count} documents disponibles")
+                print("⚠️  ATTENTION: La base de données Chroma existe mais ne contient aucun document.")
+                print("   Exécutez: python src/ingestion.py pour charger les documents.")
+
         except Exception as e:
             print(f"⚠️  Erreur lors de la vérification de la base de données: {e}")
     
@@ -238,7 +207,7 @@ try:
     router_llm = ChatGroq(
         model_name="llama-3.1-8b-instant",
         temperature=0,
-        max_tokens=100,  # Limiter pour le routage
+        max_tokens=50,  # Limiter pour la classification
         timeout=30,  # Timeout de 30 secondes
     )
     generation_llm = ChatGroq(
@@ -275,29 +244,20 @@ def classify_question(state: AgentState):
         ("human", "{question}")
     ])
     
-    chain = prompt | router_llm # FIX : Utilise SEULEMENT le router_llm
-    category = chain.invoke({"question": state["question"]}).content.strip().upper()
+    chain = prompt | router_llm
+    response = chain.invoke({"question": state["question"]})
+    category = "JURIDIQUE" if "JURIDIQUE" in response.content.upper() else "AUTRE"
     
     return {"category": category, "messages": messages}
 
-def route_question(state: AgentState):
-    if state.get("category") == "JURIDIQUE":
-        return "retrieve"
-    return "refuse" # <-- Changé de "end" à "refuse"
-
 def handle_non_juridique(state: AgentState):
     """Génère une réponse polie avec le router_llm lorsque la question est hors-sujet."""
-    question = state["question"]
     messages = state.get("messages", [])
-    
-    template = "La question suivante n'est pas juridique: '{question}'. Rédige une réponse polie et concise (moins de 20 mots) indiquant que tu ne peux pas répondre car tu es un assistant juridique spécialisé dans le droit sénégalais."
-    
-    prompt = ChatPromptTemplate.from_template(template)
+    prompt = ChatPromptTemplate.from_template(
+        "Tu es un assistant juridique sénégalais. L'utilisateur a posé une question qui ne concerne pas le droit sénégalais. Réponds poliment que tu ne peux répondre qu'aux questions sur le droit sénégalais (Constitution, Code du Travail, Code Pénal, etc.). Sois bref et courtois."
+    )
     chain = prompt | router_llm # FIX : Utilise SEULEMENT le router_llm (pour la vitesse)
-    
-    response = chain.invoke({"question": question})
-    
-    # Ajouter la réponse à l'historique
+    response = chain.invoke({"question": state["question"]})
     messages.append(AIMessage(content=response.content))
     
     return {
@@ -480,7 +440,7 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
         if q_lower != question_lower:
             question_scores.append((score, q))
     
-    # Trier par score décroissant et sélectionner les 3 meilleures questions contextuelles
+    # Trier par score décroissant et sélectionner les meilleures
     question_scores.sort(reverse=True, key=lambda x: x[0])
     
     # Sélectionner exactement 3 questions les plus pertinentes
@@ -537,13 +497,12 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
     return selected[:num_questions]
 
 
-
 def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
-    documents = retriever.invoke(question)
-    return {"documents": documents}
+        documents = retriever.invoke(question)
+        return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
         return {"documents": []}
@@ -761,7 +720,7 @@ def generate_node(state: AgentState):
     if history_str:
         response = chain.invoke({"question": question, "context": context, "history": history_str})
     else:
-    response = chain.invoke({"question": question, "context": context})
+        response = chain.invoke({"question": question, "context": context})
     
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))
@@ -795,9 +754,12 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
                 reformulation_chain = ChatPromptTemplate.from_template(reformulation_prompt) | generation_llm
                 reformulated_response = reformulation_chain.invoke({})
                 answer_content = reformulated_response.content.strip()
+                # Si la reformulation retourne encore "Je ne trouve pas", utiliser directement le contexte
+                if answer_content == "Je ne trouve pas l'information dans les textes fournis.":
+                    answer_content = f"D'après les documents juridiques consultés : {context_excerpt}"
             except Exception as e:
                 # En cas d'erreur, utiliser directement un extrait du contexte
-                answer_content = f"D'après les documents juridiques : {context_excerpt}"
+                answer_content = f"D'après les documents juridiques consultés : {context_excerpt}"
     
     # S'assurer que sources_list n'est jamais vide
     if not sources_list:
@@ -825,97 +787,31 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
 
 
 compressor = None
-RERANKER_AVAILABLE = False
 
-# Initialize reranker lazily - only create when first needed
-def get_reranker():
-    """Get or create the reranker instance (lazy initialization)."""
-    global compressor, RERANKER_AVAILABLE
-    if compressor is None and not RERANKER_AVAILABLE:
-        try:
-            compressor = BGEReranker(
-                model_name="BAAI/bge-reranker-base",
-                top_n=3
-            )
-            RERANKER_AVAILABLE = True
-        except (MemoryError, RuntimeError, OSError) as e:
-            print(f"Warning: Could not initialize BGE reranker due to memory/resource constraints: {e}")
-            print("Reranking will be skipped. Documents will be returned as-is.")
-            RERANKER_AVAILABLE = False
-            compressor = None
-    return compressor
-
-def rerank_node(state: AgentState):
-    """Rerank documents using the BGE reranker model."""
-    question = state["question"]
-    # On récupère les documents bruts de l'état
-    documents_bruts = state.get("documents", [])
-    
-    if not documents_bruts:
-        return {"documents": []}
-    
-    # Try to get reranker (lazy initialization)
-    reranker = get_reranker()
-    
-    # Utiliser le reranker pour classer et filtrer les documents
-    if reranker is not None:
-        try:
-            reranked_docs = reranker.compress_documents(documents_bruts, question)
-            
-            # Protection: si le reranker retourne une liste vide, utiliser les documents originaux
-            if not reranked_docs and documents_bruts:
-                reranked_docs = documents_bruts[:reranker.top_n] if len(documents_bruts) > reranker.top_n else documents_bruts
-            
-            return {"documents": reranked_docs}
-        except (MemoryError, RuntimeError) as e:
-            print(f"❌ Error during reranking: {e}")
-            # Return top_n documents without reranking
-            fallback_docs = documents_bruts[:reranker.top_n] if reranker else documents_bruts[:3]
-            return {"documents": fallback_docs}
-    else:
-        # If reranker is not available, just return top_n documents
-        top_docs = documents_bruts[:3]
-        return {"documents": top_docs}
-
-# Dans src/agent.py, après handle_non_juridique, par exemple
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-
-
-
+# Créer le graphe d'agent
 workflow = StateGraph(AgentState)
-# Ajout des nœuds
+
+# Ajouter les nœuds
 workflow.add_node("classify", classify_question)
 workflow.add_node("retrieve", retrieve_noeud)
-workflow.add_node("rerank", rerank_node)
 workflow.add_node("generate", generate_node)
-workflow.add_node("refuse", handle_non_juridique)
+workflow.add_node("non_juridique", handle_non_juridique)
 
-# 1. Le point d'entrée
+# Définir le point d'entrée
 workflow.set_entry_point("classify")
 
-# 2. Le routage conditionnel (FIX du BUG : 'refuse' doit être la clé)
-workflow.add_conditional_edges(
-    "classify",
-    route_question,
-    {
-        "retrieve": "retrieve", # Si JURIDIQUE
-        "refuse": "refuse"      # Si AUTRE (Va au nœud de refus)
-    }
-)
+# Ajouter les arêtes conditionnelles
+def should_retrieve(state: AgentState):
+    category = state.get("category", "")
+    if category == "JURIDIQUE":
+        return "retrieve"
+    else:
+        return "non_juridique"
 
-# 3. Les arêtes linéaires
-workflow.add_edge("retrieve", "rerank")
-workflow.add_edge("rerank", "generate")
+workflow.add_conditional_edges("classify", should_retrieve)
+workflow.add_edge("retrieve", "generate")
 workflow.add_edge("generate", END)
-workflow.add_edge("refuse", END) # Le nœud de refus termine le graphe proprement
+workflow.add_edge("non_juridique", END)
 
+# Compiler le graphe avec le checkpointer pour la mémoire
 agent_app = workflow.compile(checkpointer=memory)
-
-if __name__ == "__main__":
-    question_test = input("Posez votre question juridique : ")
-    result = agent_app.invoke({"question": question_test})
-    
-    print("Réponse de l'agent :")
-    print(result["answer"])
-
-
