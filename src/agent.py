@@ -262,7 +262,7 @@ def classify_question(state: AgentState):
     
     # Si aucun mot-clé juridique n'est trouvé, utiliser le LLM pour une classification plus fine
     if not contains_juridique_keyword:
-        prompt = ChatPromptTemplate.from_messages([
+    prompt = ChatPromptTemplate.from_messages([
             ("system", """Tu es un classificateur binaire pour un assistant juridique sénégalais.
 Ta tâche est de déterminer si la question concerne le droit sénégalais ou un sujet juridique général.
 
@@ -282,8 +282,8 @@ Une question est AUTRE si elle concerne :
 
 Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
         ("human", "{question}")
-        ])
-        
+    ])
+    
         try:
             chain = prompt | router_llm
             response = chain.invoke({"question": state["question"]})
@@ -561,8 +561,8 @@ def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
-        documents = retriever.invoke(question)
-        return {"documents": documents}
+    documents = retriever.invoke(question)
+    return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
         return {"documents": []}
@@ -713,13 +713,17 @@ def generate_node(state: AgentState):
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Tu dois expliquer le droit sénégalais comme si tu enseignais à quelqu'un qui ne connaît rien au droit. Commence toujours par expliquer le concept de manière simple et claire, AVANT de mentionner les articles.
-    2. STRUCTURE TA RÉPONSE NATURELLEMENT : Réponds d'abord à la question de manière claire et accessible, puis explique les détails, les conditions, les exceptions, et enfin mentionne les articles et codes pertinents pour les spécialistes qui veulent approfondir. NE METS JAMAIS de titres comme "Réponse directe", "Explication détaillée", etc. dans ta réponse.
-    3. UTILISE UN LANGAGE ACCESSIBLE : Évite le jargon juridique complexe. Si tu dois utiliser un terme technique, explique-le immédiatement.
-    4. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
-    5. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question.
-    6. NE COMMENCE JAMAIS par citer un article : Commence toujours par la réponse concrète, puis explique, puis cite les références.
-    7. NE METS JAMAIS de titres ou de sections dans ta réponse : Écris de manière fluide et naturelle, sans labels comme "Réponse directe", "Explication détaillée", etc.
+    1. SOIS CONCIS ET CLAIR : Limite ta réponse à 3-4 paragraphes maximum. Va droit au but, évite les répétitions et les détails superflus.
+    2. STRUCTURE TA RÉPONSE AVEC HIÉRARCHIE :
+       - Commence par une réponse directe et concise (1-2 phrases)
+       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, etc.
+       - Utilise des listes numérotées (1., 2., 3.) pour les étapes ou processus
+       - Termine par les références légales entre crochets [Article X, Code Y]
+    3. UTILISE DES LISTES POUR FACILITER LA LECTURE : Au lieu de longs paragraphes, utilise des listes à puces pour les éléments multiples (missions, conditions, droits, obligations, etc.).
+    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile.
+    5. INCLUS TOUJOURS les détails spécifiques : nombres, dates, montants, délais, mais de manière concise.
+    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète.
+    7. NE METS JAMAIS de titres ou sections : Écris de manière fluide mais structurée avec des listes.
     8. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
@@ -752,13 +756,17 @@ def generate_node(state: AgentState):
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Tu dois expliquer le droit sénégalais comme si tu enseignais à quelqu'un qui ne connaît rien au droit. Commence toujours par expliquer le concept de manière simple et claire, AVANT de mentionner les articles.
-    2. STRUCTURE TA RÉPONSE NATURELLEMENT : Réponds d'abord à la question de manière claire et accessible, puis explique les détails, les conditions, les exceptions, et enfin mentionne les articles et codes pertinents pour les spécialistes qui veulent approfondir. NE METS JAMAIS de titres comme "Réponse directe", "Explication détaillée", etc. dans ta réponse.
-    3. UTILISE UN LANGAGE ACCESSIBLE : Évite le jargon juridique complexe. Si tu dois utiliser un terme technique, explique-le immédiatement.
-    4. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
-    5. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question.
-    6. NE COMMENCE JAMAIS par citer un article : Commence toujours par la réponse concrète, puis explique, puis cite les références.
-    7. NE METS JAMAIS de titres ou de sections dans ta réponse : Écris de manière fluide et naturelle, sans labels comme "Réponse directe", "Explication détaillée", etc.
+    1. SOIS CONCIS ET CLAIR : Limite ta réponse à 3-4 paragraphes maximum. Va droit au but, évite les répétitions et les détails superflus.
+    2. STRUCTURE TA RÉPONSE AVEC HIÉRARCHIE :
+       - Commence par une réponse directe et concise (1-2 phrases)
+       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, etc.
+       - Utilise des listes numérotées (1., 2., 3.) pour les étapes ou processus
+       - Termine par les références légales entre crochets [Article X, Code Y]
+    3. UTILISE DES LISTES POUR FACILITER LA LECTURE : Au lieu de longs paragraphes, utilise des listes à puces pour les éléments multiples (missions, conditions, droits, obligations, etc.).
+    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile.
+    5. INCLUS TOUJOURS les détails spécifiques : nombres, dates, montants, délais, mais de manière concise.
+    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète.
+    7. NE METS JAMAIS de titres ou sections : Écris de manière fluide mais structurée avec des listes.
     8. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
@@ -790,7 +798,7 @@ def generate_node(state: AgentState):
     if history_str:
         response = chain.invoke({"question": question, "context": context, "history": history_str})
     else:
-        response = chain.invoke({"question": question, "context": context})
+    response = chain.invoke({"question": question, "context": context})
     
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))

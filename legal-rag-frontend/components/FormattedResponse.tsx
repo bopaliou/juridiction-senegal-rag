@@ -44,13 +44,13 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
     // Formater les listes à puces (commençant par - ou •)
     formatted = formatted.replace(
       /^[\-\•]\s+(.+)$/gm,
-      '<div class="ml-4 mb-1.5 flex items-start gap-2"><span class="text-blue-600 mt-1.5 shrink-0">•</span><span>$1</span></div>'
+      '<div class="ml-6 mb-2 flex items-start gap-3"><span class="text-blue-600 mt-1.5 shrink-0 font-bold">•</span><span class="flex-1 text-slate-700 leading-relaxed">$1</span></div>'
     );
 
     // Formater les listes numérotées
     formatted = formatted.replace(
       /^(\d+)\.\s+(.+)$/gm,
-      '<div class="ml-4 mb-1.5 flex items-start gap-2"><span class="font-semibold text-blue-600 shrink-0">$1.</span><span>$2</span></div>'
+      '<div class="ml-6 mb-2 flex items-start gap-3"><span class="font-semibold text-blue-600 shrink-0 min-w-[24px]">$1.</span><span class="flex-1 text-slate-700 leading-relaxed">$2</span></div>'
     );
 
     // Mettre en gras les mots-clés importants
@@ -86,8 +86,8 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
           return trimmed;
         }
         
-        // Sinon, créer un paragraphe
-        return `<p class="mb-3 leading-relaxed text-slate-700">${trimmed}</p>`;
+        // Sinon, créer un paragraphe avec meilleur espacement
+        return `<p class="mb-4 leading-relaxed text-slate-700 text-[15px]">${trimmed}</p>`;
       })
       .join('');
 
