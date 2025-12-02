@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JurisAdal AI - Assistant Juridique Intelligent",
-  description: "JurisAdal AI - Assistant juridique intelligent basé sur RAG pour le droit sénégalais. JurisAdal combine l'expertise juridique avec l'intelligence artificielle pour répondre à vos questions sur le droit sénégalais.",
+  title: "YoonAssist AI - Assistant Juridique Intelligent",
+  description: "YoonAssist AI - Assistant juridique intelligent basé sur RAG pour le droit sénégalais. YoonAssist combine l'expertise juridique avec l'intelligence artificielle pour répondre à vos questions sur le droit sénégalais.",
 };
 
 export default function RootLayout({

@@ -33,7 +33,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
-                  JurisAdal
+                  YoonAssist
                 </h1>
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
                   AI
