@@ -22,8 +22,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
           
           <div className="flex items-center gap-4">
-            {/* Logo très agrandi et percutant - sans arrière-plan */}
-            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center bg-transparent">
+            {/* Logo très agrandi et percutant */}
+            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
               <Image
                 src="/assets/logo.png"
                 alt="YoonAssist AI Logo"
@@ -32,8 +32,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 className="h-28 w-28 object-contain"
                 priority
                 style={{ 
-                  filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2))',
-                  backgroundColor: 'transparent'
+                  filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2))'
                 }}
               />
             </div>
