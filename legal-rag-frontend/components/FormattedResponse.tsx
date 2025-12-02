@@ -11,6 +11,18 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
   const formattedContent = useMemo(() => {
     let formatted = content;
 
+    // Traiter le markdown : convertir **texte** en <strong>
+    formatted = formatted.replace(
+      /\*\*(.+?)\*\*/g,
+      '<strong class="font-semibold text-slate-900">$1</strong>'
+    );
+
+    // Traiter le markdown : convertir *texte* en <em> (italique)
+    formatted = formatted.replace(
+      /\*(.+?)\*/g,
+      '<em class="italic text-slate-800">$1</em>'
+    );
+
     // Détecter et formater les articles de loi (L.2, L.69, Article 25, etc.)
     formatted = formatted.replace(
       /\b(Article\s+)?(L\.\d+|L\.\s*\d+|[A-Z]\.\d+)\b/gi,
