@@ -392,13 +392,19 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
     - Ne retourne rien si pas de documents ou réponse vide
     """
     # Si pas de documents ou réponse vide, ne pas proposer de questions
-    if not documents or not answer or answer.strip() == "Je ne trouve pas l'information dans les textes fournis.":
+    if not documents or not answer:
+        return []
+    
+    # Ne pas proposer de questions si la réponse est "Je ne trouve pas" ET qu'il n'y a vraiment pas de sources
+    answer_stripped = answer.strip()
+    if answer_stripped == "Je ne trouve pas l'information dans les textes fournis.":
         return []
     
     # Sélectionner un nombre aléatoire de questions entre 3 et 7
     num_questions = random.randint(3, 7)
     
     # Créer une copie de la liste et la mélanger pour garantir un ordre différent à chaque appel
+    # Utiliser random.shuffle() qui modifie la liste en place pour garantir une vraie aléa
     shuffled_questions = AUTHORIZED_QUESTIONS.copy()
     random.shuffle(shuffled_questions)
     
@@ -602,15 +608,52 @@ def generate_node(state: AgentState):
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))
     
+    # CORRECTION : Si des sources ont été trouvées mais que le LLM répond "Je ne trouve pas...",
+    # c'est incohérent. On ne doit jamais retourner "Je ne trouve pas" si des sources existent.
+    answer_content = response.content.strip()
+    
+    # Si des sources existent mais que la réponse dit "Je ne trouve pas", c'est incohérent
+    # Dans ce cas, on utilise le contexte des documents pour générer une réponse
+    if sources_list and len(sources_list) > 0 and answer_content == "Je ne trouve pas l'information dans les textes fournis.":
+        # Si on a des sources, on ne devrait jamais dire qu'on ne trouve pas l'information
+        # On va utiliser le contexte pour reformuler une réponse
+        if context and len(context.strip()) > 0:
+            # Prendre les premiers 500 caractères du contexte comme base de réponse
+            context_excerpt = context[:500].strip()
+            if len(context) > 500:
+                context_excerpt += "..."
+            # Reformuler avec le LLM en forçant une réponse basée sur le contexte
+            reformulation_prompt = f"""Basé sur le contexte suivant, réponds à la question de manière factuelle et concise.
+Ne dis jamais "Je ne trouve pas" car le contexte contient des informations.
+
+CONTEXTE:
+{context_excerpt}
+
+QUESTION: {question}
+
+RÉPONSE (factuelle et basée uniquement sur le contexte):"""
+            
+            try:
+                reformulation_chain = ChatPromptTemplate.from_template(reformulation_prompt) | generation_llm
+                reformulated_response = reformulation_chain.invoke({})
+                answer_content = reformulated_response.content.strip()
+            except Exception as e:
+                # En cas d'erreur, utiliser directement un extrait du contexte
+                answer_content = f"D'après les documents juridiques : {context_excerpt}"
+    
     # S'assurer que sources_list n'est jamais vide
     if not sources_list:
         sources_list = ["Aucune source disponible"]
     
     # Générer des questions suggérées basées sur les documents et leur domaine
-    suggested_questions = generate_suggested_questions(question, documents, response.content)
+    # Ne pas générer de questions si la réponse est "Je ne trouve pas" ET qu'il n'y a pas de sources
+    if answer_content == "Je ne trouve pas l'information dans les textes fournis." and not sources_list:
+        suggested_questions = []
+    else:
+        suggested_questions = generate_suggested_questions(question, documents, answer_content)
     
     return {
-        "answer": response.content,
+        "answer": answer_content,
         "sources": sources_list, # <-- CLÉ FINALE POUR L'API avec métadonnées
         "messages": messages,
         "suggested_questions": suggested_questions
