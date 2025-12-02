@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-slate-200/60 bg-white/98 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-30 w-full border-b border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-teal-50 backdrop-blur-md shadow-sm">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         {/* Section gauche : Menu et Logo */}
         <div className="flex items-center gap-3">
