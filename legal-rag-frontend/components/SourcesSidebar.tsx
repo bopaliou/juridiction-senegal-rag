@@ -119,7 +119,11 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+                className={`rounded-lg p-2 transition-colors ${
+                  isCollapsed 
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                    : 'text-gray-400 hover:bg-white hover:text-gray-600'
+                }`}
                 title={isCollapsed ? "Agrandir" : "Réduire"}
               >
                 {isCollapsed ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
