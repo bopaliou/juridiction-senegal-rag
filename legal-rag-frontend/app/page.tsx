@@ -438,7 +438,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+    <div className="flex h-screen bg-white">
       {/* Sidebar gauche (historique) */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -479,7 +479,7 @@ export default function Home() {
               {message.role === 'user' ? (
                 // Message utilisateur - aligné à droite
                 <div className="ml-auto max-w-[80%] sm:max-w-[75%]">
-                  <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-600 to-blue-700 px-5 py-3.5 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                  <div className="rounded-2xl rounded-tr-sm bg-blue-600 px-5 py-3.5 text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all duration-200">
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">
                       {message.content}
                     </p>
@@ -535,7 +535,7 @@ export default function Home() {
           {isLoading && (
             <div className="flex w-full">
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
-                <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-slate-100 to-slate-50 px-5 py-4 shadow-md border border-slate-200/50">
+                <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>

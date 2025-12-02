@@ -63,7 +63,7 @@ class BGEReranker:
                     self._model.to(self.device)
                 except Exception as e2:
                     print(f"❌ Erreur critique lors du chargement du modèle: {e2}")
-                    raise
+                raise
 
         return self._model
     
@@ -88,12 +88,12 @@ class BGEReranker:
                 batch = pairs[i:i + batch_size]
                 inputs = tokenizer(
                     batch,
-                    padding=True,
-                    truncation=True,
-                    return_tensors="pt",
-                    max_length=512
-                ).to(self.device)
-                
+                        padding=True,
+                        truncation=True,
+                        return_tensors="pt",
+                        max_length=512
+                    ).to(self.device)
+                    
                 with torch.no_grad():
                     scores = model(**inputs).logits.view(-1).float()
                     all_scores.extend(scores.cpu().tolist())
@@ -262,7 +262,7 @@ def classify_question(state: AgentState):
     
     # Si aucun mot-clé juridique n'est trouvé, utiliser le LLM pour une classification plus fine
     if not contains_juridique_keyword:
-        prompt = ChatPromptTemplate.from_messages([
+    prompt = ChatPromptTemplate.from_messages([
             ("system", """Tu es un classificateur binaire pour un assistant juridique sénégalais.
 Ta tâche est de déterminer si la question concerne le droit sénégalais ou un sujet juridique général.
 
@@ -281,9 +281,9 @@ Une question est AUTRE si elle concerne :
 - Des questions personnelles sans lien juridique
 
 Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
-            ("human", "{question}")
-        ])
-        
+        ("human", "{question}")
+    ])
+    
         try:
             chain = prompt | router_llm
             response = chain.invoke({"question": state["question"]})
@@ -561,8 +561,8 @@ def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
-        documents = retriever.invoke(question)
-        return {"documents": documents}
+    documents = retriever.invoke(question)
+    return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
         return {"documents": []}
@@ -713,22 +713,27 @@ def generate_node(state: AgentState):
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. EXPLIQUE TOUJOURS le contenu des articles : Ne dis jamais juste "selon l'article L.2" ou "l'article L.69 prévoit". Tu dois TOUJOURS expliquer ce que dit l'article de manière claire et compréhensible. L'utilisateur veut comprendre, pas juste connaître l'existence d'un article.
-    2. SOIS PÉDAGOGIQUE : L'utilisateur ne connaît pas forcément les articles. Explique leur contenu comme si tu enseignais le droit à quelqu'un qui ne le connaît pas. Ne présume jamais que l'utilisateur sait ce que dit un article.
-    3. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
-    4. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question. Ne donne pas de réponses vagues.
-    5. STRUCTURE TA RÉPONSE : Commence par répondre directement à la question avec les informations concrètes, puis explique les détails (articles, conditions, exceptions, etc.) de manière pédagogique.
-    6. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
+    1. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Tu dois expliquer le droit sénégalais comme si tu enseignais à quelqu'un qui ne connaît rien au droit. Commence toujours par expliquer le concept de manière simple et claire, AVANT de mentionner les articles.
+    2. STRUCTURE TA RÉPONSE EN 3 PARTIES :
+       a) RÉPONSE DIRECTE ET SIMPLE : Réponds d'abord à la question de manière claire et accessible, sans jargon juridique inutile.
+       b) EXPLICATION DÉTAILLÉE : Explique ensuite les détails, les conditions, les exceptions, les implications pratiques.
+       c) RÉFÉRENCES POUR LES SPÉCIALISTES : À la fin, mentionne les articles et codes pertinents pour les spécialistes qui veulent approfondir.
+    3. UTILISE UN LANGAGE ACCESSIBLE : Évite le jargon juridique complexe. Si tu dois utiliser un terme technique, explique-le immédiatement.
+    4. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
+    5. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question.
+    6. NE COMMENCE JAMAIS par citer un article : Commence toujours par la réponse concrète, puis explique, puis cite les références.
+    7. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
     - Question: "Quel est l'âge légal de départ à la retraite ?"
-      Bonne réponse: "L'âge légal de départ à la retraite au Sénégal est de 60 ans. Cette disposition est prévue par l'article L.69 du Code du Travail qui fixe cet âge comme condition pour bénéficier de la retraite. Cela signifie qu'un travailleur peut prendre sa retraite à partir de 60 ans s'il remplit les autres conditions requises."
-      Mauvaise réponse: "Selon l'article L.69, l'âge est de 60 ans." (trop court, ne explique pas)
-      Mauvaise réponse: "L'article L.69 du Code du Travail prévoit l'âge de la retraite." (ne dit pas quel âge, ne explique pas)
+      Bonne réponse: "Au Sénégal, un travailleur peut prendre sa retraite à partir de 60 ans. C'est l'âge minimum fixé par la loi pour pouvoir bénéficier de la retraite. Pour pouvoir partir à la retraite, il faut généralement avoir atteint cet âge ET avoir cotisé pendant un certain nombre d'années (les conditions exactes dépendent du régime de retraite). Cette règle de 60 ans est prévue par l'article L.69 du Code du Travail. [Référence pour spécialistes : Article L.69 du Code du Travail]"
+      Mauvaise réponse: "Selon l'article L.69 du Code du Travail, l'âge de la retraite est de 60 ans." (trop technique, commence par l'article)
+      Mauvaise réponse: "L'article L.69 prévoit que..." (ne répond pas directement, trop juridique)
     
     - Question: "Quelle est la durée du préavis ?"
-      Bonne réponse: "La durée du préavis varie selon l'ancienneté du travailleur : 1 mois pour les contrats de moins de 2 ans, 2 mois pour les contrats de 2 à 5 ans, et 3 mois pour les contrats de plus de 5 ans. Ces durées sont fixées par le Code du Travail pour protéger les travailleurs lors de la rupture du contrat. Le préavis est la période pendant laquelle le travailleur continue de travailler tout en étant informé de la fin de son contrat."
-      Mauvaise réponse: "Le préavis est prévu par le Code du Travail." (ne donne pas les durées, ne explique pas)
+      Bonne réponse: "Le préavis est la période pendant laquelle vous continuez de travailler après avoir été informé de la fin de votre contrat. Cette période vous permet de vous préparer à la fin de votre emploi. Au Sénégal, la durée du préavis dépend de votre ancienneté dans l'entreprise : si vous travaillez depuis moins de 2 ans, le préavis est de 1 mois. Si vous travaillez entre 2 et 5 ans, il est de 2 mois. Et si vous travaillez depuis plus de 5 ans, il est de 3 mois. Cette règle protège les travailleurs en leur donnant le temps de trouver un nouvel emploi. [Références : Code du Travail, articles relatifs au préavis]"
+      Mauvaise réponse: "Le préavis est prévu par le Code du Travail selon l'ancienneté." (trop vague, ne donne pas les durées)
+      Mauvaise réponse: "Article L.X du Code du Travail : 1 mois, 2 mois, 3 mois selon l'ancienneté." (trop technique, pas d'explication)
     
     NE GÉnÈRE JAMAIS de salutations, de listes d'expertise, ou de références aux sources dans le texte. 
     NE CITE PAS les sources directement dans ta réponse - elles seront affichées séparément.
@@ -749,22 +754,27 @@ def generate_node(state: AgentState):
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. EXPLIQUE TOUJOURS le contenu des articles : Ne dis jamais juste "selon l'article L.2" ou "l'article L.69 prévoit". Tu dois TOUJOURS expliquer ce que dit l'article de manière claire et compréhensible. L'utilisateur veut comprendre, pas juste connaître l'existence d'un article.
-    2. SOIS PÉDAGOGIQUE : L'utilisateur ne connaît pas forcément les articles. Explique leur contenu comme si tu enseignais le droit à quelqu'un qui ne le connaît pas. Ne présume jamais que l'utilisateur sait ce que dit un article.
-    3. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
-    4. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question. Ne donne pas de réponses vagues.
-    5. STRUCTURE TA RÉPONSE : Commence par répondre directement à la question avec les informations concrètes, puis explique les détails (articles, conditions, exceptions, etc.) de manière pédagogique.
-    6. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
+    1. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Tu dois expliquer le droit sénégalais comme si tu enseignais à quelqu'un qui ne connaît rien au droit. Commence toujours par expliquer le concept de manière simple et claire, AVANT de mentionner les articles.
+    2. STRUCTURE TA RÉPONSE EN 3 PARTIES :
+       a) RÉPONSE DIRECTE ET SIMPLE : Réponds d'abord à la question de manière claire et accessible, sans jargon juridique inutile.
+       b) EXPLICATION DÉTAILLÉE : Explique ensuite les détails, les conditions, les exceptions, les implications pratiques.
+       c) RÉFÉRENCES POUR LES SPÉCIALISTES : À la fin, mentionne les articles et codes pertinents pour les spécialistes qui veulent approfondir.
+    3. UTILISE UN LANGAGE ACCESSIBLE : Évite le jargon juridique complexe. Si tu dois utiliser un terme technique, explique-le immédiatement.
+    4. INCLUS TOUJOURS les détails spécifiques : nombres (60 ans, 65 ans, etc.), dates, montants, délais, conditions, exceptions, etc.
+    5. SOIS COMPLET : Inclus toutes les informations pertinentes du contexte qui répondent à la question.
+    6. NE COMMENCE JAMAIS par citer un article : Commence toujours par la réponse concrète, puis explique, puis cite les références.
+    7. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
     - Question: "Quel est l'âge légal de départ à la retraite ?"
-      Bonne réponse: "L'âge légal de départ à la retraite au Sénégal est de 60 ans. Cette disposition est prévue par l'article L.69 du Code du Travail qui fixe cet âge comme condition pour bénéficier de la retraite. Cela signifie qu'un travailleur peut prendre sa retraite à partir de 60 ans s'il remplit les autres conditions requises."
-      Mauvaise réponse: "Selon l'article L.69, l'âge est de 60 ans." (trop court, ne explique pas)
-      Mauvaise réponse: "L'article L.69 du Code du Travail prévoit l'âge de la retraite." (ne dit pas quel âge, ne explique pas)
+      Bonne réponse: "Au Sénégal, un travailleur peut prendre sa retraite à partir de 60 ans. C'est l'âge minimum fixé par la loi pour pouvoir bénéficier de la retraite. Pour pouvoir partir à la retraite, il faut généralement avoir atteint cet âge ET avoir cotisé pendant un certain nombre d'années (les conditions exactes dépendent du régime de retraite). Cette règle de 60 ans est prévue par l'article L.69 du Code du Travail. [Référence pour spécialistes : Article L.69 du Code du Travail]"
+      Mauvaise réponse: "Selon l'article L.69 du Code du Travail, l'âge de la retraite est de 60 ans." (trop technique, commence par l'article)
+      Mauvaise réponse: "L'article L.69 prévoit que..." (ne répond pas directement, trop juridique)
     
     - Question: "Quelle est la durée du préavis ?"
-      Bonne réponse: "La durée du préavis varie selon l'ancienneté du travailleur : 1 mois pour les contrats de moins de 2 ans, 2 mois pour les contrats de 2 à 5 ans, et 3 mois pour les contrats de plus de 5 ans. Ces durées sont fixées par le Code du Travail pour protéger les travailleurs lors de la rupture du contrat. Le préavis est la période pendant laquelle le travailleur continue de travailler tout en étant informé de la fin de son contrat."
-      Mauvaise réponse: "Le préavis est prévu par le Code du Travail." (ne donne pas les durées, ne explique pas)
+      Bonne réponse: "Le préavis est la période pendant laquelle vous continuez de travailler après avoir été informé de la fin de votre contrat. Cette période vous permet de vous préparer à la fin de votre emploi. Au Sénégal, la durée du préavis dépend de votre ancienneté dans l'entreprise : si vous travaillez depuis moins de 2 ans, le préavis est de 1 mois. Si vous travaillez entre 2 et 5 ans, il est de 2 mois. Et si vous travaillez depuis plus de 5 ans, il est de 3 mois. Cette règle protège les travailleurs en leur donnant le temps de trouver un nouvel emploi. [Références : Code du Travail, articles relatifs au préavis]"
+      Mauvaise réponse: "Le préavis est prévu par le Code du Travail selon l'ancienneté." (trop vague, ne donne pas les durées)
+      Mauvaise réponse: "Article L.X du Code du Travail : 1 mois, 2 mois, 3 mois selon l'ancienneté." (trop technique, pas d'explication)
     
     NE GÉnÈRE JAMAIS de salutations, de listes d'expertise, ou de références aux sources dans le texte. 
     NE CITE PAS les sources directement dans ta réponse - elles seront affichées séparément.
@@ -784,7 +794,7 @@ def generate_node(state: AgentState):
     if history_str:
         response = chain.invoke({"question": question, "context": context, "history": history_str})
     else:
-        response = chain.invoke({"question": question, "context": context})
+    response = chain.invoke({"question": question, "context": context})
     
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))
