@@ -533,15 +533,6 @@ export default function Home() {
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-6 w-6 shrink-0">
-                      <Image
-                        src="/assets/logo.png"
-                        alt="YoonAssist AI"
-                        width={24}
-                        height={24}
-                        className="h-6 w-6 object-contain animate-pulse"
-                      />
-                    </div>
                     <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>
                   </div>
