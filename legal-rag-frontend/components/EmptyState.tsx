@@ -90,17 +90,20 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-12">
       <div className="mx-auto max-w-2xl text-center">
-        {/* Logo agrandi et percutant */}
+        {/* Logo agrandi et percutant - sans arrière-plan */}
         <div className="mb-8 flex justify-center">
-          <div className="relative flex h-32 w-32 items-center justify-center">
+          <div className="relative flex h-32 w-32 items-center justify-center bg-transparent">
             <Image
               src="/assets/logo.png"
               alt="YoonAssist AI Logo"
               width={128}
               height={128}
-              className="h-32 w-32 object-contain drop-shadow-xl"
+              className="h-32 w-32 object-contain"
               priority
-              style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
+              style={{ 
+                filter: 'drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2))',
+                backgroundColor: 'transparent'
+              }}
             />
           </div>
         </div>

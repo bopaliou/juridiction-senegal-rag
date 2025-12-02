@@ -490,7 +490,7 @@ export default function Home() {
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                   <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
-                    {/* Logo de l'assistant - agrandi */}
+                    {/* Logo de l'assistant - agrandi et percutant - sans arrière-plan */}
                     <div className="absolute -left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-white overflow-hidden">
                       <Image
                         src="/assets/logo.png"
@@ -498,7 +498,10 @@ export default function Home() {
                         width={48}
                         height={48}
                         className="h-12 w-12 object-contain"
-                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
+                        style={{ 
+                          filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15))',
+                          backgroundColor: 'transparent'
+                        }}
                       />
                     </div>
                     <div className="ml-14">

@@ -22,16 +22,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
           
           <div className="flex items-center gap-4">
-            {/* Logo agrandi et percutant */}
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+            {/* Logo agrandi et percutant - sans arrière-plan */}
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center bg-transparent">
               <Image
                 src="/assets/logo.png"
                 alt="YoonAssist AI Logo"
                 width={64}
                 height={64}
-                className="h-16 w-16 object-contain drop-shadow-lg"
+                className="h-16 w-16 object-contain"
                 priority
-                style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                style={{ 
+                  filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))',
+                  backgroundColor: 'transparent'
+                }}
               />
             </div>
             
