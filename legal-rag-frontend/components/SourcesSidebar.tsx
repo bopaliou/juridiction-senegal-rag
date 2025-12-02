@@ -38,7 +38,7 @@ const getDomainColor = (domain?: string) => {
   
   switch (domain.toLowerCase()) {
     case 'constitution':
-      return 'bg-blue-100 text-blue-700 border-blue-200';
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     case 'travail':
     case 'social':
       return 'bg-green-100 text-green-700 border-green-200';
@@ -120,7 +120,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
             {isLoading && visibleSources.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent"></div>
                   <p className="text-sm text-gray-500">Chargement des sources...</p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                           href={source.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600"
                           title="Ouvrir dans un nouvel onglet"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -194,7 +194,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                 {isLoading && visibleSources.length < sources.length && (
                   <div className="flex items-center justify-center py-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></div>
                       <span>Chargement des sources...</span>
                     </div>
                   </div>

@@ -21,26 +21,27 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </button>
           
-          <div className="flex items-center gap-3">
-            {/* Logo */}
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
+          <div className="flex items-center gap-4">
+            {/* Logo agrandi et percutant */}
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
               <Image
                 src="/assets/logo.png"
                 alt="YoonAssist AI Logo"
-                width={48}
-                height={48}
-                className="h-12 w-12 object-contain"
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain drop-shadow-lg"
                 priority
+                style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
               />
             </div>
             
             {/* Nom et description */}
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-900">
+                <h1 className="text-2xl font-bold text-slate-900">
                   YoonAssist
                 </h1>
-                <span className="rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+                <span className="rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
                   AI
                 </span>
               </div>

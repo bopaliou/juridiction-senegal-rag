@@ -79,12 +79,12 @@ export default function SuggestedQuestions({
             key={index}
             onClick={() => onQuestionClick(question)}
             disabled={isLoading}
-            className="group relative flex shrink-0 items-center gap-2.5 overflow-hidden rounded-full border border-slate-200 bg-gradient-to-r from-white to-slate-50 px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 hover:text-blue-700 hover:shadow-md hover:shadow-blue-100 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+            className="group relative flex shrink-0 items-center gap-2.5 overflow-hidden rounded-full border border-slate-200 bg-gradient-to-r from-white to-slate-50 px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-emerald-400 hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 hover:shadow-md hover:shadow-emerald-100 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {/* Effet de brillance au hover */}
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
             
-            <Sparkles className="relative z-10 h-3.5 w-3.5 shrink-0 text-slate-500 transition-colors duration-200 group-hover:text-blue-600" />
+            <Sparkles className="relative z-10 h-3.5 w-3.5 shrink-0 text-slate-500 transition-colors duration-200 group-hover:text-emerald-600" />
             <span className="relative z-10 whitespace-nowrap">{question}</span>
           </button>
         ))}

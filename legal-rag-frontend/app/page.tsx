@@ -480,7 +480,7 @@ export default function Home() {
               {message.role === 'user' ? (
                 // Message utilisateur - aligné à droite
                 <div className="ml-auto max-w-[80%] sm:max-w-[75%]">
-                  <div className="rounded-2xl rounded-tr-sm bg-blue-600 px-5 py-3.5 text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all duration-200">
+                  <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-emerald-600 to-teal-600 px-5 py-3.5 text-white shadow-md hover:from-emerald-700 hover:to-teal-700 hover:shadow-lg transition-all duration-200">
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">
                       {message.content}
                     </p>
@@ -490,17 +490,18 @@ export default function Home() {
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                   <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
-                    {/* Logo de l'assistant */}
-                    <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-white overflow-hidden">
+                    {/* Logo de l'assistant - agrandi */}
+                    <div className="absolute -left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-white overflow-hidden">
                       <Image
                         src="/assets/logo.png"
                         alt="YoonAssist AI"
-                        width={32}
-                        height={32}
-                        className="h-8 w-8 object-contain"
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 object-contain"
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
                       />
                     </div>
-                    <div className="ml-6">
+                    <div className="ml-14">
                       <FormattedResponse content={message.content} />
                     </div>
                   </div>
@@ -514,7 +515,7 @@ export default function Home() {
                           setCurrentMessageSources(parsedSources);
                           setSourcesSidebarOpen(true);
                         }}
-                        className="group flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-all hover:border-blue-300 hover:bg-blue-100 hover:shadow-sm"
+                        className="group flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-sm"
                       >
                         <FileText className="h-4 w-4" />
                         <span>
@@ -544,16 +545,16 @@ export default function Home() {
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-5 w-5 shrink-0">
+                    <div className="relative h-6 w-6 shrink-0">
                       <Image
                         src="/assets/logo.png"
                         alt="YoonAssist AI"
-                        width={20}
-                        height={20}
-                        className="h-5 w-5 object-contain animate-pulse"
+                        width={24}
+                        height={24}
+                        className="h-6 w-6 object-contain animate-pulse"
                       />
                     </div>
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
+                    <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>
                   </div>
                 </div>
@@ -594,7 +595,7 @@ export default function Home() {
                 placeholder="Posez votre question juridique ici..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full resize-none rounded-xl border-2 border-slate-200 bg-white px-5 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full resize-none rounded-xl border-2 border-slate-200 bg-white px-5 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   minHeight: '48px',
                   maxHeight: '120px',
@@ -609,7 +610,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

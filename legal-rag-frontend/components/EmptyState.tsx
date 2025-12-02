@@ -60,7 +60,7 @@ const AUTHORIZED_QUESTIONS = [
 
 // Icônes disponibles pour les questions
 const icons = [Briefcase, Calendar, Shield, HeartHandshake];
-const colors = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600'];
+const colors = ['text-emerald-600', 'text-teal-600', 'text-amber-600', 'text-slate-600'];
 
 // Fonction pour sélectionner aléatoirement 4 questions parmi les 45
 function getRandomQuestions() {
@@ -90,16 +90,17 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-12">
       <div className="mx-auto max-w-2xl text-center">
-        {/* Logo */}
-        <div className="mb-6 flex justify-center">
-          <div className="relative flex h-24 w-24 items-center justify-center">
+        {/* Logo agrandi et percutant */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative flex h-32 w-32 items-center justify-center">
             <Image
               src="/assets/logo.png"
               alt="YoonAssist AI Logo"
-              width={96}
-              height={96}
-              className="h-24 w-24 object-contain drop-shadow-lg"
+              width={128}
+              height={128}
+              className="h-32 w-32 object-contain drop-shadow-xl"
               priority
+              style={{ filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))' }}
             />
           </div>
         </div>
@@ -110,7 +111,7 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
         </h2>
         
         {/* Slogan */}
-        <p className="mb-3 text-sm font-semibold text-blue-600 sm:text-base">
+        <p className="mb-3 text-sm font-semibold text-emerald-600 sm:text-base">
           L'expertise juridique sénégalaise à votre service
         </p>
 
@@ -130,9 +131,9 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
                 key={index}
                 onClick={() => onQuestionClick(item.question)}
                 disabled={isLoading}
-                className="group relative flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:border-blue-300 hover:bg-gray-50 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:border-emerald-300 hover:bg-emerald-50/30 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-blue-50 ${item.color}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-emerald-50 ${item.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1">

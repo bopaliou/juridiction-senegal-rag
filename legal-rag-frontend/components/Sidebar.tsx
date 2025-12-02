@@ -140,7 +140,7 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
           <div className="flex items-center justify-between border-b border-slate-800 p-4">
             <button
               onClick={onNewChat}
-              className="flex w-full items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="flex w-full items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-emerald-700 hover:to-teal-700"
             >
               <Plus className="h-4 w-4" />
               <span>Nouveau Chat</span>
