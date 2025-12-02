@@ -141,10 +141,14 @@ La base de données vectorielle est créée automatiquement lors de l'ingestion.
 
 Ce projet peut être déployé sur plusieurs plateformes. Consultez **[ALTERNATIVES_DEPLOIEMENT.md](ALTERNATIVES_DEPLOIEMENT.md)** pour une comparaison détaillée des alternatives gratuites et open source à Render.
 
+**Guides disponibles** :
+- **[DEPLOIEMENT_RAILWAY.md](DEPLOIEMENT_RAILWAY.md)** : Guide complet pour Railway (recommandé)
+- **[DEPLOIEMENT_CAPROVER.md](DEPLOIEMENT_CAPROVER.md)** : Guide pour CapRover (open source)
+
 **Recommandations** :
+- **Railway** (Gratuit) : Interface moderne avec crédits gratuits ⭐
 - **CapRover** (Open Source) : Sur VPS gratuit (Oracle Cloud Free Tier)
 - **Fly.io** (Gratuit) : Déploiement cloud simple
-- **Railway** (Gratuit) : Interface moderne avec crédits gratuits
 
 ### Déploiement sur Render
 
