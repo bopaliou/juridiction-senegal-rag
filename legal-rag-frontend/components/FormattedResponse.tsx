@@ -1,6 +1,5 @@
 'use client';
 
-import { Scale } from 'lucide-react';
 import { useMemo } from 'react';
 
 interface FormattedResponseProps {
