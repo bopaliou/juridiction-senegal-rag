@@ -502,6 +502,17 @@ export default function Home() {
             </div>
           )}
 
+          {/* Questions suggérées globales - affichées après chaque message ou quand il n'y a pas de questions dans le dernier message */}
+          {!isLoading && globalSuggestedQuestions.length > 0 && (
+            <div className="mt-4 w-full">
+              <SuggestedQuestions
+                questions={globalSuggestedQuestions}
+                onQuestionClick={handleSuggestionClick}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
+
           {/* Référence pour auto-scroll */}
           <div ref={messagesEndRef} />
         </div>
