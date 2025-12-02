@@ -478,29 +478,60 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
         if q_lower != question_lower:
             question_scores.append((score, q))
     
-    # Trier par score décroissant et sélectionner les meilleures
+    # Trier par score décroissant et sélectionner les 3 meilleures questions contextuelles
     question_scores.sort(reverse=True, key=lambda x: x[0])
     
-    # Sélectionner entre 3 et 7 questions, en privilégiant celles avec un score élevé
-    # Mais aussi en gardant un peu d'aléatoire pour la variété
-    num_questions = random.randint(3, 7)
+    # Sélectionner exactement 3 questions les plus pertinentes
+    num_questions = 3
     
     if len(question_scores) >= num_questions:
-        # Prendre les meilleures questions, mais mélanger un peu pour la variété
-        top_questions = question_scores[:num_questions * 2]  # Prendre 2x plus pour avoir du choix
-        # Mélanger les questions avec des scores similaires
-        shuffled_top = sorted(top_questions, key=lambda x: (x[0] // 5, random.random()))
-        selected = [q for _, q in shuffled_top[:num_questions]]
+        # Prendre les 3 meilleures questions avec les scores les plus élevés
+        # Si plusieurs questions ont le même score, on peut en prendre aléatoirement parmi celles-ci
+        # Mais on privilégie toujours les scores les plus élevés
+        top_questions = question_scores[:num_questions * 2]  # Prendre 2x plus pour avoir du choix si scores égaux
+        
+        # Grouper par score et prendre les meilleures
+        selected = []
+        current_score = None
+        for score, q in top_questions:
+            if len(selected) >= num_questions:
+                break
+            # Si le score est significatif (au moins 2 points), l'inclure
+            if score >= 2:
+                selected.append(q)
+            elif len(selected) < num_questions and score > 0:
+                # Si on n'a pas encore 3 questions et que le score est > 0, l'inclure
+                selected.append(q)
     else:
-        # Si pas assez de questions, prendre toutes celles disponibles
+        # Si pas assez de questions avec score, prendre toutes celles disponibles
         selected = [q for _, q in question_scores[:num_questions]]
     
-    # Si on n'a pas assez de questions pertinentes, compléter avec des questions aléatoires
-    if len(selected) < 3:
-        remaining = [q for q in AUTHORIZED_QUESTIONS if q not in selected]
-        random.shuffle(remaining)
-        selected.extend(remaining[:3 - len(selected)])
+    # Si on n'a pas assez de questions pertinentes (score > 0), compléter avec des questions du même domaine
+    if len(selected) < num_questions:
+        # Essayer de trouver des questions du même domaine
+        domain_questions = []
+        for q in AUTHORIZED_QUESTIONS:
+            if q not in selected:
+                q_lower = q.lower()
+                if detected_domain == 'travail' and any(word in q_lower for word in ['travail', 'travailleur', 'employeur', 'employé', 'salarié', 'contrat', 'licenciement', 'préavis', 'retraite', 'syndicat']):
+                    domain_questions.append(q)
+                elif detected_domain == 'penal' and any(word in q_lower for word in ['pénal', 'penal', 'peine', 'infraction', 'sanction', 'prison', 'détenu', 'juge', 'tribunal']):
+                    domain_questions.append(q)
+                elif detected_domain == 'finance' and any(word in q_lower for word in ['budget', 'finance', 'impôt', 'taxe', 'fiscal', 'déficit']):
+                    domain_questions.append(q)
+        
+        # Ajouter des questions du même domaine si disponibles
+        if domain_questions:
+            random.shuffle(domain_questions)
+            selected.extend(domain_questions[:num_questions - len(selected)])
+        
+        # Si toujours pas assez, compléter avec des questions aléatoires
+        if len(selected) < num_questions:
+            remaining = [q for q in AUTHORIZED_QUESTIONS if q not in selected]
+            random.shuffle(remaining)
+            selected.extend(remaining[:num_questions - len(selected)])
     
+    # Retourner exactement 3 questions
     return selected[:num_questions]
 
 
@@ -510,8 +541,8 @@ def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
-        documents = retriever.invoke(question)
-        return {"documents": documents}
+    documents = retriever.invoke(question)
+    return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
         return {"documents": []}
@@ -729,7 +760,7 @@ def generate_node(state: AgentState):
     if history_str:
         response = chain.invoke({"question": question, "context": context, "history": history_str})
     else:
-        response = chain.invoke({"question": question, "context": context})
+    response = chain.invoke({"question": question, "context": context})
     
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))
