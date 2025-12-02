@@ -382,12 +382,12 @@ AUTHORIZED_QUESTIONS = [
 
 def generate_suggested_questions(question: str, documents: List[Document], answer: str) -> List[str]:
     """
-    Génère des questions suggérées en sélectionnant aléatoirement entre 3 et 7 questions
-    de la liste officielle autorisée.
+    Génère des questions suggérées contextuelles en sélectionnant les questions les plus pertinentes
+    parmi la liste officielle autorisée, basées sur le contexte de la conversation.
     
     Règles:
-    - Sélectionne aléatoirement entre 3 et 7 questions
-    - Mélange la liste à chaque appel pour garantir un ordre différent
+    - Sélectionne entre 3 et 7 questions les plus pertinentes selon le contexte
+    - Utilise la question posée, la réponse donnée et les documents pour déterminer la pertinence
     - Ne retourne jamais de questions absentes de la liste
     - Ne retourne rien si pas de documents ou réponse vide
     """
@@ -400,16 +400,101 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
     if answer_stripped == "Je ne trouve pas l'information dans les textes fournis.":
         return []
     
-    # Sélectionner un nombre aléatoire de questions entre 3 et 7
+    # Extraire les mots-clés du contexte (question + réponse + documents)
+    question_lower = question.lower()
+    answer_lower = answer.lower()
+    
+    # Extraire les mots-clés des documents
+    doc_keywords = set()
+    for doc in documents[:3]:  # Utiliser les 3 premiers documents
+        if doc.page_content:
+            # Extraire les mots significatifs (plus de 4 caractères)
+            words = doc.page_content.lower().split()
+            doc_keywords.update([w for w in words if len(w) > 4])
+    
+    # Combiner tous les mots-clés du contexte
+    context_keywords = set(question_lower.split())
+    context_keywords.update(answer_lower.split())
+    context_keywords.update(doc_keywords)
+    
+    # Détecter le domaine principal de la conversation
+    domain_keywords = {
+        'travail': ['travail', 'travailleur', 'employeur', 'employé', 'salarié', 'contrat', 'licenciement', 'préavis', 'retraite', 'syndicat', 'grève', 'congé', 'salaire'],
+        'penal': ['pénal', 'penal', 'peine', 'infraction', 'sanction', 'prison', 'détenu', 'juge', 'tribunal', 'procédure', 'prescription'],
+        'finance': ['budget', 'finance', 'impôt', 'taxe', 'fiscal', 'déficit', 'ressource', 'charge'],
+        'constitution': ['constitution', 'président', 'parlement', 'pouvoir', 'droit fondamental'],
+        'administration': ['administration', 'fonction publique', 'collectivité', 'organisation'],
+    }
+    
+    detected_domain = 'general'
+    max_matches = 0
+    for domain, keywords in domain_keywords.items():
+        matches = sum(1 for kw in keywords if kw in context_keywords)
+        if matches > max_matches:
+            max_matches = matches
+            detected_domain = domain
+    
+    # Scorer chaque question selon sa pertinence au contexte
+    question_scores = []
+    for q in AUTHORIZED_QUESTIONS:
+        score = 0
+        q_lower = q.lower()
+        
+        # Score basé sur les mots-clés communs avec la question
+        question_words = set(q_lower.split())
+        common_words = context_keywords.intersection(question_words)
+        score += len(common_words) * 2  # Poids plus élevé pour les mots communs
+        
+        # Score basé sur le domaine détecté
+        if detected_domain == 'travail':
+            if any(word in q_lower for word in ['travail', 'travailleur', 'employeur', 'employé', 'salarié', 'contrat', 'licenciement', 'préavis', 'retraite', 'syndicat', 'grève', 'congé', 'salaire', 'l.2', 'l.69']):
+                score += 5
+        elif detected_domain == 'penal':
+            if any(word in q_lower for word in ['pénal', 'penal', 'peine', 'infraction', 'sanction', 'prison', 'détenu', 'juge', 'tribunal', 'procédure', 'prescription', 'loi 2020']):
+                score += 5
+        elif detected_domain == 'finance':
+            if any(word in q_lower for word in ['budget', 'finance', 'impôt', 'taxe', 'fiscal', 'déficit', 'ressource', 'charge', '2025', '2026']):
+                score += 5
+        elif detected_domain == 'constitution':
+            if any(word in q_lower for word in ['constitution', 'président', 'parlement', 'pouvoir', 'droit fondamental']):
+                score += 5
+        
+        # Score basé sur la similarité sémantique avec la question posée
+        # Si la question suggérée contient des mots similaires à la question posée
+        question_important_words = [w for w in question_lower.split() if len(w) > 4]
+        q_important_words = [w for w in q_lower.split() if len(w) > 4]
+        semantic_matches = len(set(question_important_words).intersection(set(q_important_words)))
+        score += semantic_matches * 3
+        
+        # Bonus pour les questions sur le même sujet mais avec un angle différent
+        # (éviter de suggérer la même question)
+        if q_lower != question_lower:
+            question_scores.append((score, q))
+    
+    # Trier par score décroissant et sélectionner les meilleures
+    question_scores.sort(reverse=True, key=lambda x: x[0])
+    
+    # Sélectionner entre 3 et 7 questions, en privilégiant celles avec un score élevé
+    # Mais aussi en gardant un peu d'aléatoire pour la variété
     num_questions = random.randint(3, 7)
     
-    # Créer une copie de la liste et la mélanger pour garantir un ordre différent à chaque appel
-    # Utiliser random.shuffle() qui modifie la liste en place pour garantir une vraie aléa
-    shuffled_questions = AUTHORIZED_QUESTIONS.copy()
-    random.shuffle(shuffled_questions)
+    if len(question_scores) >= num_questions:
+        # Prendre les meilleures questions, mais mélanger un peu pour la variété
+        top_questions = question_scores[:num_questions * 2]  # Prendre 2x plus pour avoir du choix
+        # Mélanger les questions avec des scores similaires
+        shuffled_top = sorted(top_questions, key=lambda x: (x[0] // 5, random.random()))
+        selected = [q for _, q in shuffled_top[:num_questions]]
+    else:
+        # Si pas assez de questions, prendre toutes celles disponibles
+        selected = [q for _, q in question_scores[:num_questions]]
     
-    # Retourner le nombre sélectionné de questions
-    return shuffled_questions[:num_questions]
+    # Si on n'a pas assez de questions pertinentes, compléter avec des questions aléatoires
+    if len(selected) < 3:
+        remaining = [q for q in AUTHORIZED_QUESTIONS if q not in selected]
+        random.shuffle(remaining)
+        selected.extend(remaining[:3 - len(selected)])
+    
+    return selected[:num_questions]
 
 
 
