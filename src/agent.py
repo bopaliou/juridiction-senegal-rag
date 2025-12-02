@@ -539,7 +539,6 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
 
 
 def retrieve_noeud(state: AgentState):
-
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
