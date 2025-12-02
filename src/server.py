@@ -80,7 +80,17 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Endpoint de santé pour vérifier que l'API fonctionne."""
-    return {"status": "healthy", "service": "Agent Juridique Sénégalais RAG API"}
+    # Vérifier si Chroma DB existe
+    import os
+    from pathlib import Path
+    chroma_db_path = Path("data/chroma_db")
+    db_ready = chroma_db_path.exists() and any(chroma_db_path.iterdir())
+    
+    return {
+        "status": "healthy" if db_ready else "initializing",
+        "service": "Agent Juridique Sénégalais RAG API",
+        "database_ready": db_ready
+    }
 
 @app.post("/ask", response_model=QueryResponse)
 async def ask_question(request: SecureQueryRequest):
