@@ -65,11 +65,7 @@ export default function SuggestedQuestions({
       {/* Container avec défilement horizontal */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-10 py-2"
-        style={{
-          scrollbarWidth: 'none', // Firefox
-          msOverflowStyle: 'none', // IE/Edge
-        }}
+        className="flex gap-3 overflow-x-auto px-10 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         onScroll={() => {
           if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
@@ -78,11 +74,6 @@ export default function SuggestedQuestions({
           }
         }}
       >
-        <style jsx>{`
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
         {questions.map((question, index) => (
           <button
             key={index}
