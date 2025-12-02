@@ -22,8 +22,18 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
           
           <div className="flex items-center gap-4">
-            {/* Logo très agrandi et percutant */}
-            
+            {/* Logo */}
+            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
+              <div className="absolute inset-0 bg-white rounded-lg shadow-sm"></div>
+              <Image
+                src="/assets/logo.png"
+                alt="YoonAssist AI Logo"
+                width={80}
+                height={80}
+                className="h-20 w-20 object-contain relative z-10"
+                priority
+              />
+            </div>
             
             {/* Nom et description */}
             <div className="flex flex-col">
