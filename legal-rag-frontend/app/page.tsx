@@ -438,7 +438,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
       {/* Sidebar gauche (historique) */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -479,7 +479,7 @@ export default function Home() {
               {message.role === 'user' ? (
                 // Message utilisateur - aligné à droite
                 <div className="ml-auto max-w-[80%] sm:max-w-[75%]">
-                  <div className="rounded-2xl rounded-tr-sm bg-blue-600 px-4 py-3 text-white shadow-md">
+                  <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-600 to-blue-700 px-5 py-3.5 text-white shadow-lg hover:shadow-xl transition-all duration-200">
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">
                       {message.content}
                     </p>
@@ -488,7 +488,7 @@ export default function Home() {
               ) : (
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
-                  <div className="group relative rounded-2xl rounded-tl-sm bg-gradient-to-br from-white via-slate-50 to-white px-5 py-4 text-gray-800 shadow-md border border-slate-200/50 hover:shadow-lg transition-all duration-200">
+                  <div className="group relative rounded-2xl rounded-tl-sm bg-gradient-to-br from-white via-blue-50/50 to-white px-6 py-5 text-gray-800 shadow-lg border border-blue-100/50 hover:shadow-xl hover:border-blue-200/70 transition-all duration-300">
                     {/* Icône de l'assistant */}
                     <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md ring-2 ring-white">
                       <Scale className="h-4 w-4" />
@@ -535,7 +535,7 @@ export default function Home() {
           {isLoading && (
             <div className="flex w-full">
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
-                <div className="rounded-2xl rounded-tl-sm bg-gray-100 px-4 py-3 shadow-sm">
+                <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-slate-100 to-slate-50 px-5 py-4 shadow-md border border-slate-200/50">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>
@@ -562,7 +562,7 @@ export default function Home() {
         </div>
 
         {/* Zone de saisie fixe en bas */}
-        <div className="sticky bottom-0 z-40 w-full border-t border-slate-200 bg-white px-4 py-4 shadow-lg sm:px-6">
+        <div className="sticky bottom-0 z-40 w-full border-t border-slate-200/80 bg-white/95 backdrop-blur-sm px-4 py-4 shadow-lg sm:px-6">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
           <div className="flex items-end gap-3">
             <div className="flex-1">
@@ -578,7 +578,7 @@ export default function Home() {
                 placeholder="Posez votre question juridique ici..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full resize-none rounded-xl border-2 border-slate-200 bg-white px-5 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   minHeight: '48px',
                   maxHeight: '120px',
@@ -593,7 +593,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
