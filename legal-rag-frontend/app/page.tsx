@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Loader2, ChevronDown, ChevronUp, Menu, FileText } from 'lucide-react';
+import Image from 'next/image';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
 import SourcesSidebar, { SourceItem } from '@/components/SourcesSidebar';
 import SuggestedQuestions from '@/components/SuggestedQuestions';
@@ -489,7 +490,18 @@ export default function Home() {
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                   <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
-                    <div className="ml-0">
+                    {/* Logo de l'assistant */}
+                    <div className="absolute -left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-white overflow-hidden">
+                      <div className="absolute inset-0 bg-white rounded-full"></div>
+                      <Image
+                        src="/assets/logo.png"
+                        alt="YoonAssist AI"
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 object-contain relative z-10"
+                      />
+                    </div>
+                    <div className="ml-14">
                       <FormattedResponse content={message.content} />
                     </div>
                   </div>
@@ -533,6 +545,16 @@ export default function Home() {
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
                   <div className="flex items-center gap-3">
+                    <div className="relative h-5 w-5 shrink-0">
+                      <div className="absolute inset-0 bg-white rounded"></div>
+                      <Image
+                        src="/assets/logo.png"
+                        alt="YoonAssist AI"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 object-contain relative z-10 animate-pulse"
+                      />
+                    </div>
                     <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>
                   </div>

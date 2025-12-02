@@ -1,6 +1,7 @@
 'use client';
 
 import { Briefcase, Calendar, Shield, HeartHandshake } from 'lucide-react';
+import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 
 interface EmptyStateProps {
@@ -89,6 +90,21 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-12">
       <div className="mx-auto max-w-2xl text-center">
+        {/* Logo */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative flex h-48 w-48 items-center justify-center">
+            <div className="absolute inset-0 bg-white rounded-2xl shadow-lg"></div>
+            <Image
+              src="/assets/logo.png"
+              alt="YoonAssist AI Logo"
+              width={192}
+              height={192}
+              className="h-48 w-48 object-contain relative z-10"
+              priority
+            />
+          </div>
+        </div>
+
         {/* Message de Bienvenue */}
         <h2 className="mb-2 text-2xl font-bold text-slate-900 sm:text-3xl">
           Bienvenue sur YoonAssist AI
