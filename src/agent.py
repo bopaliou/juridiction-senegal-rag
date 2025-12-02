@@ -205,13 +205,13 @@ except Exception as e:
 # Configuration des LLMs avec gestion d'erreur
 try:
     router_llm = ChatGroq(
-        model_name="llama-3.1-8b-instant",
+        model_name="openai/gpt-oss-120b",
         temperature=0,
         max_tokens=50,  # Limiter pour la classification
         timeout=30,  # Timeout de 30 secondes
     )
     generation_llm = ChatGroq(
-        model_name="llama-3.1-8b-instant",
+        model_name="openai/gpt-oss-120b",
         temperature=0,
         max_tokens=2000,  # Limiter la longueur des réponses
         timeout=60,  # Timeout de 60 secondes
@@ -239,14 +239,75 @@ def classify_question(state: AgentState):
     messages = state.get("messages", [])
     messages.append(HumanMessage(content=state["question"]))
     
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "Tu es un classificateur binaire. Ta seule tâche est de déterminer si la question de l'utilisateur concerne le droit sénégalais (Constitution, Code du Travail, Code Pénal, etc.). Réponds UNIQUEMENT avec le mot 'JURIDIQUE' si oui, ou 'AUTRE' si non."),
-        ("human", "{question}")
-    ])
+    question = state["question"].lower()
     
-    chain = prompt | router_llm
-    response = chain.invoke({"question": state["question"]})
-    category = "JURIDIQUE" if "JURIDIQUE" in response.content.upper() else "AUTRE"
+    # Liste de mots-clés juridiques pour une classification rapide
+    juridique_keywords = [
+        "travail", "travailleur", "employeur", "employé", "salarié", "contrat", 
+        "licenciement", "préavis", "retraite", "syndicat", "grève", "congé", 
+        "salaire", "code du travail", "l.2", "l.69", "article l.",
+        "pénal", "penal", "peine", "infraction", "sanction", "prison", "détenu", 
+        "juge", "tribunal", "procédure", "prescription", "loi 2020", "code pénal",
+        "constitution", "président", "parlement", "pouvoir", "droit fondamental",
+        "budget", "finance", "impôt", "taxe", "fiscal", "déficit", "ressource", 
+        "charge", "plf", "loi de finance",
+        "collectivité", "municipalité", "commune", "région",
+        "aviation", "aérien",
+        "droit", "loi", "décret", "règlement", "juridique", "juridiction",
+        "sénégal", "sénégalais", "sénégalaise"
+    ]
+    
+    # Classification rapide basée sur les mots-clés (plus fiable)
+    contains_juridique_keyword = any(keyword in question for keyword in juridique_keywords)
+    
+    # Si aucun mot-clé juridique n'est trouvé, utiliser le LLM pour une classification plus fine
+    if not contains_juridique_keyword:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Tu es un classificateur binaire pour un assistant juridique sénégalais.
+Ta tâche est de déterminer si la question concerne le droit sénégalais ou un sujet juridique général.
+
+Une question est JURIDIQUE si elle concerne :
+- Le droit du travail (contrats, licenciement, congés, salaires, retraite, etc.)
+- Le droit pénal (infractions, peines, procédures, tribunaux, etc.)
+- Le droit constitutionnel (Constitution, pouvoirs, droits fondamentaux, etc.)
+- Le droit financier (budget, impôts, finances publiques, etc.)
+- Le droit administratif (collectivités, organisation administrative, etc.)
+- Toute question sur les lois, décrets, codes, règlements sénégalais
+- Toute question juridique générale même sans mention explicite du Sénégal
+
+Une question est AUTRE si elle concerne :
+- La météo, le sport, la cuisine, les loisirs
+- Des questions techniques non juridiques (programmation, mathématiques pures, etc.)
+- Des questions personnelles sans lien juridique
+
+Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
+            ("human", "{question}")
+        ])
+        
+        try:
+            chain = prompt | router_llm
+            response = chain.invoke({"question": state["question"]})
+            response_content = response.content.upper().strip()
+            
+            # Log pour le débogage
+            print(f"🔍 Classification - Question: {state['question'][:50]}...")
+            print(f"🔍 Réponse du LLM: {response.content}")
+            
+            # Détection plus robuste de "JURIDIQUE"
+            if "JURIDIQUE" in response_content or response_content.startswith("JURIDIQUE"):
+                category = "JURIDIQUE"
+            else:
+                category = "AUTRE"
+        except Exception as e:
+            print(f"⚠️  Erreur lors de la classification LLM: {e}")
+            # En cas d'erreur, être permissif et classer comme JURIDIQUE par défaut
+            category = "JURIDIQUE"
+    else:
+        # Si des mots-clés juridiques sont trouvés, classer directement comme JURIDIQUE
+        category = "JURIDIQUE"
+        print(f"✅ Classification rapide - Question juridique détectée par mots-clés")
+    
+    print(f"📊 Catégorie finale: {category}")
     
     return {"category": category, "messages": messages}
 
@@ -454,7 +515,6 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
         
         # Grouper par score et prendre les meilleures
         selected = []
-        current_score = None
         for score, q in top_questions:
             if len(selected) >= num_questions:
                 break
@@ -757,7 +817,7 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
                 # Si la reformulation retourne encore "Je ne trouve pas", utiliser directement le contexte
                 if answer_content == "Je ne trouve pas l'information dans les textes fournis.":
                     answer_content = f"D'après les documents juridiques consultés : {context_excerpt}"
-            except Exception as e:
+            except Exception:
                 # En cas d'erreur, utiliser directement un extrait du contexte
                 answer_content = f"D'après les documents juridiques consultés : {context_excerpt}"
     
