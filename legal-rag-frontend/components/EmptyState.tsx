@@ -92,20 +92,20 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
       <div className="mx-auto max-w-2xl text-center">
         {/* Logo très agrandi et percutant */}
         <div className="mb-10 flex justify-center">
-          <div className="relative flex h-64 w-64 items-center justify-center bg-white rounded-2xl shadow-lg p-4">
-            <div className="w-full h-full bg-white rounded-lg flex items-center justify-center">
-              <Image
-                src="/assets/logo.png"
-                alt="YoonAssist AI Logo"
-                width={256}
-                height={256}
-                className="h-full w-full object-contain"
-                priority
-                style={{ 
-                  filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25))'
-                }}
-              />
-            </div>
+          <div className="relative flex h-64 w-64 items-center justify-center bg-white rounded-2xl shadow-lg p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-white z-0 rounded-lg"></div>
+            <Image
+              src="/assets/logo.png"
+              alt="YoonAssist AI Logo"
+              width={256}
+              height={256}
+              className="h-full w-full object-contain relative z-10"
+              priority
+              style={{ 
+                filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25))',
+                backgroundColor: '#ffffff'
+              }}
+            />
           </div>
         </div>
 

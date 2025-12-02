@@ -491,19 +491,19 @@ export default function Home() {
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                   <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
                     {/* Logo de l'assistant - très agrandi et percutant */}
-                    <div className="absolute -left-4 top-2 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-white overflow-hidden p-1">
-                      <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                        <Image
-                          src="/assets/logo.png"
-                          alt="YoonAssist AI"
-                          width={64}
-                          height={64}
-                          className="h-full w-full object-contain"
-                          style={{ 
-                            filter: 'drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2))'
-                          }}
-                        />
-                      </div>
+                    <div className="absolute -left-4 top-2 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-white overflow-hidden">
+                      <div className="absolute inset-0 bg-white z-0 rounded-full"></div>
+                      <Image
+                        src="/assets/logo.png"
+                        alt="YoonAssist AI"
+                        width={64}
+                        height={64}
+                        className="h-full w-full object-contain relative z-10"
+                        style={{ 
+                          filter: 'drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2))',
+                          backgroundColor: '#ffffff'
+                        }}
+                      />
                     </div>
                     <div className="ml-20">
                       <FormattedResponse content={message.content} />
