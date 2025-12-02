@@ -23,12 +23,13 @@ import gc
 class BGEReranker:
     """Custom reranker using BGE reranker model from HuggingFace with lazy loading."""
     
-    def __init__(self, model_name: str = "BAAI/bge-reranker-base", top_n: int = 3, device: Optional[str] = None):
+    def __init__(self, model_name: str = "BAAI/bge-reranker-base", top_n: int = 3, device: Optional[str] = None, enabled: bool = True):
         self.model_name = model_name
         self.top_n = top_n
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self._model = None
         self._tokenizer = None
+        self.enabled = enabled  # Permet de désactiver le reranker pour économiser la mémoire
     
     @property
     def tokenizer(self):
@@ -85,6 +86,10 @@ class BGEReranker:
         
         if not documents:
             return []
+        
+        # Si le reranker est désactivé, retourner simplement les top_n documents
+        if not self.enabled:
+            return documents[:self.top_n]
         
         try:
             # Préparer les paires (query, document)
@@ -148,6 +153,10 @@ CHROMA_DB_PATH = BASE_DIR / "data" / "chroma_db"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY n'est pas définie dans les variables d'environnement")
+
+# Option pour désactiver le reranker (réduit l'utilisation mémoire)
+# Par défaut, désactivé pour économiser la mémoire sur Render (plan starter 512MB)
+ENABLE_RERANKER = os.getenv("ENABLE_RERANKER", "false").lower() == "true"
 
 # Initialiser l'embedding function (lazy loading pour optimiser le démarrage)
 _embedding_function = None
