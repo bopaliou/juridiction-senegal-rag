@@ -19,7 +19,7 @@ Une application d'assistant juridique basée sur RAG (Retrieval-Augmented Genera
 - **Chroma DB** : Base de données vectorielle pour les embeddings
 - **HuggingFace Embeddings** : Modèle `sentence-transformers/all-MiniLM-L6-v2`
 - **BGE Reranker** : Reclassement des documents pour améliorer la pertinence
-- **Groq** : LLM pour la génération de réponses (Llama 3.1 8B)
+- **Groq** : LLM pour la génération de réponses (openai/gpt-oss-120b)
 
 ### Frontend
 - **Next.js 14+** : Framework React avec App Router
