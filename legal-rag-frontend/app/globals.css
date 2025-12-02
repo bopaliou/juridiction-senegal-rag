@@ -81,3 +81,25 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Forcer un fond blanc pour les logos avec transparence */
+.logo-no-transparency {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+}
+
+.logo-no-transparency::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #ffffff;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.logo-no-transparency img {
+  position: relative;
+  z-index: 1;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+}
