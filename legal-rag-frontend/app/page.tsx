@@ -505,9 +505,9 @@ export default function Home() {
               ) : (
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
-                  <div className="group relative rounded-2xl rounded-tl-sm bg-gradient-to-br from-white to-slate-50 px-5 py-4 text-gray-800 shadow-md border border-slate-200/50 hover:shadow-lg transition-all duration-200">
+                  <div className="group relative rounded-2xl rounded-tl-sm bg-gradient-to-br from-white via-slate-50 to-white px-5 py-4 text-gray-800 shadow-md border border-slate-200/50 hover:shadow-lg transition-all duration-200">
                     {/* Icône de l'assistant */}
-                    <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
+                    <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md ring-2 ring-white">
                       <Scale className="h-4 w-4" />
                     </div>
                     <div className="ml-6">
