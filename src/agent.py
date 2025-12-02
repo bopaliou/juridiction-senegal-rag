@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from typing import List, TypedDict, Optional
 import os
 import json
+import random
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -329,138 +330,82 @@ def detect_domain_from_source(source_path: str) -> str:
     else:
         return 'general'
 
+# Liste officielle et exhaustive des questions autorisées (issues des documents fournis)
+AUTHORIZED_QUESTIONS = [
+    "Quelles sont les missions du juge de l'application des peines au Sénégal ?",
+    "Comment fonctionne la commission pénitentiaire consultative de l'aménagement des peines ?",
+    "Quelles sont les règles de séparation des détenus dans les établissements pénitentiaires ?",
+    "Quelles sont les conditions d'application du travail d'intérêt général ?",
+    "Comment se déroule l'extraction d'un détenu pour comparution devant un juge ?",
+    "Quels sont les droits des détenus provisoires selon le décret 2001-362 ?",
+    "Quel est le rôle des visiteurs de prison dans le système pénitentiaire ?",
+    "Comment la loi 2020-05 modifie-t-elle les peines pour viol au Sénégal ?",
+    "Quelles sont les nouvelles peines prévues pour les actes de pédophilie ?",
+    "Quelles sont les circonstances aggravantes en matière de violences sexuelles ?",
+    "Quels délais de prescription ont été suspendus pendant l'état d'urgence ?",
+    "Comment la loi 2020-16 affecte-t-elle les délais de recours en matière pénale ?",
+    "Quelles sont les règles concernant les contraintes par corps durant la période Covid-19 ?",
+    "Quels dossiers sont jugés par les tribunaux départementaux en matière correctionnelle ?",
+    "Quelles sont les infractions relevant uniquement du tribunal régional ?",
+    "Comment s'effectue le transfert d'une procédure entre le tribunal régional et le tribunal départemental ?",
+    "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
+    "Quelles sont les obligations de l'employeur envers les travailleurs ?",
+    "Quelles sont les règles de création d'un syndicat professionnel ?",
+    "Quelles protections s'appliquent aux travailleurs dans l'exercice du droit d'expression ?",
+    "Quelles sont les infractions concernant le travail forcé ?",
+    "Quels sont les droits des syndicats devant la justice ?",
+    "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
+    "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
+    "Quelles protections s'appliquent aux biens d'un syndicat ?",
+    "Quel est l'âge légal de départ à la retraite au Sénégal ?",
+    "Quels travailleurs peuvent poursuivre leur activité au-delà de 60 ans ?",
+    "Quelles professions sont autorisées à travailler jusqu'à 65 ans ?",
+    "Comment s'applique l'article L.69 modifié du Code du Travail ?",
+    "Un travailleur peut-il continuer d'exercer volontairement après 60 ans ?",
+    "Quels sont les axes stratégiques du budget 2025 ?",
+    "Comment se répartissent les ressources et charges de l'État pour 2025 ?",
+    "Quels sont les objectifs macroéconomiques du PLF 2026 ?",
+    "Quelles taxes nouvelles sont prévues dans la stratégie SUPREC ?",
+    "Quelles sont les mesures d'assainissement des finances publiques en 2026 ?",
+    "Comment évolue le déficit budgétaire entre 2024, 2025 et 2026 ?",
+    "Quels sont les domaines de dépenses prioritaires dans le budget 2026 ?",
+    "Quels textes régissent l'organisation pénitentiaire au Sénégal ?",
+    "Comment contester une décision judiciaire en matière correctionnelle ?",
+    "Quelles sont les obligations de l'État envers les travailleurs ?",
+    "Comment déterminer l'autorité compétente pour une infraction ?",
+    "Quelles sont les règles applicables aux syndicats ?",
+    "Quelles sont les récentes réformes impactant le droit pénal sénégalais ?",
+    "Comment fonctionne la procédure d'aménagement de peine ?",
+    "Quel est le rôle de l'État dans la protection sociale selon les budgets 2025/2026 ?",
+]
+
+
 def generate_suggested_questions(question: str, documents: List[Document], answer: str) -> List[str]:
-    """Génère des questions suggérées basées sur les documents réels et la réponse générée."""
+    """
+    Génère des questions suggérées en sélectionnant aléatoirement entre 3 et 7 questions
+    de la liste officielle autorisée.
+    
+    Règles:
+    - Sélectionne aléatoirement entre 3 et 7 questions
+    - Mélange la liste à chaque appel pour garantir un ordre différent
+    - Ne retourne jamais de questions absentes de la liste
+    - Ne retourne rien si pas de documents ou réponse vide
+    """
+    # Si pas de documents ou réponse vide, ne pas proposer de questions
     if not documents or not answer or answer.strip() == "Je ne trouve pas l'information dans les textes fournis.":
         return []
     
-    try:
-        # Extraire les concepts clés des documents récupérés
-        document_concepts = []
-        for doc in documents[:3]:  # Utiliser les 3 premiers documents
-            if doc.page_content:
-                # Extraire les premières phrases qui contiennent des concepts juridiques
-                sentences = doc.page_content.split('.')[:5]
-                document_concepts.extend([s.strip() for s in sentences if len(s.strip()) > 20])
-        
-        # Limiter la longueur pour éviter les tokens excessifs
-        context_text = ' '.join(document_concepts[:10])[:1000]
-        
-        # Utiliser le LLM pour générer des questions pertinentes basées sur le contenu réel
-        prompt_template = """Tu es un assistant juridique. Basé sur la question posée, la réponse donnée et le contexte des documents juridiques, génère exactement 3 questions de suivi pertinentes et spécifiques qui explorent des aspects connexes du sujet traité.
-
-QUESTION POSÉE: {question}
-
-RÉPONSE DONNÉE: {answer}
-
-CONTEXTE DES DOCUMENTS: {context}
-
-Règles importantes:
-- Les questions doivent être spécifiques au contexte juridique sénégalais
-- Elles doivent explorer des aspects connexes mais différents de la question initiale
-- Elles doivent être formulées de manière naturelle et compréhensible
-- Chaque question doit être sur une seule ligne
-- Ne génère QUE les 3 questions, une par ligne, sans numérotation ni préfixe
-
-Questions suggérées:"""
-
-        prompt = ChatPromptTemplate.from_template(prompt_template)
-        chain = prompt | router_llm  # Utiliser router_llm qui est plus rapide
-        
-        response = chain.invoke({
-            "question": question[:200],  # Limiter la longueur
-            "answer": answer[:500],  # Limiter la longueur
-            "context": context_text
-        })
-        
-        # Extraire les questions de la réponse du LLM
-        questions_text = response.content.strip()
-        
-        # Parser les questions (une par ligne)
-        suggested_questions = []
-        for line in questions_text.split('\n'):
-            line = line.strip()
-            # Enlever les numéros, tirets, puces si présents
-            line = line.lstrip('0123456789.-• ').strip()
-            if line and len(line) > 10 and '?' in line:
-                # S'assurer que la question se termine par un point d'interrogation
-                if not line.endswith('?'):
-                    line = line.rstrip('.') + '?'
-                suggested_questions.append(line)
-        
-        # Si on n'a pas assez de questions ou si le LLM a échoué, utiliser un fallback
-        if len(suggested_questions) < 3:
-            # Fallback: générer des questions basées sur les concepts extraits
-            fallback_questions = generate_fallback_questions(question, answer, document_concepts)
-            suggested_questions.extend(fallback_questions)
-        
-        # Retourner exactement 3 questions uniques
-        unique_questions = []
-        seen = set()
-        for q in suggested_questions:
-            q_lower = q.lower()
-            if q_lower not in seen and len(q) > 15:
-                unique_questions.append(q)
-                seen.add(q_lower)
-                if len(unique_questions) >= 3:
-                    break
-        
-        return unique_questions[:3]
-        
-    except Exception as e:
-        print(f"⚠️  Erreur lors de la génération des questions suggérées: {e}")
-        # Fallback en cas d'erreur
-        return generate_fallback_questions(question, answer, [])
-
-
-def generate_fallback_questions(question: str, answer: str, concepts: List[str]) -> List[str]:
-    """Génère des questions de fallback basées sur des patterns simples."""
-    fallback = []
+    # Sélectionner un nombre aléatoire de questions entre 3 et 7
+    num_questions = random.randint(3, 7)
     
-    # Extraire des mots-clés de la réponse
-    answer_lower = answer.lower()
-    question_lower = question.lower()
+    # Créer une copie de la liste et la mélanger pour garantir un ordre différent à chaque appel
+    shuffled_questions = AUTHORIZED_QUESTIONS.copy()
+    random.shuffle(shuffled_questions)
     
-    # Patterns de questions basés sur les concepts juridiques communs
-    patterns = [
-        "Quels sont les délais applicables dans ce cas ?",
-        "Quelle est la procédure à suivre ?",
-        "Quels sont les recours possibles ?",
-        "Y a-t-il des exceptions prévues ?",
-        "Quels sont les documents requis ?",
-        "Quelles sont les sanctions prévues ?",
-    ]
-    
-    # Adapter les patterns selon le domaine détecté dans la réponse
-    if any(word in answer_lower for word in ['travail', 'employeur', 'salarié', 'contrat', 'licenciement']):
-        patterns = [
-            "Quelle est la durée du préavis ?",
-            "Comment sont calculées les indemnités ?",
-            "Quels sont les droits en cas de litige ?",
-        ]
-    elif any(word in answer_lower for word in ['pénal', 'penal', 'infraction', 'sanction', 'peine']):
-        patterns = [
-            "Quel est le délai de prescription ?",
-            "Quelle est la procédure pénale ?",
-            "Quels sont les recours possibles ?",
-        ]
-    elif any(word in answer_lower for word in ['constitution', 'président', 'parlement', 'pouvoirs']):
-        patterns = [
-            "Quels sont les droits fondamentaux garantis ?",
-            "Comment fonctionne la séparation des pouvoirs ?",
-            "Quelle est la procédure de révision ?",
-        ]
-    
-    # Filtrer les questions trop similaires à la question initiale
-    for pattern in patterns:
-        pattern_lower = pattern.lower()
-        similarity = sum(1 for word in question_lower.split() if word in pattern_lower and len(word) > 3)
-        if similarity < 2:
-            fallback.append(pattern)
-        if len(fallback) >= 3:
-            break
-    
-    return fallback[:3]
+    # Retourner le nombre sélectionné de questions
+    return shuffled_questions[:num_questions]
+
+
 
 def retrieve_noeud(state: AgentState):
 
