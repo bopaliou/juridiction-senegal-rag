@@ -380,7 +380,7 @@ AUTHORIZED_QUESTIONS = [
 ]
 
 
-def generate_suggested_questions(question: str, documents: List[Document], answer: str) -> List[str]:
+def generate_suggested_questions(question: str, documents: List[Document], answer: str, conversation_history: Optional[str] = None) -> List[str]:
     """
     Génère des questions suggérées contextuelles en sélectionnant les questions les plus pertinentes
     parmi la liste officielle autorisée, basées sur le contexte de la conversation.
@@ -400,7 +400,7 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
     if answer_stripped == "Je ne trouve pas l'information dans les textes fournis.":
         return []
     
-    # Extraire les mots-clés du contexte (question + réponse + documents)
+    # Extraire les mots-clés du contexte (question + réponse + documents + historique)
     question_lower = question.lower()
     answer_lower = answer.lower()
     
@@ -412,10 +412,17 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
             words = doc.page_content.lower().split()
             doc_keywords.update([w for w in words if len(w) > 4])
     
+    # Extraire les mots-clés de l'historique de conversation si disponible
+    history_keywords = set()
+    if conversation_history:
+        history_words = conversation_history.lower().split()
+        history_keywords.update([w for w in history_words if len(w) > 4])
+    
     # Combiner tous les mots-clés du contexte
     context_keywords = set(question_lower.split())
     context_keywords.update(answer_lower.split())
     context_keywords.update(doc_keywords)
+    context_keywords.update(history_keywords)
     
     # Détecter le domaine principal de la conversation
     domain_keywords = {
@@ -769,7 +776,13 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
     if answer_content == "Je ne trouve pas l'information dans les textes fournis." and not sources_list:
         suggested_questions = []
     else:
-        suggested_questions = generate_suggested_questions(question, documents, answer_content)
+        # Générer des questions suggérées contextuelles en incluant l'historique
+        suggested_questions = generate_suggested_questions(
+            question, 
+            documents, 
+            answer_content,
+            conversation_history=history_str if history_str else None
+        )
     
     return {
         "answer": answer_content,
