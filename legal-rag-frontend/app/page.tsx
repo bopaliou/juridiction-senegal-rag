@@ -490,9 +490,15 @@ export default function Home() {
                 // Message assistant - aligné à gauche
                 <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                   <div className="group relative rounded-2xl rounded-tl-sm bg-gradient-to-br from-white via-blue-50/50 to-white px-6 py-5 text-gray-800 shadow-lg border border-blue-100/50 hover:shadow-xl hover:border-blue-200/70 transition-all duration-300">
-                    {/* Icône de l'assistant */}
-                    <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md ring-2 ring-white">
-                      <Scale className="h-4 w-4" />
+                    {/* Logo de l'assistant */}
+                    <div className="absolute -left-2 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-white overflow-hidden">
+                      <Image
+                        src="/assets/logo.png"
+                        alt="YoonAssist AI"
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 object-contain"
+                      />
                     </div>
                     <div className="ml-6">
                       <FormattedResponse content={message.content} />
