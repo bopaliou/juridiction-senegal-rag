@@ -7,25 +7,26 @@ interface EmptyStateProps {
   isLoading?: boolean;
 }
 
+// Questions de démarrage sélectionnées parmi la liste officielle de 45 questions autorisées
 const starterQuestions = [
   {
     icon: Briefcase,
-    question: 'Quelle est la durée légale du préavis de démission ?',
+    question: 'Qui est considéré comme travailleur selon l\'article L.2 du Code du Travail ?',
     color: 'text-blue-600',
   },
   {
     icon: Calendar,
-    question: 'Comment sont calculés les congés payés ?',
+    question: 'Quelles sont les missions du juge de l\'application des peines au Sénégal ?',
     color: 'text-green-600',
   },
   {
     icon: Shield,
-    question: 'Quels sont mes droits en cas de licenciement abusif ?',
+    question: 'Quelles sont les obligations de l\'employeur envers les travailleurs ?',
     color: 'text-purple-600',
   },
   {
     icon: HeartHandshake,
-    question: 'Quelles sont les conditions d\'un CDD ?',
+    question: 'Quel est l\'âge légal de départ à la retraite au Sénégal ?',
     color: 'text-orange-600',
   },
 ];
