@@ -1,4 +1,4 @@
-# Assistant Juridique Sénégalais RAG
+# JurisAdal AI - Assistant Juridique Sénégalais RAG
 
 Une application d'assistant juridique basée sur RAG (Retrieval-Augmented Generation) pour le droit sénégalais, utilisant LangChain, LangGraph, FastAPI et Next.js.
 

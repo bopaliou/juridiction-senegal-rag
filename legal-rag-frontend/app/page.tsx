@@ -7,6 +7,7 @@ import SourcesSidebar, { SourceItem } from '@/components/SourcesSidebar';
 import SuggestedQuestions from '@/components/SuggestedQuestions';
 import EmptyState from '@/components/EmptyState';
 import FormattedResponse from '@/components/FormattedResponse';
+import Header from '@/components/Header';
 import { askQuestion, ApiError } from '@/lib/api';
 
 interface Message {
@@ -457,26 +458,8 @@ export default function Home() {
 
       {/* Zone principale */}
       <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} ${sourcesSidebarOpen ? 'lg:mr-96' : 'lg:mr-0'}`}>
-        {/* Header fixe */}
-        <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white shadow-sm">
-          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-4 sm:px-6">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-white">
-                <Scale className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">LexSenegal AI</h1>
-                <p className="text-xs text-slate-500">Assistant Juridique Sénégalais</p>
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Header moderne et élégant */}
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Zone de chat scrollable */}
         <div
