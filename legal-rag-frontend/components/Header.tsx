@@ -23,23 +23,27 @@ export default function Header({ onMenuClick }: HeaderProps) {
           
           <div className="flex items-center gap-4">
             {/* Logo */}
-            {/* Logo */}
-            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-lg" style={{ backgroundColor: '#ffffff' }}>
-              <div className="absolute inset-0 bg-white z-0" style={{ backgroundColor: '#ffffff' }}></div>
-              <div className="absolute inset-0 bg-white z-[1]" style={{ backgroundColor: '#ffffff', opacity: 1 }}></div>
-              <Image
-                src="/assets/logo.png"
-                alt="YoonAssist AI Logo"
-                width={80}
-                height={80}
-                className="h-full w-full object-contain relative z-10"
-                priority
-                style={{ 
-                  backgroundColor: '#ffffff',
-                  background: '#ffffff',
-                  mixBlendMode: 'normal'
-                }}
-              />
+            <div className="relative h-20 w-20 shrink-0 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+              <div className="absolute inset-0 bg-white z-0"></div>
+              <div className="absolute inset-0 bg-white z-[1]"></div>
+              <div className="absolute inset-0 bg-white z-[2]"></div>
+              <div className="relative w-full h-full flex items-center justify-center p-1 bg-white z-10">
+                <div className="w-full h-full bg-white flex items-center justify-center">
+                  <Image
+                    src="/assets/logo.png"
+                    alt="YoonAssist AI Logo"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-contain"
+                    priority
+                    style={{ 
+                      backgroundColor: '#ffffff',
+                      background: '#ffffff',
+                      display: 'block'
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             
             {/* Nom et description */}
