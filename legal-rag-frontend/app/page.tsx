@@ -25,6 +25,7 @@ export default function Home() {
   const [sourcesSidebarOpen, setSourcesSidebarOpen] = useState(false);
   const [currentMessageSources, setCurrentMessageSources] = useState<SourceItem[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
+  const [globalSuggestedQuestions, setGlobalSuggestedQuestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -192,6 +193,11 @@ export default function Home() {
         // Utiliser uniquement les questions suggérées de l'API (liste autorisée de 45 questions)
         suggestedQuestions: data.suggested_questions || [],
       };
+
+      // Mettre à jour les questions suggérées globales avec les nouvelles questions de l'assistant
+      if (data.suggested_questions && data.suggested_questions.length > 0) {
+        setGlobalSuggestedQuestions(data.suggested_questions);
+      }
 
       setMessages((prev) => {
         const updated = [...prev, assistantMessage];
