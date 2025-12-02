@@ -382,12 +382,14 @@ AUTHORIZED_QUESTIONS = [
 
 def generate_suggested_questions(question: str, documents: List[Document], answer: str, conversation_history: Optional[str] = None) -> List[str]:
     """
-    Génère des questions suggérées contextuelles en sélectionnant les questions les plus pertinentes
+    Génère exactement 3 questions suggérées contextuelles en sélectionnant les questions les plus pertinentes
     parmi la liste officielle autorisée, basées sur le contexte de la conversation.
     
     Règles:
-    - Sélectionne entre 3 et 7 questions les plus pertinentes selon le contexte
-    - Utilise la question posée, la réponse donnée et les documents pour déterminer la pertinence
+    - Retourne exactement 3 questions les plus pertinentes selon le contexte
+    - Utilise la question posée, la réponse donnée, les documents et l'historique pour déterminer la pertinence
+    - Priorise les questions avec un score de pertinence élevé (>= 2)
+    - Complète avec des questions du même domaine si nécessaire
     - Ne retourne jamais de questions absentes de la liste
     - Ne retourne rien si pas de documents ou réponse vide
     """
