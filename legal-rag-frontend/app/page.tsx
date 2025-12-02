@@ -189,10 +189,8 @@ export default function Home() {
         role: 'assistant',
         content: data.reponse,
         sources: data.sources || [],
-        // Utiliser les questions suggérées de l'API si disponibles, sinon générer localement
-        suggestedQuestions: data.suggested_questions && data.suggested_questions.length > 0
-          ? data.suggested_questions
-          : generateSuggestedQuestions(data.reponse),
+        // Utiliser uniquement les questions suggérées de l'API (liste autorisée de 45 questions)
+        suggestedQuestions: data.suggested_questions || [],
       };
 
       setMessages((prev) => {
@@ -349,85 +347,8 @@ export default function Home() {
     return { title, content };
   };
 
-  // Générer des questions suggérées basées sur le contenu de la réponse
-  const generateSuggestedQuestions = (content: string): string[] => {
-    // Questions contextuelles selon les domaines juridiques
-    const questionsByDomain: { [key: string]: string[] } = {
-      penal: [
-        'Quelles sont les peines encourues ?',
-        'Quels sont les délais de prescription ?',
-        'Quelle est la procédure pénale ?',
-        'Quels sont les recours possibles ?',
-      ],
-      social: [
-        'Quels sont les droits des travailleurs ?',
-        'Quelle est la procédure de licenciement ?',
-        'Quels sont les congés payés ?',
-        'Comment calculer les indemnités ?',
-      ],
-      travail: [
-        'Quel est le nombre d\'heures de travail ?',
-        'Quels sont les jours de repos ?',
-        'Quelle est la durée du préavis ?',
-        'Quels sont les droits en cas de grève ?',
-      ],
-      organisation: [
-        'Quelle est l\'organisation administrative ?',
-        'Quels sont les pouvoirs des autorités ?',
-        'Quelle est la structure de l\'État ?',
-        'Comment fonctionne l\'administration ?',
-      ],
-      constitution: [
-        'Quels sont les droits fondamentaux ?',
-        'Quelle est la séparation des pouvoirs ?',
-        'Quels sont les pouvoirs du Président ?',
-        'Comment fonctionne le Parlement ?',
-      ],
-      finances: [
-        'Quels sont les impôts applicables ?',
-        'Quelle est la procédure fiscale ?',
-        'Quels sont les délais de paiement ?',
-        'Quelles sont les sanctions fiscales ?',
-      ],
-      aviation: [
-        'Quelles sont les règles de sécurité ?',
-        'Quels sont les droits des passagers ?',
-        'Quelle est la responsabilité du transporteur ?',
-        'Quels sont les documents requis ?',
-      ],
-      collectivites: [
-        'Quels sont les pouvoirs des collectivités ?',
-        'Quelle est l\'organisation territoriale ?',
-        'Quels sont les budgets locaux ?',
-        'Comment fonctionnent les élections locales ?',
-      ],
-    };
-
-    // Détecter le domaine selon le contenu
-    const contentLower = content.toLowerCase();
-    let selectedDomain = 'social'; // Par défaut
-    
-    if (contentLower.includes('pénal') || contentLower.includes('penal') || contentLower.includes('infraction') || contentLower.includes('sanction')) {
-      selectedDomain = 'penal';
-    } else if (contentLower.includes('travail') || contentLower.includes('employeur') || contentLower.includes('salarié') || contentLower.includes('contrat')) {
-      selectedDomain = 'travail';
-    } else if (contentLower.includes('constitution') || contentLower.includes('président') || contentLower.includes('parlement')) {
-      selectedDomain = 'constitution';
-    } else if (contentLower.includes('organisation') || contentLower.includes('administration') || contentLower.includes('fonction publique')) {
-      selectedDomain = 'organisation';
-    } else if (contentLower.includes('fiscal') || contentLower.includes('impôt') || contentLower.includes('finances')) {
-      selectedDomain = 'finances';
-    } else if (contentLower.includes('aviation') || contentLower.includes('aérien')) {
-      selectedDomain = 'aviation';
-    } else if (contentLower.includes('collectivité') || contentLower.includes('local') || contentLower.includes('commune') || contentLower.includes('région')) {
-      selectedDomain = 'collectivites';
-    }
-
-    const domainQuestions = questionsByDomain[selectedDomain] || questionsByDomain.social;
-    
-    // Retourner 3 questions aléatoires du domaine détecté
-    return domainQuestions.sort(() => Math.random() - 0.5).slice(0, 3);
-  };
+  // Les questions suggérées viennent uniquement du backend (liste autorisée de 45 questions)
+  // La fonction generateSuggestedQuestions a été supprimée car elle utilisait des questions non autorisées
 
   const handleSuggestionClick = useCallback((question: string) => {
     handleSubmit(question); // Directly send the question
