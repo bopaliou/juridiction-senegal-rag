@@ -215,6 +215,11 @@ def ingest_documents():
         import traceback
         traceback.print_exc()
         logger.info(f"✅ Base de données Chroma créée à : {DATA_DB_PATH}")
+        
+        # Libérer la mémoire après l'ingestion
+        import gc
+        gc.collect()
+        logger.info("🧹 Mémoire libérée après l'ingestion")
     
 if __name__ == "__main__":
     logger.info(f"📁 Répertoire de base: {BASE_DIR}")

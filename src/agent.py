@@ -53,6 +53,7 @@ class BGEReranker:
                     self.model_name,
                     torch_dtype=torch.float16 if self.device == "cpu" else torch.float32,
                     low_cpu_mem_usage=True,
+                    device_map="auto" if self.device != "cpu" else None,
                 )
                 self._model.eval()
                 self._model.to(self.device)
