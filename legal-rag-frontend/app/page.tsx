@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Scale, Loader2, ChevronDown, ChevronUp, Menu, FileText } from 'lucide-react';
+import { Send, Loader2, ChevronDown, ChevronUp, Menu, FileText } from 'lucide-react';
+import Image from 'next/image';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
 import SourcesSidebar, { SourceItem } from '@/components/SourcesSidebar';
 import SuggestedQuestions from '@/components/SuggestedQuestions';
@@ -536,7 +537,16 @@ export default function Home() {
             <div className="flex w-full">
               <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-5 w-5 shrink-0">
+                      <Image
+                        src="/assets/logo.png"
+                        alt="YoonAssist AI"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 object-contain animate-pulse"
+                      />
+                    </div>
                     <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
                     <span className="text-sm text-slate-600">Recherche en cours...</span>
                   </div>
