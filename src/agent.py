@@ -262,7 +262,7 @@ def classify_question(state: AgentState):
     
     # Si aucun mot-clé juridique n'est trouvé, utiliser le LLM pour une classification plus fine
     if not contains_juridique_keyword:
-    prompt = ChatPromptTemplate.from_messages([
+        prompt = ChatPromptTemplate.from_messages([
             ("system", """Tu es un classificateur binaire pour un assistant juridique sénégalais.
 Ta tâche est de déterminer si la question concerne le droit sénégalais ou un sujet juridique général.
 
@@ -282,8 +282,8 @@ Une question est AUTRE si elle concerne :
 
 Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
         ("human", "{question}")
-    ])
-    
+        ])
+        
         try:
             chain = prompt | router_llm
             response = chain.invoke({"question": state["question"]})
@@ -561,8 +561,8 @@ def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
-    documents = retriever.invoke(question)
-    return {"documents": documents}
+        documents = retriever.invoke(question)
+        return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
         return {"documents": []}
@@ -794,7 +794,7 @@ def generate_node(state: AgentState):
     if history_str:
         response = chain.invoke({"question": question, "context": context, "history": history_str})
     else:
-    response = chain.invoke({"question": question, "context": context})
+        response = chain.invoke({"question": question, "context": context})
     
     # Ajouter la réponse de l'assistant à l'historique
     messages.append(AIMessage(content=response.content))
