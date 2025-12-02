@@ -24,7 +24,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-4">
             {/* Logo */}
             <div 
-              className="relative h-20 w-20 shrink-0 rounded-lg shadow-lg overflow-hidden logo-no-transparency"
+              className="relative h-28 w-28 shrink-0 rounded-lg shadow-lg overflow-hidden logo-no-transparency"
               style={{ 
                 backgroundColor: '#ffffff',
                 background: '#ffffff'
@@ -33,9 +33,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Image
                 src="/assets/logo.png"
                 alt="YoonAssist AI Logo"
-                width={80}
-                height={80}
-                className="w-full h-full object-contain"
+                width={112}
+                height={112}
+                className="w-full h-full object-cover"
                 priority
                 style={{ 
                   backgroundColor: '#ffffff',
