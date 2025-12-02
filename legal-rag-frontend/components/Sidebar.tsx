@@ -162,7 +162,11 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-slate-800 hover:text-white"
+                className={`rounded-lg p-2 transition-colors ${
+                  isCollapsed 
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                    : 'text-gray-400 hover:bg-slate-800 hover:text-white'
+                }`}
                 title={isCollapsed ? "Agrandir" : "Réduire"}
               >
                 {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}

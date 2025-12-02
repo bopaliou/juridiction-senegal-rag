@@ -90,7 +90,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
       {/* Sidebar */}
       <aside
         className={`
-          fixed right-0 top-0 z-50 h-full transform bg-white shadow-2xl transition-all duration-300 ease-in-out
+          fixed right-0 top-0 z-50 h-full transform bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-2xl transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
           ${isCollapsed ? 'w-16' : 'w-full lg:w-96'}
         `}
@@ -135,7 +135,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
 
           {/* Sources List */}
           {!isCollapsed && (
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-4 bg-white/50">
               {isLoading && visibleSources.length === 0 ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">

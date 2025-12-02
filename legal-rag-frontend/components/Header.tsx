@@ -23,19 +23,20 @@ export default function Header({ onMenuClick }: HeaderProps) {
           
           <div className="flex items-center gap-4">
             {/* Logo très agrandi et percutant */}
-            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center bg-white rounded-lg">
-              <Image
-                src="/assets/logo.png"
-                alt="YoonAssist AI Logo"
-                width={112}
-                height={112}
-                className="h-28 w-28 object-contain"
-                priority
-                style={{ 
-                  filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2))',
-                  backgroundColor: 'white'
-                }}
-              />
+            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center bg-white rounded-lg p-2 shadow-sm">
+              <div className="w-full h-full bg-white rounded flex items-center justify-center">
+                <Image
+                  src="/assets/logo.png"
+                  alt="YoonAssist AI Logo"
+                  width={112}
+                  height={112}
+                  className="h-full w-full object-contain"
+                  priority
+                  style={{ 
+                    filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2))'
+                  }}
+                />
+              </div>
             </div>
             
             {/* Nom et description */}
