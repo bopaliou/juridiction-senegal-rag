@@ -1,7 +1,7 @@
 'use client';
 
 import { Scale, Briefcase, Calendar, Shield, HeartHandshake } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 interface EmptyStateProps {
   onQuestionClick: (question: string) => void;
@@ -74,8 +74,17 @@ function getRandomQuestions() {
 }
 
 export default function EmptyState({ onQuestionClick, isLoading = false }: EmptyStateProps) {
-  // Sélectionner aléatoirement 4 questions à chaque rendu du composant
-  const starterQuestions = useMemo(() => getRandomQuestions(), []);
+  // Éviter l'erreur d'hydratation en générant les questions uniquement côté client
+  const [starterQuestions, setStarterQuestions] = useState<Array<{
+    icon: typeof Briefcase;
+    question: string;
+    color: string;
+  }>>([]);
+
+  useEffect(() => {
+    // Générer les questions uniquement après le montage côté client
+    setStarterQuestions(getRandomQuestions());
+  }, []);
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-12">
