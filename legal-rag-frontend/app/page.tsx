@@ -63,7 +63,62 @@ export default function Home() {
     } catch (e) {
       console.error('Erreur lors du chargement de l\'historique:', e);
     }
-  }, []);
+
+    // Générer des questions suggérées initiales au démarrage si aucune n'existe
+    if (globalSuggestedQuestions.length === 0) {
+      const AUTHORIZED_QUESTIONS = [
+        "Quelles sont les missions du juge de l'application des peines au Sénégal ?",
+        "Comment fonctionne la commission pénitentiaire consultative de l'aménagement des peines ?",
+        "Quelles sont les règles de séparation des détenus dans les établissements pénitentiaires ?",
+        "Quelles sont les conditions d'application du travail d'intérêt général ?",
+        "Comment se déroule l'extraction d'un détenu pour comparution devant un juge ?",
+        "Quels sont les droits des détenus provisoires selon le décret 2001-362 ?",
+        "Quel est le rôle des visiteurs de prison dans le système pénitentiaire ?",
+        "Comment la loi 2020-05 modifie-t-elle les peines pour viol au Sénégal ?",
+        "Quelles sont les nouvelles peines prévues pour les actes de pédophilie ?",
+        "Quelles sont les circonstances aggravantes en matière de violences sexuelles ?",
+        "Quels délais de prescription ont été suspendus pendant l'état d'urgence ?",
+        "Comment la loi 2020-16 affecte-t-elle les délais de recours en matière pénale ?",
+        "Quelles sont les règles concernant les contraintes par corps durant la période Covid-19 ?",
+        "Quels dossiers sont jugés par les tribunaux départementaux en matière correctionnelle ?",
+        "Quelles sont les infractions relevant uniquement du tribunal régional ?",
+        "Comment s'effectue le transfert d'une procédure entre le tribunal régional et le tribunal départemental ?",
+        "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
+        "Quelles sont les obligations de l'employeur envers les travailleurs ?",
+        "Quelles sont les règles de création d'un syndicat professionnel ?",
+        "Quelles protections s'appliquent aux travailleurs dans l'exercice du droit d'expression ?",
+        "Quelles sont les infractions concernant le travail forcé ?",
+        "Quels sont les droits des syndicats devant la justice ?",
+        "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
+        "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
+        "Quelles protections s'appliquent aux biens d'un syndicat ?",
+        "Quel est l'âge légal de départ à la retraite au Sénégal ?",
+        "Quels travailleurs peuvent poursuivre leur activité au-delà de 60 ans ?",
+        "Quelles professions sont autorisées à travailler jusqu'à 65 ans ?",
+        "Comment s'applique l'article L.69 modifié du Code du Travail ?",
+        "Un travailleur peut-il continuer d'exercer volontairement après 60 ans ?",
+        "Quels sont les axes stratégiques du budget 2025 ?",
+        "Comment se répartissent les ressources et charges de l'État pour 2025 ?",
+        "Quels sont les objectifs macroéconomiques du PLF 2026 ?",
+        "Quelles taxes nouvelles sont prévues dans la stratégie SUPREC ?",
+        "Quelles sont les mesures d'assainissement des finances publiques en 2026 ?",
+        "Comment évolue le déficit budgétaire entre 2024, 2025 et 2026 ?",
+        "Quels sont les domaines de dépenses prioritaires dans le budget 2026 ?",
+        "Quels textes régissent l'organisation pénitentiaire au Sénégal ?",
+        "Comment contester une décision judiciaire en matière correctionnelle ?",
+        "Quelles sont les obligations de l'État envers les travailleurs ?",
+        "Comment déterminer l'autorité compétente pour une infraction ?",
+        "Quelles sont les règles applicables aux syndicats ?",
+        "Quelles sont les récentes réformes impactant le droit pénal sénégalais ?",
+        "Comment fonctionne la procédure d'aménagement de peine ?",
+        "Quel est le rôle de l'État dans la protection sociale selon les budgets 2025/2026 ?",
+      ];
+      // Sélectionner aléatoirement 3 à 7 questions
+      const numQuestions = Math.floor(Math.random() * 5) + 3; // Entre 3 et 7
+      const shuffled = [...AUTHORIZED_QUESTIONS].sort(() => Math.random() - 0.5);
+      setGlobalSuggestedQuestions(shuffled.slice(0, numQuestions));
+    }
+  }, [globalSuggestedQuestions.length]);
 
   // Auto-scroll vers le bas quand de nouveaux messages arrivent
   useEffect(() => {
