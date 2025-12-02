@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "JurisAdal AI - Assistant Juridique Intelligent",
-  description: "Assistant juridique intelligent basé sur RAG pour le droit sénégalais",
+  description: "JurisAdal AI - Assistant juridique intelligent basé sur RAG pour le droit sénégalais. JurisAdal combine l'expertise juridique avec l'intelligence artificielle pour répondre à vos questions sur le droit sénégalais.",
 };
 
 export default function RootLayout({
