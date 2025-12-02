@@ -24,19 +24,22 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-4">
             {/* Logo */}
             {/* Logo */}
-            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 bg-white rounded-lg shadow-lg z-0"></div>
-              <div className="relative z-10 w-full h-full flex items-center justify-center bg-white">
-                <Image
-                  src="/assets/logo.png"
-                  alt="YoonAssist AI Logo"
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-contain"
-                  priority
-                  style={{ backgroundColor: '#ffffff' }}
-                />
-              </div>
+            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-lg" style={{ backgroundColor: '#ffffff' }}>
+              <div className="absolute inset-0 bg-white z-0" style={{ backgroundColor: '#ffffff' }}></div>
+              <div className="absolute inset-0 bg-white z-[1]" style={{ backgroundColor: '#ffffff', opacity: 1 }}></div>
+              <Image
+                src="/assets/logo.png"
+                alt="YoonAssist AI Logo"
+                width={80}
+                height={80}
+                className="h-full w-full object-contain relative z-10"
+                priority
+                style={{ 
+                  backgroundColor: '#ffffff',
+                  background: '#ffffff',
+                  mixBlendMode: 'normal'
+                }}
+              />
             </div>
             
             {/* Nom et description */}
