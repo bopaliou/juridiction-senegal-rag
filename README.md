@@ -116,10 +116,12 @@ juridiction-senegal-rag/
 
 ### Variables d'environnement
 
-Créez un fichier `.env` à la racine du projet :
+Créez un fichier `.env` à la racine du projet (voir `.env.example` pour la liste complète) :
 
 ```env
 GROQ_API_KEY=votre_cle_api_groq
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### Base de données Chroma
@@ -132,6 +134,72 @@ La base de données vectorielle est créée automatiquement lors de l'ingestion.
 2. Lancez le serveur Next.js (frontend)
 3. Ouvrez `http://localhost:3000` dans votre navigateur
 4. Posez vos questions juridiques dans l'interface
+
+## 🚀 Déploiement sur Render
+
+### Prérequis
+
+- Compte Render avec carte de crédit configurée
+- Token API Render (disponible sur https://dashboard.render.com/account/api-keys)
+- Repository GitHub avec le code
+
+### Architecture de déploiement
+
+Le projet est déployé avec **deux services séparés** :
+
+1. **Backend** : Web Service Python (FastAPI) avec Chroma DB persistant
+2. **Frontend** : Static Site (Next.js) ou Web Service Node.js
+
+### Étapes de déploiement
+
+#### 1. Backend (Web Service Python)
+
+1. Créer un nouveau Web Service sur Render
+2. Configuration :
+   - **Name** : `yoonassist-backend`
+   - **Runtime** : `Python 3`
+   - **Build Command** : `pip install -r requirements.txt`
+   - **Start Command** : `chmod +x start.sh && ./start.sh`
+   - **Repository** : `https://github.com/bopaliou/juridiction-senegal-rag.git`
+   - **Branch** : `main`
+   - **Plan** : `Starter` (ou supérieur)
+
+3. Variables d'environnement :
+   - `GROQ_API_KEY` : Votre clé API Groq
+   - `ALLOWED_ORIGINS` : URL du frontend (à mettre à jour après déploiement frontend)
+   - `PORT` : Automatiquement défini par Render
+
+4. Le script `start.sh` vérifie automatiquement si Chroma DB existe et lance l'ingestion si nécessaire.
+
+#### 2. Frontend (Static Site Next.js)
+
+1. Créer un nouveau Static Site sur Render
+2. Configuration :
+   - **Name** : `yoonassist-frontend`
+   - **Build Command** : `cd legal-rag-frontend && npm install && npm run build`
+   - **Publish Directory** : `legal-rag-frontend/.next` (ou `legal-rag-frontend/out` si export statique)
+   - **Repository** : `https://github.com/bopaliou/juridiction-senegal-rag.git`
+   - **Branch** : `main`
+
+3. Variables d'environnement :
+   - `NEXT_PUBLIC_API_URL` : URL du backend Render (ex: `https://yoonassist-backend.onrender.com`)
+
+#### 3. Configuration post-déploiement
+
+Après le déploiement des deux services :
+
+1. Récupérer l'URL du backend (ex: `https://yoonassist-backend.onrender.com`)
+2. Récupérer l'URL du frontend (ex: `https://yoonassist-frontend.onrender.com`)
+3. Mettre à jour `ALLOWED_ORIGINS` du backend avec l'URL du frontend
+4. Mettre à jour `NEXT_PUBLIC_API_URL` du frontend avec l'URL du backend
+5. Redéployer les deux services
+
+### Notes importantes
+
+- **Chroma DB** : Persiste dans `data/chroma_db` sur le disque local du service backend
+- **Port** : Render définit automatiquement la variable `PORT`, le script `start.sh` l'utilise
+- **CORS** : Configuré via `ALLOWED_ORIGINS` (doit inclure l'URL du frontend)
+- **Ingestion** : Se lance automatiquement au premier démarrage si Chroma DB n'existe pas
 
 ## 🛠️ Technologies utilisées
 
