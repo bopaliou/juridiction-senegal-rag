@@ -22,17 +22,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
           
           <div className="flex items-center gap-4">
-            {/* Logo agrandi et percutant - sans arrière-plan */}
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center bg-transparent">
+            {/* Logo très agrandi et percutant - sans arrière-plan */}
+            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center bg-transparent">
               <Image
                 src="/assets/logo.png"
                 alt="YoonAssist AI Logo"
-                width={64}
-                height={64}
-                className="h-16 w-16 object-contain"
+                width={112}
+                height={112}
+                className="h-28 w-28 object-contain"
                 priority
                 style={{ 
-                  filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))',
+                  filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2))',
                   backgroundColor: 'transparent'
                 }}
               />
@@ -49,7 +49,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </span>
               </div>
               <p className="text-xs font-medium text-slate-600">
-                L'expertise juridique sénégalaise à votre service
+                Trouvez facilement toutes les informations sur le droit sénégalais
               </p>
             </div>
           </div>

@@ -90,18 +90,18 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 py-12">
       <div className="mx-auto max-w-2xl text-center">
-        {/* Logo agrandi et percutant - sans arrière-plan */}
-        <div className="mb-8 flex justify-center">
-          <div className="relative flex h-32 w-32 items-center justify-center bg-transparent">
+        {/* Logo très agrandi et percutant - sans arrière-plan */}
+        <div className="mb-10 flex justify-center">
+          <div className="relative flex h-64 w-64 items-center justify-center bg-transparent">
             <Image
               src="/assets/logo.png"
               alt="YoonAssist AI Logo"
-              width={128}
-              height={128}
-              className="h-32 w-32 object-contain"
+              width={256}
+              height={256}
+              className="h-64 w-64 object-contain"
               priority
               style={{ 
-                filter: 'drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2))',
+                filter: 'drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25))',
                 backgroundColor: 'transparent'
               }}
             />
@@ -115,7 +115,7 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
         
         {/* Slogan */}
         <p className="mb-3 text-sm font-semibold text-emerald-600 sm:text-base">
-          L'expertise juridique sénégalaise à votre service
+          Trouvez facilement toutes les informations sur le droit sénégalais
         </p>
 
         {/* Sous-titre */}
