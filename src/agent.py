@@ -681,10 +681,35 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
 
 def retrieve_noeud(state: AgentState):
     question = state["question"]
+    question_lower = question.lower()
+    
+    # Détecter si la question concerne un article spécifique
+    import re
+    article_pattern = re.search(r'article\s*(l\.?\s*)?(\d+)', question_lower)
+    specific_article = None
+    if article_pattern:
+        specific_article = article_pattern.group(2)
+    # Détecter "premier article", "deuxième article", etc.
+    ordinal_map = {
+        'premier': '1', 'première': '1', 'deuxième': '2', 'second': '2', 'seconde': '2',
+        'troisième': '3', 'quatrième': '4', 'cinquième': '5', 'sixième': '6',
+    }
+    for ordinal, num in ordinal_map.items():
+        if ordinal in question_lower and 'article' in question_lower:
+            specific_article = num
+            break
+    
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
+        # Si un article spécifique est détecté, modifier la requête pour être plus explicite
+        search_query = question
+        if specific_article:
+            # Ajouter explicitement le numéro d'article dans la requête
+            search_query = f"Article L.{specific_article} {question}"
+            print(f"🔍 Recherche améliorée pour Article L.{specific_article}: {search_query}")
+        
         # Récupérer plus de documents initialement pour avoir un meilleur pool
-        documents = retriever.invoke(question)
+        documents = retriever.invoke(search_query)
         
         # Si le reranker est activé, l'utiliser pour améliorer la pertinence
         if ENABLE_RERANKER and compressor:
@@ -741,6 +766,25 @@ def generate_node(state: AgentState):
     # Utiliser un système de scoring plus strict
     question_lower = question.lower()
     
+    # Détecter si la question concerne un article spécifique
+    import re
+    article_pattern = re.search(r'article\s*(l\.?\s*)?(\d+)', question_lower)
+    specific_article = None
+    if article_pattern:
+        specific_article = article_pattern.group(2)
+        print(f"🔍 Article spécifique détecté: Article L.{specific_article}")
+    # Détecter "premier article", "deuxième article", etc.
+    ordinal_map = {
+        'premier': '1', 'première': '1', 'deuxième': '2', 'second': '2', 'seconde': '2',
+        'troisième': '3', 'quatrième': '4', 'cinquième': '5', 'sixième': '6',
+        'septième': '7', 'huitième': '8', 'neuvième': '9', 'dixième': '10'
+    }
+    for ordinal, num in ordinal_map.items():
+        if ordinal in question_lower and 'article' in question_lower:
+            specific_article = num
+            print(f"🔍 Article ordinal détecté: Article L.{specific_article}")
+            break
+    
     # Extraire les concepts clés spécifiques de la question
     key_concepts = {w for w in question_lower.split() if len(w) > 4}
     # Ajouter des concepts spécifiques selon le type de question
@@ -761,6 +805,23 @@ def generate_node(state: AgentState):
             # Bonus pour les concepts clés spécifiques
             concept_matches = sum(1 for concept in key_concepts if concept in content_lower)
             score += concept_matches * 2  # Poids plus élevé pour les concepts clés
+            
+            # BONUS MAJEUR si un article spécifique est recherché et trouvé dans le document
+            if specific_article:
+                # Patterns pour détecter l'article spécifique
+                article_patterns = [
+                    f'article l.{specific_article}.',
+                    f'article l.{specific_article}\n',
+                    f'article l.{specific_article} ',
+                    f'article l {specific_article}.',
+                    f'article l {specific_article}\n',
+                    f'article l {specific_article} ',
+                ]
+                for pattern in article_patterns:
+                    if pattern in content_lower:
+                        score += 50  # Gros bonus pour l'article exact
+                        print(f"✅ Article L.{specific_article} trouvé dans un document!")
+                        break
             
             # Vérifier la cohérence du domaine
             metadata = doc.metadata if hasattr(doc, 'metadata') and doc.metadata else {}

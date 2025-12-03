@@ -25,6 +25,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>('');
   const [expandedSources, setExpandedSources] = useState<{ [key: number]: boolean }>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sourcesSidebarOpen, setSourcesSidebarOpen] = useState(false);
   const [sourcesSidebarCollapsed, setSourcesSidebarCollapsed] = useState(false);
   const [currentMessageSources, setCurrentMessageSources] = useState<SourceItem[]>([]);
@@ -71,51 +72,75 @@ export default function Home() {
     // Générer des questions suggérées initiales au démarrage si aucune n'existe
     if (globalSuggestedQuestions.length === 0) {
       const AUTHORIZED_QUESTIONS = [
-        "Quelles sont les missions du juge de l'application des peines au Sénégal ?",
-        "Comment fonctionne la commission pénitentiaire consultative de l'aménagement des peines ?",
-        "Quelles sont les règles de séparation des détenus dans les établissements pénitentiaires ?",
-        "Quelles sont les conditions d'application du travail d'intérêt général ?",
-        "Comment se déroule l'extraction d'un détenu pour comparution devant un juge ?",
-        "Quels sont les droits des détenus provisoires selon le décret 2001-362 ?",
-        "Quel est le rôle des visiteurs de prison dans le système pénitentiaire ?",
-        "Comment la loi 2020-05 modifie-t-elle les peines pour viol au Sénégal ?",
-        "Quelles sont les nouvelles peines prévues pour les actes de pédophilie ?",
-        "Quelles sont les circonstances aggravantes en matière de violences sexuelles ?",
-        "Quels délais de prescription ont été suspendus pendant l'état d'urgence ?",
-        "Comment la loi 2020-16 affecte-t-elle les délais de recours en matière pénale ?",
-        "Quelles sont les règles concernant les contraintes par corps durant la période Covid-19 ?",
-        "Quels dossiers sont jugés par les tribunaux départementaux en matière correctionnelle ?",
-        "Quelles sont les infractions relevant uniquement du tribunal régional ?",
-        "Comment s'effectue le transfert d'une procédure entre le tribunal régional et le tribunal départemental ?",
+        // Questions sur le droit du travail - Dispositions générales (Code du Travail)
         "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
+        "Qu'est-ce qu'un travailleur au sens de l'article L.2 du Code du Travail ?",
+        "Quelles sont les personnes soumises au Code du Travail sénégalais ?",
+        "Qu'est-ce qu'une entreprise selon l'article L.3 du Code du Travail ?",
+        "Qu'est-ce qu'un établissement au sens du Code du Travail ?",
         "Quelles sont les obligations de l'employeur envers les travailleurs ?",
+        "Quel est le droit au travail selon l'article L.1 du Code du Travail ?",
+        "Comment l'État assure-t-il l'égalité de chance en matière d'emploi ?",
+        "Quelles sont les obligations de l'État envers les travailleurs ?",
+        "Le travail forcé est-il interdit au Sénégal selon l'article L.4 ?",
+        "Qu'est-ce que le travail forcé ou obligatoire selon l'article L.4 ?",
+        "Quelles sont les exceptions à l'interdiction du travail forcé ?",
+        "Qu'est-ce que le droit à l'expression des travailleurs selon l'article L.5 ?",
+        "Quel est l'objet du droit d'expression des travailleurs dans l'entreprise ?",
+        "Les opinions des travailleurs peuvent-elles motiver un licenciement selon l'article L.5 ?",
+        "Quelles sont les conditions d'application du droit d'expression des travailleurs ?",
+        "Un travailleur peut-il bénéficier d'avantages supérieurs à ceux du Code du Travail ?",
+        "Les personnes nommées dans un emploi permanent de l'administration sont-elles soumises au Code du Travail ?",
+        
+        // Questions sur les syndicats professionnels (Code du Travail)
         "Quelles sont les règles de création d'un syndicat professionnel ?",
+        "Quel est l'objet des syndicats professionnels selon l'article L.6 ?",
+        "Qui peut constituer un syndicat professionnel selon l'article L.7 ?",
+        "Qui peut adhérer à un syndicat professionnel ?",
+        "Quelles sont les conditions pour créer un syndicat professionnel ?",
+        "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
+        "Où doit-on déposer les statuts d'un syndicat professionnel selon l'article L.8 ?",
+        "Quels documents doivent être déposés pour créer un syndicat ?",
+        "Quel est le délai pour le dépôt des statuts d'un syndicat ?",
+        "Qui délivre le récépissé de reconnaissance d'un syndicat ?",
+        "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
+        "Qui vérifie la régularité des statuts d'un syndicat ?",
+        "Quelles sont les conséquences si un membre ne remplit pas les conditions pour diriger un syndicat ?",
+        "Quand peut-on demander la dissolution d'un syndicat ?",
         "Quelles protections s'appliquent aux travailleurs dans l'exercice du droit d'expression ?",
         "Quelles sont les infractions concernant le travail forcé ?",
         "Quels sont les droits des syndicats devant la justice ?",
-        "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
-        "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
         "Quelles protections s'appliquent aux biens d'un syndicat ?",
-        "Quel est l'âge légal de départ à la retraite au Sénégal ?",
-        "Quels travailleurs peuvent poursuivre leur activité au-delà de 60 ans ?",
-        "Quelles professions sont autorisées à travailler jusqu'à 65 ans ?",
-        "Comment s'applique l'article L.69 modifié du Code du Travail ?",
-        "Un travailleur peut-il continuer d'exercer volontairement après 60 ans ?",
-        "Quels sont les axes stratégiques du budget 2025 ?",
-        "Comment se répartissent les ressources et charges de l'État pour 2025 ?",
-        "Quels sont les objectifs macroéconomiques du PLF 2026 ?",
-        "Quelles taxes nouvelles sont prévues dans la stratégie SUPREC ?",
-        "Quelles sont les mesures d'assainissement des finances publiques en 2026 ?",
-        "Comment évolue le déficit budgétaire entre 2024, 2025 et 2026 ?",
-        "Quels sont les domaines de dépenses prioritaires dans le budget 2026 ?",
-        "Quels textes régissent l'organisation pénitentiaire au Sénégal ?",
-        "Comment contester une décision judiciaire en matière correctionnelle ?",
-        "Quelles sont les obligations de l'État envers les travailleurs ?",
-        "Comment déterminer l'autorité compétente pour une infraction ?",
         "Quelles sont les règles applicables aux syndicats ?",
-        "Quelles sont les récentes réformes impactant le droit pénal sénégalais ?",
-        "Comment fonctionne la procédure d'aménagement de peine ?",
-        "Quel est le rôle de l'État dans la protection sociale selon les budgets 2025/2026 ?",
+        
+        // Questions sur la retraite (Loi sur la retraite)
+        "Quel est l'âge légal de départ à la retraite au Sénégal ?",
+        "Quels sont les conditions pour bénéficier de la retraite ?",
+        "Comment calculer la pension de retraite ?",
+        "Quels travailleurs peuvent poursuivre leur activité au-delà de l'âge de la retraite ?",
+        "Quelles sont les modalités de versement de la pension de retraite ?",
+        "Comment fonctionne le système de retraite au Sénégal ?",
+        "Quelles sont les cotisations nécessaires pour la retraite ?",
+        "Quels sont les droits des retraités ?",
+        "Comment faire une demande de retraite ?",
+        "Quelles sont les conditions d'ancienneté pour la retraite ?",
+        
+        // Questions sur le droit pénal (Loi 84-20 du 02 février 1984)
+        "Quelles sont les infractions prévues par la loi 84-20 du 02 février 1984 ?",
+        "Quelles sont les peines prévues par la loi 84-20 ?",
+        "Comment s'applique la loi 84-20 du 02 février 1984 ?",
+        "Quelles sont les dispositions de la loi 84-20 concernant les infractions pénales ?",
+        "Quels sont les délits réprimés par la loi 84-20 ?",
+        "Quelles sont les sanctions prévues par la loi 84-20 ?",
+        
+        // Questions sur le droit pénal (Loi 2020-05 du 10 janvier 2020)
+        "Quelles sont les modifications apportées par la loi 2020-05 du 10 janvier 2020 ?",
+        "Comment la loi 2020-05 modifie-t-elle les peines pour violences sexuelles ?",
+        "Quelles sont les nouvelles peines prévues par la loi 2020-05 ?",
+        "Quelles sont les infractions concernées par la loi 2020-05 ?",
+        "Comment s'applique la loi 2020-05 du 10 janvier 2020 ?",
+        "Quelles sont les circonstances aggravantes prévues par la loi 2020-05 ?",
+        "Quels sont les délais de prescription modifiés par la loi 2020-05 ?",
       ];
       // Sélectionner aléatoirement 3 à 7 questions
       const numQuestions = Math.floor(Math.random() * 5) + 3; // Entre 3 et 7
@@ -474,6 +499,7 @@ export default function Home() {
         onNewChat={handleNewChat}
         chatHistory={chatHistory}
         onChatClick={handleChatClick}
+        onCollapseChange={setSidebarCollapsed}
       />
       
       {/* Sidebar droite (sources) */}
@@ -486,20 +512,18 @@ export default function Home() {
       />
 
       {/* Zone principale */}
-      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-96' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-16' : 'lg:mr-0'}`}>
-        {/* Header moderne et élégant */}
+      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen && !sidebarCollapsed ? 'lg:ml-72' : sidebarOpen && sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-[420px]' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-0'}`}>
+        {/* Header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Zone de chat scrollable */}
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+          className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8"
         >
-        <div className={`mx-auto space-y-6 transition-all duration-300 ease-in-out ${
-          sourcesSidebarOpen && sourcesSidebarCollapsed 
-            ? 'max-w-6xl' 
-            : sourcesSidebarOpen && !sourcesSidebarCollapsed 
-            ? 'max-w-3xl' 
+        <div className={`mx-auto space-y-8 transition-all duration-300 ease-in-out ${
+          !sourcesSidebarOpen || sourcesSidebarCollapsed 
+            ? 'max-w-5xl' 
             : 'max-w-3xl'
         }`}>
           {messages.length === 0 ? (
@@ -510,16 +534,16 @@ export default function Home() {
           ) : null}
 
           {messages.map((message, index) => (
-            <div key={index} className="flex w-full animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div key={index} className="flex w-full animate-slide-in" style={{ animationDelay: `${index * 0.05}s` }}>
               {message.role === 'user' ? (
                 // Message utilisateur - aligné à droite
                 <div className={`ml-auto transition-all duration-300 ease-in-out ${
-                  sourcesSidebarOpen && sourcesSidebarCollapsed 
-                    ? 'max-w-[90%] sm:max-w-[85%]' 
-                    : 'max-w-[80%] sm:max-w-[75%]'
+                  !sourcesSidebarOpen || sourcesSidebarCollapsed 
+                    ? 'max-w-[85%] sm:max-w-[75%]' 
+                    : 'max-w-[80%] sm:max-w-[70%]'
                 }`}>
-                  <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-emerald-600 to-teal-600 px-5 py-3.5 text-white shadow-md hover:from-emerald-700 hover:to-teal-700 hover:shadow-lg transition-all duration-200">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                  <div className="bg-gradient-to-br from-[#0891B2] to-[#0E7490] text-white rounded-2xl rounded-br-md px-5 py-4 shadow-md">
+                    <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
                       {message.content}
                     </p>
                   </div>
@@ -527,99 +551,112 @@ export default function Home() {
               ) : (
                 // Message assistant - aligné à gauche
                 <div className={`mr-auto transition-all duration-300 ease-in-out ${
-                  sourcesSidebarOpen && sourcesSidebarCollapsed 
-                    ? 'max-w-[90%] sm:max-w-[85%]' 
-                    : 'max-w-[80%] sm:max-w-[75%]'
+                  !sourcesSidebarOpen || sourcesSidebarCollapsed 
+                    ? 'max-w-[95%] sm:max-w-[90%]' 
+                    : 'max-w-[90%] sm:max-w-[85%]'
                 }`}>
-                  <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
-                    {/* Logo de l'assistant */}
-                    <div className="absolute -left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-white overflow-hidden">
-                      <div className="absolute inset-0 bg-white rounded-full"></div>
-                      <Image
-                        src="/assets/logo.png"
-                        alt="YoonAssist AI"
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 object-contain relative z-10"
-                      />
+                  <div className="flex gap-4">
+                    {/* Avatar */}
+                    <div className="shrink-0">
+                      <div className="h-10 w-10 rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0]">
+                        <Image
+                          src="/assets/logo.png"
+                          alt="YoonAssist AI"
+                          width={40}
+                          height={40}
+                          className="h-10 w-10 object-contain"
+                        />
+                      </div>
                     </div>
-                    <div className="ml-14">
-                      <FormattedResponse content={message.content} />
+                    
+                    {/* Contenu */}
+                    <div className="flex-1 min-w-0">
+                      {/* Nom de l'assistant */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-[#0F2942]">YoonAssist</span>
+                        <span className="text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded-full">AI</span>
+                      </div>
+                      
+                      {/* Message */}
+                      <div className="bg-white rounded-2xl rounded-tl-md px-5 py-4 shadow-sm border border-[#E2E8F0]">
+                        <FormattedResponse content={message.content} />
+                      </div>
+
+                      {/* Bouton pour ouvrir le sidebar des sources */}
+                      {message.sources && message.sources.length > 0 && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => {
+                              const parsedSources = parseSources(message.sources || []);
+                              setCurrentMessageSources(parsedSources);
+                              setSourcesSidebarOpen(true);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#475569] shadow-sm transition-all hover:border-[#0891B2] hover:text-[#0891B2] hover:shadow-md"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span>
+                              {message.sources.length} source{message.sources.length > 1 ? 's' : ''}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Questions suggérées */}
+                      {message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
+                        <SuggestedQuestions
+                          questions={message.suggestedQuestions}
+                          onQuestionClick={handleSuggestionClick}
+                          isLoading={isLoading}
+                        />
+                      )}
                     </div>
                   </div>
-
-                  {/* Bouton pour ouvrir le sidebar des sources */}
-                  {message.sources && message.sources.length > 0 && (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => {
-                          const parsedSources = parseSources(message.sources || []);
-                          setCurrentMessageSources(parsedSources);
-                          setSourcesSidebarOpen(true);
-                        }}
-                        className="group flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-all hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-sm"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span>
-                          {message.sources.length} source{message.sources.length > 1 ? 's' : ''} référencée{message.sources.length > 1 ? 's' : ''}
-                        </span>
-                        <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Questions suggérées */}
-                  {message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
-                    <SuggestedQuestions
-                      questions={message.suggestedQuestions}
-                      onQuestionClick={handleSuggestionClick}
-                      isLoading={isLoading}
-                    />
-                  )}
                 </div>
               )}
             </div>
           ))}
 
-          {/* Indicateur de chargement amélioré avec animation de réflexion */}
+          {/* Indicateur de chargement */}
           {isLoading && (
             <div className="flex w-full animate-slide-in">
               <div className={`mr-auto transition-all duration-300 ease-in-out ${
-                sourcesSidebarOpen && sourcesSidebarCollapsed 
-                  ? 'max-w-[90%] sm:max-w-[85%]' 
-                  : 'max-w-[80%] sm:max-w-[75%]'
+                !sourcesSidebarOpen || sourcesSidebarCollapsed 
+                  ? 'max-w-[95%] sm:max-w-[90%]' 
+                  : 'max-w-[90%] sm:max-w-[85%]'
               }`}>
-                <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-5 shadow-lg border-2 border-emerald-200/60 backdrop-blur-sm">
-                  <div className="flex items-center gap-4">
-                    {/* Logo animé avec effet de pulsation */}
-                    <div className="relative h-12 w-12 shrink-0">
-                      <div className="absolute inset-0 bg-white rounded-full shadow-md"></div>
-                      <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+                <div className="flex gap-4">
+                  {/* Avatar */}
+                  <div className="shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0] animate-pulse">
                       <Image
                         src="/assets/logo.png"
                         alt="YoonAssist AI"
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 object-contain relative z-10 animate-pulse"
-                        style={{ animationDuration: '2s' }}
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 object-contain"
                       />
                     </div>
-                    {/* Spinner avec texte animé */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-emerald-600" style={{ animationDuration: '1s' }} />
-                        <span className="text-sm font-medium text-emerald-900 animate-pulse" style={{ animationDuration: '1.5s' }}>
-                          YoonAssist réfléchit...
-                        </span>
+                  </div>
+                  
+                  {/* Contenu */}
+                  <div className="flex-1">
+                    {/* Nom */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-semibold text-[#0F2942]">YoonAssist</span>
+                      <span className="text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded-full">AI</span>
+                    </div>
+                    
+                    {/* Bulle de chargement */}
+                    <div className="bg-white rounded-2xl rounded-tl-md px-5 py-4 shadow-sm border border-[#E2E8F0]">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-[#0891B2]" />
+                        <span className="text-sm text-[#64748B]">Analyse en cours...</span>
                       </div>
-                      <div className="flex gap-1.5">
-                        <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0s', animationDuration: '1.4s' }}></div>
-                        <div className="h-1.5 w-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s', animationDuration: '1.4s' }}></div>
-                        <div className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s', animationDuration: '1.4s' }}></div>
+                      <div className="flex gap-1.5 mt-3">
+                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                       </div>
-                      <p className="text-xs text-emerald-700/70 mt-2">
-                        Analyse des documents juridiques en cours...
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -627,9 +664,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* Questions suggérées globales - affichées après chaque message ou quand il n'y a pas de questions dans le dernier message */}
+          {/* Questions suggérées globales */}
           {!isLoading && globalSuggestedQuestions.length > 0 && (
-            <div className="mt-4 w-full">
+            <div className="mt-6 w-full">
               <SuggestedQuestions
                 questions={globalSuggestedQuestions}
                 onQuestionClick={handleSuggestionClick}
@@ -644,17 +681,16 @@ export default function Home() {
         </div>
 
         {/* Zone de saisie fixe en bas */}
-        <div className="sticky bottom-0 z-40 w-full border-t border-slate-200/80 bg-white/95 backdrop-blur-sm px-4 py-4 shadow-lg sm:px-6">
+        <div className="sticky bottom-0 z-40 w-full border-t border-[#E2E8F0] glass px-4 py-5 sm:px-6 lg:px-8">
         <form onSubmit={handleSubmit} className={`mx-auto transition-all duration-300 ease-in-out ${
-          sourcesSidebarOpen && sourcesSidebarCollapsed 
-            ? 'max-w-6xl' 
-            : sourcesSidebarOpen && !sourcesSidebarCollapsed 
-            ? 'max-w-3xl' 
+          !sourcesSidebarOpen || sourcesSidebarCollapsed 
+            ? 'max-w-5xl' 
             : 'max-w-3xl'
         }`}>
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
+          <div className="flex items-end gap-4">
+            <div className="flex-1 relative">
               <textarea
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -663,33 +699,36 @@ export default function Home() {
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Posez votre question juridique ici..."
+                placeholder="Posez votre question juridique..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full resize-none rounded-xl border-2 border-slate-200 bg-white px-5 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="input-modern w-full resize-none pr-14 text-[15px] text-[#0F2942] placeholder:text-[#94A3B8]"
                 style={{
-                  minHeight: '48px',
-                  maxHeight: '120px',
+                  minHeight: '56px',
+                  maxHeight: '140px',
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                  target.style.height = `${Math.min(target.scrollHeight, 140)}px`;
                 }}
               />
             </div>
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
+              className="btn-primary flex h-14 w-14 shrink-0 items-center justify-center !rounded-2xl !p-0 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-6 w-6" />
               )}
             </button>
           </div>
+          <p className="text-center text-[11px] text-[#94A3B8] mt-3">
+            YoonAssist peut faire des erreurs. Vérifiez les informations importantes.
+          </p>
         </form>
         </div>
       </div>

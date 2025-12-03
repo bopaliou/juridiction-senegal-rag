@@ -1,6 +1,6 @@
 'use client';
 
-import { X, ExternalLink, FileText, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ExternalLink, FileText, BookOpen, ChevronLeft, ChevronRight, Scale, Gavel } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export interface SourceItem {
@@ -28,50 +28,72 @@ const getDomainIcon = (domain?: string) => {
       return <BookOpen className="h-4 w-4" />;
     case 'travail':
     case 'social':
-      return <FileText className="h-4 w-4" />;
+      return <Scale className="h-4 w-4" />;
+    case 'penal':
+      return <Gavel className="h-4 w-4" />;
     default:
       return <FileText className="h-4 w-4" />;
   }
 };
 
-const getDomainColor = (domain?: string) => {
-  if (!domain) return 'bg-gray-100 text-gray-700 border-gray-200';
+const getDomainStyles = (domain?: string) => {
+  if (!domain) return {
+    badge: 'bg-[#64748B]/10 text-[#64748B] border-[#64748B]/20',
+    icon: 'from-[#64748B] to-[#475569]'
+  };
   
   switch (domain.toLowerCase()) {
     case 'constitution':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return {
+        badge: 'bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20',
+        icon: 'from-[#0891B2] to-[#14B8A6]'
+      };
     case 'travail':
     case 'social':
-      return 'bg-green-100 text-green-700 border-green-200';
+      return {
+        badge: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20',
+        icon: 'from-[#059669] to-[#10B981]'
+      };
     case 'penal':
-      return 'bg-red-100 text-red-700 border-red-200';
+      return {
+        badge: 'bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/20',
+        icon: 'from-[#DC2626] to-[#EF4444]'
+      };
     case 'finance':
-      return 'bg-purple-100 text-purple-700 border-purple-200';
+      return {
+        badge: 'bg-[#D97706]/10 text-[#D97706] border-[#D97706]/20',
+        icon: 'from-[#D97706] to-[#F59E0B]'
+      };
     default:
-      return 'bg-gray-100 text-gray-700 border-gray-200';
+      return {
+        badge: 'bg-[#64748B]/10 text-[#64748B] border-[#64748B]/20',
+        icon: 'from-[#64748B] to-[#475569]'
+      };
   }
 };
 
 export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = false, onCollapseChange }: SourcesSidebarProps) {
   const [visibleSources, setVisibleSources] = useState<SourceItem[]>([]);
-  // État pour réduire/agrandir la sidebar
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Notifier le parent du changement d'état
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCollapsed(false);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (onCollapseChange) {
       onCollapseChange(isCollapsed);
     }
   }, [isCollapsed, onCollapseChange]);
 
-  // Charger les sources progressivement
   useEffect(() => {
     if (!isOpen || sources.length === 0) {
       setVisibleSources([]);
       return;
     }
 
-    // Charger les sources une par une avec un délai pour l'effet de progression
     let currentIndex = 0;
     const interval = setInterval(() => {
       if (currentIndex < sources.length) {
@@ -80,42 +102,41 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
       } else {
         clearInterval(interval);
       }
-    }, 150); // 150ms entre chaque source
+    }, 150);
 
     return () => clearInterval(interval);
   }, [isOpen, sources]);
 
-  // Ne pas rendre null si isOpen est false, mais plutôt masquer visuellement
-  // pour permettre de le réouvrir même quand réduit
-
-  // Gérer le clic en dehors : réduire si ouvert, ne rien faire si déjà réduit (garder visible)
   const handleOverlayClick = () => {
     if (!isCollapsed) {
-      // Si ouvert, réduire (mais garder visible)
       setIsCollapsed(true);
     }
-    // Si déjà réduit, ne rien faire (garder le sidebar visible en mode réduit)
   };
 
   return (
     <>
-      {/* Overlay - seulement visible si le sidebar est complètement ouvert (pas réduit) */}
+      {/* Overlay */}
       {isOpen && !isCollapsed && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 lg:bg-transparent"
+          className="fixed inset-0 z-40 bg-[#0F2942]/20 lg:bg-transparent"
           onClick={handleOverlayClick}
         />
       )}
 
-      {/* Sidebar - toujours visible si isOpen est true, même quand réduit */}
+      {/* Sidebar */}
       <aside
         className={`
-          fixed right-0 top-0 z-50 h-full transform bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-2xl transition-all duration-300 ease-in-out
+          fixed right-0 top-0 z-50 h-full transform shadow-2xl
+          transition-all duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-          ${isCollapsed ? 'w-16' : 'w-full lg:w-96'}
+          ${isCollapsed ? 'w-20' : 'w-full lg:w-[420px]'}
         `}
+        style={{
+          background: isCollapsed 
+            ? 'linear-gradient(180deg, #0891B2 0%, #14B8A6 100%)' 
+            : 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 50%, #F0FDFA 100%)'
+        }}
         onClick={(e) => {
-          // Si réduit et qu'on clique sur le sidebar, le réagrandir
           if (isCollapsed) {
             e.stopPropagation();
             setIsCollapsed(false);
@@ -124,155 +145,189 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className={`flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 transition-all duration-300 ${
-            isCollapsed ? 'px-2 py-4 flex-col gap-3' : 'px-6 py-4'
+          <div className={`border-b transition-all duration-300 ${
+            isCollapsed 
+              ? 'border-white/20 px-3 py-4' 
+              : 'border-[#E2E8F0] px-6 py-5'
           }`}>
-            {!isCollapsed && (
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Sources</h2>
-                  <p className="text-xs text-gray-500">
-                    {sources.length} source{sources.length > 1 ? 's' : ''} référencée{sources.length > 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-            )}
-            {isCollapsed && (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-md">
-                  <FileText className="h-5 w-5" />
-                </div>
-                {sources.length > 0 && (
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold">
-                    {sources.length}
-                  </div>
-                )}
-              </div>
-            )}
-            <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col w-full' : ''}`}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsCollapsed(!isCollapsed);
-                }}
-                className={`rounded-lg p-2 transition-colors ${
-                  isCollapsed 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 w-full' 
-                    : 'text-gray-400 hover:bg-white hover:text-gray-600'
-                }`}
-                title={isCollapsed ? "Agrandir" : "Réduire"}
-              >
-                {isCollapsed ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-              </button>
+            <div className={`flex items-center ${isCollapsed ? 'flex-col gap-3' : 'justify-between'}`}>
               {!isCollapsed && (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0891B2] to-[#14B8A6] text-white shadow-lg">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-[#0F2942]">Sources</h2>
+                    <p className="text-sm text-[#64748B]">
+                      {sources.length} référence{sources.length > 1 ? 's' : ''} juridique{sources.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {isCollapsed && (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-white shadow-lg backdrop-blur-sm">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  {sources.length > 0 && (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#0891B2] text-sm font-bold shadow-md">
+                      {sources.length}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col w-full mt-2' : ''}`}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onClose();
+                    setIsCollapsed(!isCollapsed);
                   }}
-                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+                  className={`rounded-xl p-2.5 transition-all ${
+                    isCollapsed 
+                      ? 'bg-white/20 text-white hover:bg-white/30 w-full backdrop-blur-sm' 
+                      : 'text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#0891B2]'
+                  }`}
+                  title={isCollapsed ? "Agrandir" : "Réduire"}
                 >
-                  <X className="h-5 w-5" />
+                  {isCollapsed ? <ChevronLeft className="h-5 w-5 mx-auto" /> : <ChevronRight className="h-5 w-5" />}
                 </button>
-              )}
+                {!isCollapsed && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                    }}
+                    className="rounded-xl p-2.5 text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#DC2626] transition-all"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Sources List */}
           {!isCollapsed && (
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-white/50">
+            <div className="flex-1 overflow-y-auto px-5 py-5">
               {isLoading && visibleSources.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent"></div>
-                    <p className="text-sm text-gray-500">Chargement des sources...</p>
+                <div className="flex items-center justify-center py-16">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                      <div className="h-12 w-12 rounded-full border-4 border-[#E2E8F0]"></div>
+                      <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-4 border-[#0891B2] border-t-transparent"></div>
+                    </div>
+                    <p className="text-sm text-[#64748B] font-medium">Recherche des sources...</p>
                   </div>
                 </div>
               ) : visibleSources.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileText className="h-12 w-12 text-gray-300" />
-                  <p className="mt-4 text-sm text-gray-500">Aucune source disponible</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 rounded-2xl bg-[#F1F5F9] p-5">
+                    <FileText className="h-10 w-10 text-[#CBD5E1]" />
+                  </div>
+                  <p className="text-base font-medium text-[#475569]">Aucune source disponible</p>
+                  <p className="text-sm text-[#94A3B8] mt-1">Les références apparaîtront ici</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {visibleSources.map((source, index) => {
-                  if (!source) return null;
-                  
-                  // Créer une clé unique en combinant plusieurs propriétés
-                  const uniqueKey = source.id 
-                    ? `${source.id}-${index}` 
-                    : `source-${index}-${source.title?.substring(0, 10) || 'unknown'}-${source.url?.substring(0, 10) || 'no-url'}`;
-                  
-                  return (
-                  <div
-                    key={uniqueKey}
-                    className="group animate-fade-in rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    {/* Header avec titre et badge */}
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-2">
-                          {getDomainIcon(source?.domain)}
-                          <h3 className="font-semibold text-gray-900 line-clamp-2">
-                            {source?.title || 'Source'}
-                          </h3>
+                    if (!source) return null;
+                    
+                    const uniqueKey = source.id 
+                      ? `${source.id}-${index}` 
+                      : `source-${index}-${source.title?.substring(0, 10) || 'unknown'}`;
+                    
+                    const styles = getDomainStyles(source?.domain);
+                    
+                    return (
+                      <div
+                        key={uniqueKey}
+                        className="group animate-slide-in-right rounded-2xl border-2 border-[#E2E8F0] bg-white p-5 shadow-sm transition-all duration-300 hover:border-[#0891B2]/30 hover:shadow-lg hover:-translate-y-1"
+                        style={{ animationDelay: `${index * 80}ms` }}
+                      >
+                        {/* Header */}
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="mb-3 flex items-center gap-3">
+                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${styles.icon} text-white shadow-md`}>
+                                {getDomainIcon(source?.domain)}
+                              </div>
+                              <h3 className="font-bold text-[#0F2942] line-clamp-2 text-base">
+                                {source?.title || 'Source'}
+                              </h3>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-2">
+                              {source?.domain && (
+                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles.badge}`}>
+                                  {source.domain}
+                                </span>
+                              )}
+                              {source?.page && (
+                                <span className="inline-flex items-center rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-medium text-[#64748B]">
+                                  Page {source.page}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {source?.url && (
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#94A3B8] transition-all hover:bg-[#0891B2]/10 hover:text-[#0891B2] hover:scale-110"
+                              title="Ouvrir dans un nouvel onglet"
+                            >
+                              <ExternalLink className="h-5 w-5" />
+                            </a>
+                          )}
                         </div>
-                        {source?.domain && (
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getDomainColor(source.domain)}`}
-                          >
-                            {source.domain}
-                          </span>
-                        )}
-                        {source?.page && (
-                          <span className="ml-2 text-xs text-gray-500">
-                            Page {source.page}
-                          </span>
-                        )}
+
+                        {/* Contenu */}
+                        <div className="max-h-48 overflow-y-auto rounded-xl bg-[#F8FAFC] p-4">
+                          <p className="text-sm leading-relaxed text-[#475569] whitespace-pre-wrap">
+                            {source?.content || 'Aucun contenu disponible'}
+                          </p>
+                        </div>
                       </div>
-                      {source?.url && (
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600"
-                          title="Ouvrir dans un nouvel onglet"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
+                    );
+                  })}
 
-                    {/* Contenu */}
-                    <div className="max-h-64 overflow-y-auto">
-                      <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
-                        {source?.content || 'Aucun contenu disponible'}
-                      </p>
+                  {/* Indicateur de chargement progressif */}
+                  {isLoading && visibleSources.length < sources.length && (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="flex items-center gap-3 text-sm text-[#64748B]">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#0891B2] border-t-transparent"></div>
+                        <span className="font-medium">Chargement...</span>
+                      </div>
                     </div>
-                  </div>
-                  );
-                })}
-
-                {/* Indicateur de chargement progressif */}
-                {isLoading && visibleSources.length < sources.length && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></div>
-                      <span>Chargement des sources...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Footer hint en mode collapsed */}
+          {isCollapsed && sources.length > 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center py-4 gap-2">
+              {sources.slice(0, 3).map((_, index) => (
+                <div 
+                  key={index}
+                  className="h-2 w-8 rounded-full bg-white/30"
+                  style={{ opacity: 1 - index * 0.3 }}
+                />
+              ))}
+              {sources.length > 3 && (
+                <span className="text-[10px] text-white/70 font-medium mt-1">
+                  +{sources.length - 3}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </aside>
     </>
   );
 }
-

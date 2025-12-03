@@ -8,122 +8,146 @@ interface FormattedResponseProps {
 
 export default function FormattedResponse({ content }: FormattedResponseProps) {
   const formattedContent = useMemo(() => {
-    let formatted = content;
+    // Échapper les caractères HTML dangereux d'abord
+    let formatted = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
     // Traiter le markdown : convertir **texte** en <strong>
     formatted = formatted.replace(
       /\*\*(.+?)\*\*/g,
-      '<strong class="font-semibold text-slate-900">$1</strong>'
+      '<strong>$1</strong>'
     );
 
     // Traiter le markdown : convertir *texte* en <em> (italique)
     formatted = formatted.replace(
-      /\*(.+?)\*/g,
-      '<em class="italic text-slate-800">$1</em>'
+      /(?<!\*)\*([^*]+)\*(?!\*)/g,
+      '<em>$1</em>'
     );
 
-    // Détecter et formater les articles de loi (L.2, L.69, Article 25, etc.)
+    // Détecter les références légales entre crochets [Article X, Code Y]
     formatted = formatted.replace(
-      /\b(Article\s+)?(L\.\d+|L\.\s*\d+|[A-Z]\.\d+)\b/gi,
-      '<span class="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded inline-block">$&</span>'
+      /\[([^\]]+)\]/g,
+      '<span class="ref-legal">📄 $1</span>'
     );
 
-    // Détecter et formater les dates (2025, 2026, etc.)
+    // Formater les listes à puces
+    // Séparer les éléments condensés sur une même ligne
     formatted = formatted.replace(
-      /\b(19|20)\d{2}\b/g,
-      '<span class="font-semibold text-purple-700">$&</span>'
-    );
-
-    // Détecter et formater les nombres importants (60 ans, 65 ans, montants, etc.)
-    formatted = formatted.replace(
-      /\b(\d+)\s*(ans?|mois|jours?|heures?|francs?|FCFA|euros?|%)\b/gi,
-      '<span class="font-semibold text-emerald-700">$&</span>'
-    );
-
-    // Formater les listes à puces (commençant par - ou •)
-    // D'abord, séparer les éléments de liste qui sont sur la même ligne
-    formatted = formatted.replace(
-      /([\-\•]\s+[^\-\•\n]+?)(?=\s+[\-\•]\s)/g,
-      (match) => {
-        return match.trim() + '\n';
-      }
+      /([-•]\s+[^-•\n]+?)(?=\s+[-•]\s)/g,
+      '$1\n'
     );
     
-    // Ensuite, formater chaque élément de liste sur sa propre ligne
+    // Formater chaque élément de liste à puces
     formatted = formatted.replace(
-      /^[\-\•]\s+((?:[^\n]|\n(?![\-\•]\s))+)$/gm,
-      (match, content) => {
-        // Nettoyer le contenu (enlever les retours à la ligne multiples)
-        const cleanContent = content.trim().replace(/\n+/g, ' ');
-        return `<div class="ml-6 mb-3 flex items-start gap-3"><span class="text-emerald-600 mt-1.5 shrink-0 font-bold text-lg">•</span><span class="flex-1 text-slate-700 leading-relaxed text-[15px]">${cleanContent}</span></div>`;
-      }
+      /^[-•]\s+(.+)$/gm,
+      '<li class="list-bullet">$1</li>'
     );
 
     // Formater les listes numérotées
-    // Étape 1: Séparer les éléments de liste qui sont condensés sur la même ligne
-    // Exemple: "1. Premier point 2. Deuxième point" -> "1. Premier point\n2. Deuxième point"
+    // Séparer les éléments condensés
     formatted = formatted.replace(
       /(\d+\.\s+[^\n]+?)(?=\s+\d+\.\s)/g,
-      (match) => {
-        return match.trim() + '\n';
-      }
+      '$1\n'
     );
     
-    // Étape 2: Formater chaque élément de liste sur sa propre ligne avec un meilleur espacement
+    // Formater chaque élément de liste numérotée
     formatted = formatted.replace(
-      /^(\d+)\.\s+(.+?)(?=\n\d+\.\s|\n\n|$)/gm,
-      (match, num, content) => {
-        // Nettoyer le contenu : enlever les retours à la ligne multiples et les espaces superflus
-        const cleanContent = content.trim().replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ');
-        return `<div class="ml-6 mb-3 flex items-start gap-3"><span class="font-semibold text-emerald-600 shrink-0 min-w-[32px] text-base">${num}.</span><span class="flex-1 text-slate-700 leading-relaxed text-[15px]">${cleanContent}</span></div>`;
-      }
+      /^(\d+)\.\s+(.+)$/gm,
+      '<li class="list-number"><span class="num">$1.</span> $2</li>'
     );
 
-    // Mettre en gras les mots-clés importants
-    const importantKeywords = [
-      'doit',
-      'obligation',
-      'droit',
-      'interdit',
-      'autorisé',
-      'requis',
-      'nécessaire',
-      'important',
-      'selon',
-      'conformément',
-    ];
-    importantKeywords.forEach((keyword) => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-      formatted = formatted.replace(
-        regex,
-        '<strong class="font-semibold text-slate-900">$&</strong>'
-      );
-    });
+    // Grouper les li consécutifs dans des ul
+    formatted = formatted.replace(
+      /(<li class="list-(?:bullet|number)">.+?<\/li>\n?)+/g,
+      '<ul class="response-list">$&</ul>'
+    );
 
-    // Diviser en paragraphes et formater
+    // Convertir les sauts de ligne en paragraphes
     const paragraphs = formatted.split(/\n\n+/);
-    return paragraphs
-      .map((para) => {
-        const trimmed = para.trim();
+    formatted = paragraphs
+      .map(p => {
+        const trimmed = p.trim();
         if (!trimmed) return '';
-        
-        // Si c'est déjà une div (liste), retourner tel quel
-        if (trimmed.startsWith('<div')) {
+        if (trimmed.startsWith('<ul') || trimmed.startsWith('<li')) {
           return trimmed;
         }
-        
-        // Sinon, créer un paragraphe avec meilleur espacement
-        return `<p class="mb-4 leading-relaxed text-slate-700 text-[15px]">${trimmed}</p>`;
+        // Convertir les sauts de ligne simples en <br>
+        const withBreaks = trimmed.replace(/\n/g, '<br>');
+        return `<p>${withBreaks}</p>`;
       })
+      .filter(p => p)
       .join('');
 
+    return formatted;
   }, [content]);
 
   return (
-    <div 
-      className="text-sm"
-      dangerouslySetInnerHTML={{ __html: formattedContent }}
-    />
+    <div className="formatted-response">
+      <style jsx>{`
+        .formatted-response {
+          font-size: 15px;
+          line-height: 1.7;
+          color: #374151;
+        }
+        .formatted-response p {
+          margin-bottom: 0.75rem;
+        }
+        .formatted-response p:last-child {
+          margin-bottom: 0;
+        }
+        .formatted-response strong {
+          font-weight: 600;
+          color: #1e293b;
+        }
+        .formatted-response em {
+          font-style: italic;
+        }
+        .formatted-response :global(.ref-legal) {
+          display: inline-block;
+          font-size: 12px;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 2px 8px;
+          border-radius: 4px;
+          margin-top: 8px;
+        }
+        .formatted-response :global(.response-list) {
+          list-style: none;
+          padding-left: 0;
+          margin: 0.75rem 0;
+        }
+        .formatted-response :global(.list-bullet) {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 8px;
+          padding-left: 4px;
+        }
+        .formatted-response :global(.list-bullet)::before {
+          content: "•";
+          color: #0891b2;
+          font-weight: bold;
+          font-size: 18px;
+          line-height: 1.4;
+          flex-shrink: 0;
+        }
+        .formatted-response :global(.list-number) {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 8px;
+          padding-left: 4px;
+        }
+        .formatted-response :global(.list-number) :global(.num) {
+          color: #0891b2;
+          font-weight: 600;
+          flex-shrink: 0;
+          min-width: 24px;
+        }
+      `}</style>
+      <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+    </div>
   );
 }
-

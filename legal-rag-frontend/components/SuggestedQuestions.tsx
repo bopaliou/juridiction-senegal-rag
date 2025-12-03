@@ -34,7 +34,7 @@ export default function SuggestedQuestions({
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 300; // Pixels à scroller
+      const scrollAmount = 320;
       const newScrollLeft =
         direction === 'left'
           ? scrollContainerRef.current.scrollLeft - scrollAmount
@@ -50,22 +50,22 @@ export default function SuggestedQuestions({
   if (!questions || questions.length === 0) return null;
 
   return (
-    <div className="relative mt-5">
+    <div className="relative mt-6">
       {/* Bouton de défilement gauche */}
       {canScrollLeft && (
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-2 shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl"
+          className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-[#F8FAFC] hover:shadow-xl hover:scale-110 border border-[#E2E8F0]"
           aria-label="Défiler vers la gauche"
         >
-          <ChevronLeft className="h-5 w-5 text-slate-600" />
+          <ChevronLeft className="h-5 w-5 text-[#0891B2]" />
         </button>
       )}
 
       {/* Container avec défilement horizontal */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto px-10 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 overflow-x-auto px-12 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         onScroll={() => {
           if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
@@ -79,12 +79,14 @@ export default function SuggestedQuestions({
             key={index}
             onClick={() => onQuestionClick(question)}
             disabled={isLoading}
-            className="group relative flex shrink-0 items-center gap-2.5 overflow-hidden rounded-full border border-slate-200 bg-gradient-to-r from-white to-slate-50 px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:border-emerald-400 hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 hover:shadow-md hover:shadow-emerald-100 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+            className="group relative flex shrink-0 items-center gap-3 overflow-hidden rounded-2xl border-2 border-[#E2E8F0] bg-white px-5 py-3 text-sm font-medium text-[#475569] shadow-sm transition-all duration-300 hover:border-[#0891B2]/40 hover:bg-gradient-to-r hover:from-[#0891B2]/5 hover:to-[#14B8A6]/5 hover:text-[#0891B2] hover:shadow-md hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {/* Effet de brillance au hover */}
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             
-            <Sparkles className="relative z-10 h-3.5 w-3.5 shrink-0 text-slate-500 transition-colors duration-200 group-hover:text-emerald-600" />
+            <div className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] transition-all duration-300 group-hover:bg-[#0891B2]/10">
+              <Sparkles className="h-4 w-4 text-[#94A3B8] transition-colors duration-300 group-hover:text-[#0891B2]" />
+            </div>
             <span className="relative z-10 whitespace-nowrap">{question}</span>
           </button>
         ))}
@@ -94,10 +96,10 @@ export default function SuggestedQuestions({
       {canScrollRight && (
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-2 shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl"
+          className="absolute right-0 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-[#F8FAFC] hover:shadow-xl hover:scale-110 border border-[#E2E8F0]"
           aria-label="Défiler vers la droite"
         >
-          <ChevronRight className="h-5 w-5 text-slate-600" />
+          <ChevronRight className="h-5 w-5 text-[#0891B2]" />
         </button>
       )}
     </div>

@@ -1,0 +1,27 @@
+[Unit]
+Description=YoonAssist AI Frontend (Next.js)
+After=network.target yoonassist-backend.service
+
+[Service]
+Type=simple
+User=yoonassist
+Group=yoonassist
+WorkingDirectory=/opt/yoonassist/legal-rag-frontend
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+
+# Limites de ressources
+MemoryMax=300M
+CPUQuota=50%
+
+# Logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=yoonassist-frontend
+
+[Install]
+WantedBy=multi-user.target
+

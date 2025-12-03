@@ -1,31 +1,81 @@
 @import "tailwindcss";
 
+/* ==========================================
+   YOONASSIST AI - DESIGN SYSTEM
+   Basé sur la charte graphique du logo
+   ========================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Couleurs principales de la marque */
+  --brand-navy: #0F2942;
+  --brand-navy-light: #1E3A5F;
+  --brand-cyan: #0891B2;
+  --brand-cyan-light: #22D3EE;
+  --brand-teal: #14B8A6;
+  --brand-teal-light: #2DD4BF;
+  
+  /* Couleurs du Sénégal */
+  --senegal-green: #059669;
+  --senegal-green-light: #10B981;
+  --senegal-yellow: #D97706;
+  --senegal-yellow-light: #F59E0B;
+  --senegal-red: #DC2626;
+  --senegal-red-light: #EF4444;
+  
+  /* Couleurs neutres */
+  --neutral-50: #F8FAFC;
+  --neutral-100: #F1F5F9;
+  --neutral-200: #E2E8F0;
+  --neutral-300: #CBD5E1;
+  --neutral-400: #94A3B8;
+  --neutral-500: #64748B;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1E293B;
+  --neutral-900: #0F172A;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--brand-cyan) 0%, var(--brand-teal) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--senegal-green) 0%, var(--brand-teal) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+  --gradient-subtle: linear-gradient(135deg, #F0FDFA 0%, #ECFEFF 50%, #F0F9FF 100%);
+  
+  /* Ombres */
+  --shadow-sm: 0 1px 2px 0 rgb(15 41 66 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 41 66 / 0.1), 0 2px 4px -2px rgb(15 41 66 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(15 41 66 / 0.1), 0 4px 6px -4px rgb(15 41 66 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(15 41 66 / 0.1), 0 8px 10px -6px rgb(15 41 66 / 0.1);
+  --shadow-glow: 0 0 20px rgb(8 145 178 / 0.3);
+  --shadow-glow-strong: 0 0 40px rgb(8 145 178 / 0.4);
+  
+  /* Backgrounds */
+  --background: #FFFFFF;
+  --foreground: var(--brand-navy);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ==========================================
+   BASE STYLES
+   ========================================== */
 body {
-  background: var(--background);
+  background: var(--gradient-subtle);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Animation fade-in pour les sources */
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+
+/* Fade In */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -38,15 +88,15 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
+  animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   opacity: 0;
 }
 
-/* Animation slide-in pour les messages */
+/* Slide In */
 @keyframes slide-in {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -55,70 +105,161 @@ body {
 }
 
 .animate-slide-in {
-  animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Animation de réflexion pour le spinner */
-@keyframes thinking-pulse {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-}
-
-@keyframes thinking-glow {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
-  }
-}
-
-/* Animation fluide pour les transitions */
-@keyframes smooth-fade {
+/* Slide In Right */
+@keyframes slide-in-right {
   from {
     opacity: 0;
+    transform: translateX(20px);
   }
   to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Float Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse Glow */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgb(8 145 178 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgb(8 145 178 / 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Shimmer Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Thinking Animation */
+@keyframes thinking {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
     opacity: 1;
   }
 }
 
-.animate-smooth-fade {
-  animation: smooth-fade 0.3s ease-in-out;
+.animate-thinking {
+  animation: thinking 1.5s ease-in-out infinite;
 }
 
-/* Animation de typing pour les messages */
-@keyframes typing {
+/* Bounce Dots */
+@keyframes bounce-dot {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-1 {
+  animation: bounce-dot 1.4s ease-in-out infinite;
+}
+
+.animate-bounce-2 {
+  animation: bounce-dot 1.4s ease-in-out 0.2s infinite;
+}
+
+.animate-bounce-3 {
+  animation: bounce-dot 1.4s ease-in-out 0.4s infinite;
+}
+
+/* Scale In */
+@keyframes scale-in {
   from {
-    width: 0;
+    opacity: 0;
+    transform: scale(0.9);
   }
   to {
-    width: 100%;
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-/* Transitions fluides pour tous les éléments interactifs */
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Rotate */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ==========================================
+   TRANSITIONS
+   ========================================== */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+  transition-duration: 200ms;
 }
 
-/* Smooth scrolling */
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -126,32 +267,199 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: var(--brand-cyan);
+  border-radius: 100px;
+  opacity: 0.5;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--brand-teal);
 }
 
-/* Forcer un fond blanc pour les logos avec transparence */
-.logo-no-transparency {
-  background-color: #ffffff !important;
-  background: #ffffff !important;
+/* ==========================================
+   CUSTOM COMPONENTS
+   ========================================== */
+
+/* Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.logo-no-transparency::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-color: #ffffff;
-  z-index: 0;
-  border-radius: inherit;
+.glass-dark {
+  background: rgba(15, 41, 66, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.logo-no-transparency img {
-  position: relative;
-  z-index: 1;
-  background-color: #ffffff !important;
-  background: #ffffff !important;
+/* Gradient Text */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-navy {
+  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow Effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgb(8 145 178 / 0.4);
+}
+
+.glow-teal {
+  box-shadow: 0 0 20px rgb(20 184 166 / 0.4);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgb(5 150 105 / 0.4);
+}
+
+/* Logo Container */
+.logo-container {
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.logo-container img {
+  background: #FFFFFF;
+}
+
+/* Card Styles */
+.card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  border-color: var(--brand-cyan);
+  box-shadow: var(--shadow-lg), 0 0 0 3px rgb(8 145 178 / 0.1);
+  transform: translateY(-2px);
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 12px 24px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Input Styles */
+.input-modern {
+  background: var(--neutral-50);
+  border: 2px solid var(--neutral-200);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: var(--brand-cyan);
+  box-shadow: 0 0 0 4px rgb(8 145 178 / 0.1);
+  background: white;
+}
+
+/* Message Bubbles - Classes utilitaires */
+.message-bubble {
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+/* Badge Styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-cyan {
+  background: rgb(8 145 178 / 0.1);
+  color: var(--brand-cyan);
+  border: 1px solid rgb(8 145 178 / 0.2);
+}
+
+.badge-green {
+  background: rgb(5 150 105 / 0.1);
+  color: var(--senegal-green);
+  border: 1px solid rgb(5 150 105 / 0.2);
+}
+
+.badge-navy {
+  background: rgb(15 41 66 / 0.1);
+  color: var(--brand-navy);
+  border: 1px solid rgb(15 41 66 / 0.2);
+}
+
+/* Sidebar Styles */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background: rgb(8 145 178 / 0.1);
+}
+
+.sidebar-item.active {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+/* ==========================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================== */
+@media (max-width: 640px) {
+  .card {
+    border-radius: 12px;
+  }
+  
+  .btn-primary {
+    padding: 10px 20px;
+    border-radius: 10px;
+  }
+}
+
+/* ==========================================
+   DARK MODE (optional)
+   ========================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--neutral-900);
+    --foreground: var(--neutral-100);
+  }
 }
