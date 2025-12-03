@@ -519,9 +519,9 @@ export default function Home() {
         {/* Zone de chat scrollable */}
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8"
+          className="flex-1 overflow-y-auto px-2 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8 lg:py-8"
         >
-        <div className={`mx-auto space-y-8 transition-all duration-300 ease-in-out ${
+        <div className={`mx-auto space-y-4 sm:space-y-6 md:space-y-8 transition-all duration-300 ease-in-out ${
           !sourcesSidebarOpen || sourcesSidebarCollapsed 
             ? 'max-w-5xl' 
             : 'max-w-3xl'
@@ -539,11 +539,11 @@ export default function Home() {
                 // Message utilisateur - aligné à droite
                 <div className={`ml-auto transition-all duration-300 ease-in-out ${
                   !sourcesSidebarOpen || sourcesSidebarCollapsed 
-                    ? 'max-w-[85%] sm:max-w-[75%]' 
-                    : 'max-w-[80%] sm:max-w-[70%]'
+                    ? 'max-w-[92%] sm:max-w-[85%] md:max-w-[75%]' 
+                    : 'max-w-[88%] sm:max-w-[80%] md:max-w-[70%]'
                 }`}>
-                  <div className="bg-gradient-to-br from-[#0891B2] to-[#0E7490] text-white rounded-2xl rounded-br-md px-5 py-4 shadow-md">
-                    <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+                  <div className="bg-gradient-to-br from-[#0891B2] to-[#0E7490] text-white rounded-xl sm:rounded-2xl rounded-br-sm sm:rounded-br-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-md">
+                    <p className="whitespace-pre-wrap text-[13px] sm:text-[14px] md:text-[15px] leading-relaxed">
                       {message.content}
                     </p>
                   </div>
@@ -552,19 +552,19 @@ export default function Home() {
                 // Message assistant - aligné à gauche
                 <div className={`mr-auto transition-all duration-300 ease-in-out ${
                   !sourcesSidebarOpen || sourcesSidebarCollapsed 
-                    ? 'max-w-[95%] sm:max-w-[90%]' 
-                    : 'max-w-[90%] sm:max-w-[85%]'
+                    ? 'max-w-[98%] sm:max-w-[95%] md:max-w-[90%]' 
+                    : 'max-w-[95%] sm:max-w-[90%] md:max-w-[85%]'
                 }`}>
-                  <div className="flex gap-4">
-                    {/* Avatar */}
+                  <div className="flex gap-2 sm:gap-3 md:gap-4">
+                    {/* Avatar - plus petit sur mobile */}
                     <div className="shrink-0">
-                      <div className="h-10 w-10 rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0]">
+                      <div className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-lg sm:rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0]">
                         <Image
                           src="/assets/logo.png"
                           alt="YoonAssist AI"
                           width={40}
                           height={40}
-                          className="h-10 w-10 object-contain"
+                          className="h-full w-full object-contain"
                         />
                       </div>
                     </div>
@@ -572,28 +572,28 @@ export default function Home() {
                     {/* Contenu */}
                     <div className="flex-1 min-w-0">
                       {/* Nom de l'assistant */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-semibold text-[#0F2942]">YoonAssist</span>
-                        <span className="text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded-full">AI</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                        <span className="text-xs sm:text-sm font-semibold text-[#0F2942]">YoonAssist</span>
+                        <span className="text-[8px] sm:text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-1.5 sm:px-2 py-0.5 rounded-full">AI</span>
                       </div>
                       
                       {/* Message */}
-                      <div className="bg-white rounded-2xl rounded-tl-md px-5 py-4 shadow-sm border border-[#E2E8F0]">
+                      <div className="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm sm:rounded-tl-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm border border-[#E2E8F0]">
                         <FormattedResponse content={message.content} />
                       </div>
 
                       {/* Bouton pour ouvrir le sidebar des sources */}
                       {message.sources && message.sources.length > 0 && (
-                        <div className="mt-3">
+                        <div className="mt-2 sm:mt-3">
                           <button
                             onClick={() => {
                               const parsedSources = parseSources(message.sources || []);
                               setCurrentMessageSources(parsedSources);
                               setSourcesSidebarOpen(true);
                             }}
-                            className="inline-flex items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#475569] shadow-sm transition-all hover:border-[#0891B2] hover:text-[#0891B2] hover:shadow-md"
+                            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg border border-[#E2E8F0] bg-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[#475569] shadow-sm transition-all hover:border-[#0891B2] hover:text-[#0891B2] hover:shadow-md"
                           >
-                            <FileText className="h-4 w-4" />
+                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             <span>
                               {message.sources.length} source{message.sources.length > 1 ? 's' : ''}
                             </span>
@@ -621,19 +621,19 @@ export default function Home() {
             <div className="flex w-full animate-slide-in">
               <div className={`mr-auto transition-all duration-300 ease-in-out ${
                 !sourcesSidebarOpen || sourcesSidebarCollapsed 
-                  ? 'max-w-[95%] sm:max-w-[90%]' 
-                  : 'max-w-[90%] sm:max-w-[85%]'
+                  ? 'max-w-[98%] sm:max-w-[95%] md:max-w-[90%]' 
+                  : 'max-w-[95%] sm:max-w-[90%] md:max-w-[85%]'
               }`}>
-                <div className="flex gap-4">
+                <div className="flex gap-2 sm:gap-3 md:gap-4">
                   {/* Avatar */}
                   <div className="shrink-0">
-                    <div className="h-10 w-10 rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0] animate-pulse">
+                    <div className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-lg sm:rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0] animate-pulse">
                       <Image
                         src="/assets/logo.png"
                         alt="YoonAssist AI"
                         width={40}
                         height={40}
-                        className="h-10 w-10 object-contain"
+                        className="h-full w-full object-contain"
                       />
                     </div>
                   </div>
@@ -641,21 +641,21 @@ export default function Home() {
                   {/* Contenu */}
                   <div className="flex-1">
                     {/* Nom */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-[#0F2942]">YoonAssist</span>
-                      <span className="text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded-full">AI</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                      <span className="text-xs sm:text-sm font-semibold text-[#0F2942]">YoonAssist</span>
+                      <span className="text-[8px] sm:text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-1.5 sm:px-2 py-0.5 rounded-full">AI</span>
                     </div>
                     
                     {/* Bulle de chargement */}
-                    <div className="bg-white rounded-2xl rounded-tl-md px-5 py-4 shadow-sm border border-[#E2E8F0]">
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-[#0891B2]" />
-                        <span className="text-sm text-[#64748B]">Analyse en cours...</span>
+                    <div className="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm sm:rounded-tl-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm border border-[#E2E8F0]">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-[#0891B2]" />
+                        <span className="text-xs sm:text-sm text-[#64748B]">Analyse en cours...</span>
                       </div>
-                      <div className="flex gap-1.5 mt-3">
-                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                        <span className="h-2 w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      <div className="flex gap-1 sm:gap-1.5 mt-2 sm:mt-3">
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#0891B2] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                       </div>
                     </div>
                   </div>
@@ -681,13 +681,13 @@ export default function Home() {
         </div>
 
         {/* Zone de saisie fixe en bas */}
-        <div className="sticky bottom-0 z-40 w-full border-t border-[#E2E8F0] glass px-4 py-5 sm:px-6 lg:px-8">
+        <div className="sticky bottom-0 z-40 w-full border-t border-[#E2E8F0] glass px-2 py-3 sm:px-4 sm:py-4 md:px-6 lg:px-8 lg:py-5">
         <form onSubmit={handleSubmit} className={`mx-auto transition-all duration-300 ease-in-out ${
           !sourcesSidebarOpen || sourcesSidebarCollapsed 
             ? 'max-w-5xl' 
             : 'max-w-3xl'
         }`}>
-          <div className="flex items-end gap-4">
+          <div className="flex items-end gap-2 sm:gap-3 md:gap-4">
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
@@ -699,34 +699,34 @@ export default function Home() {
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Posez votre question juridique..."
+                placeholder="Posez votre question..."
                 disabled={isLoading}
                 rows={1}
-                className="input-modern w-full resize-none pr-14 text-[15px] text-[#0F2942] placeholder:text-[#94A3B8]"
+                className="input-modern w-full resize-none text-[13px] sm:text-[14px] md:text-[15px] text-[#0F2942] placeholder:text-[#94A3B8] px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-3.5"
                 style={{
-                  minHeight: '56px',
-                  maxHeight: '140px',
+                  minHeight: '44px',
+                  maxHeight: '120px',
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 140)}px`;
+                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
                 }}
               />
             </div>
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="btn-primary flex h-14 w-14 shrink-0 items-center justify-center !rounded-2xl !p-0 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-primary flex h-11 w-11 sm:h-12 sm:w-12 md:h-14 md:w-14 shrink-0 items-center justify-center !rounded-xl sm:!rounded-2xl !p-0 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
               ) : (
-                <Send className="h-6 w-6" />
+                <Send className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </button>
           </div>
-          <p className="text-center text-[11px] text-[#94A3B8] mt-3">
+          <p className="hidden sm:block text-center text-[10px] sm:text-[11px] text-[#94A3B8] mt-2 sm:mt-3">
             YoonAssist peut faire des erreurs. Vérifiez les informations importantes.
           </p>
         </form>
