@@ -513,6 +513,17 @@ export default function Home() {
         isLoading={isLoading}
         onCollapseChange={setSourcesSidebarCollapsed}
       />
+      
+      {/* Bouton flottant pour ouvrir les sources sur mobile */}
+      {currentMessageSources.length > 0 && !sourcesSidebarOpen && (
+        <button
+          onClick={() => setSourcesSidebarOpen(true)}
+          className="fixed bottom-24 right-4 z-30 flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-3 text-white shadow-lg transition-all hover:shadow-xl hover:scale-105 active:scale-95 lg:hidden"
+        >
+          <FileText className="h-5 w-5" />
+          <span className="text-sm font-semibold">{currentMessageSources.length} source{currentMessageSources.length > 1 ? 's' : ''}</span>
+        </button>
+      )}
 
       {/* Zone principale */}
       <div className={`flex flex-1 flex-col transition-all duration-300 overflow-x-hidden ${sidebarOpen && !sidebarCollapsed ? 'lg:ml-72' : sidebarOpen && sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-[420px]' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-0'}`}>
