@@ -369,10 +369,13 @@ export default function Home() {
         return updated;
       });
       
-      // Ouvrir le sidebar des sources si des sources sont disponibles
+      // Stocker les sources et ouvrir le sidebar uniquement sur desktop (lg: 1024px+)
       if (parsedSources.length > 0) {
         setCurrentMessageSources(parsedSources);
-        setSourcesSidebarOpen(true);
+        // N'ouvrir automatiquement que sur grand écran
+        if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+          setSourcesSidebarOpen(true);
+        }
       }
     } catch (error) {
       console.error('Erreur lors de l\'appel API:', error);

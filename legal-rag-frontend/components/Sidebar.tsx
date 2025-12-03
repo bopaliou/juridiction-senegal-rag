@@ -142,10 +142,10 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
 
   return (
     <>
-      {/* Overlay pour mobile */}
+      {/* Overlay pour mobile et tablette */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#0F2942]/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-[#0F2942]/40 lg:bg-[#0F2942]/10"
           onClick={onClose}
         />
       )}
@@ -157,8 +157,8 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
           glass-dark text-white
           transition-all duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isCollapsed ? 'w-20' : 'w-72'}
-          lg:relative lg:z-auto
+          w-[85vw] max-w-[300px] sm:w-72
+          ${isCollapsed ? 'lg:w-20' : 'lg:w-72'}
         `}
         style={{
           background: 'linear-gradient(180deg, #0F2942 0%, #1E3A5F 100%)'

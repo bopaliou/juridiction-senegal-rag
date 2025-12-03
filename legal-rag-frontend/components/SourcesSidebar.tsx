@@ -115,11 +115,11 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && !isCollapsed && (
+      {/* Overlay - visible uniquement sur mobile/tablette */}
+      {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#0F2942]/20 lg:bg-transparent"
-          onClick={handleOverlayClick}
+          className="fixed inset-0 z-40 bg-[#0F2942]/30 lg:bg-[#0F2942]/10"
+          onClick={onClose}
         />
       )}
 
@@ -129,7 +129,8 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
           fixed right-0 top-0 z-50 h-full transform shadow-2xl
           transition-all duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-          ${isCollapsed ? 'w-20' : 'w-[90vw] sm:w-[400px] lg:w-[420px]'}
+          w-[85vw] max-w-[380px] sm:w-[400px] lg:w-[420px]
+          ${isCollapsed ? 'lg:w-20' : ''}
         `}
         style={{
           background: isCollapsed 
