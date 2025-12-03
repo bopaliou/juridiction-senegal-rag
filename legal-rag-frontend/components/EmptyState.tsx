@@ -82,8 +82,8 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
   if (!mounted) return null;
 
   return (
-    <div className="flex h-full flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8 md:py-12">
-      <div className="mx-auto w-full max-w-3xl text-center">
+    <div className="flex h-full flex-col items-center justify-center px-4 sm:px-6 py-6 sm:py-8 md:py-12 overflow-x-hidden">
+      <div className="mx-auto w-full max-w-3xl text-center px-2 sm:px-0">
         {/* Logo animé */}
         <div className="mb-6 sm:mb-8 flex justify-center">
           <div className="relative animate-float">
@@ -135,7 +135,7 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
         </div>
 
         {/* Grille de suggestions - 1 colonne sur mobile, 2 sur tablette+ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 px-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
           {STARTER_QUESTIONS.map((item, index) => {
             const Icon = item.icon;
             const styles = colorStyles[item.color as keyof typeof colorStyles];

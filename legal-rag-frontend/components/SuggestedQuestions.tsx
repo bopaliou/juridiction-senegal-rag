@@ -50,7 +50,7 @@ export default function SuggestedQuestions({
   if (!questions || questions.length === 0) return null;
 
   return (
-    <div className="relative mt-4 sm:mt-5 md:mt-6">
+    <div className="relative mt-4 sm:mt-5 md:mt-6 w-full overflow-hidden">
       {/* Bouton de défilement gauche */}
       {canScrollLeft && (
         <button
@@ -65,7 +65,7 @@ export default function SuggestedQuestions({
       {/* Container avec défilement horizontal */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-2 sm:gap-3 overflow-x-auto px-8 sm:px-10 md:px-12 py-1.5 sm:py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-10 md:px-12 py-1.5 sm:py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         onScroll={() => {
           if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;

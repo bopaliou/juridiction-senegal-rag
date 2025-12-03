@@ -512,7 +512,7 @@ export default function Home() {
       />
 
       {/* Zone principale */}
-      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen && !sidebarCollapsed ? 'lg:ml-72' : sidebarOpen && sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-[420px]' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-0'}`}>
+      <div className={`flex flex-1 flex-col transition-all duration-300 overflow-x-hidden ${sidebarOpen && !sidebarCollapsed ? 'lg:ml-72' : sidebarOpen && sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-[420px]' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-0'}`}>
         {/* Header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 

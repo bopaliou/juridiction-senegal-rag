@@ -129,7 +129,7 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
           fixed right-0 top-0 z-50 h-full transform shadow-2xl
           transition-all duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-          ${isCollapsed ? 'w-20' : 'w-full lg:w-[420px]'}
+          ${isCollapsed ? 'w-20' : 'w-[90vw] sm:w-[400px] lg:w-[420px]'}
         `}
         style={{
           background: isCollapsed 

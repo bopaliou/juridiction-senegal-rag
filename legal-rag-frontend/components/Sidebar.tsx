@@ -156,9 +156,9 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
           fixed left-0 top-0 z-50 h-full transform
           glass-dark text-white
           transition-all duration-300 ease-out
-          lg:relative lg:z-auto lg:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           ${isCollapsed ? 'w-20' : 'w-72'}
+          lg:relative lg:z-auto
         `}
         style={{
           background: 'linear-gradient(180deg, #0F2942 0%, #1E3A5F 100%)'
