@@ -41,15 +41,42 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
     );
 
     // Formater les listes à puces (commençant par - ou •)
+    // D'abord, séparer les éléments de liste qui sont sur la même ligne
     formatted = formatted.replace(
-      /^[\-\•]\s+(.+)$/gm,
-      '<div class="ml-6 mb-2 flex items-start gap-3"><span class="text-emerald-600 mt-1.5 shrink-0 font-bold">•</span><span class="flex-1 text-slate-700 leading-relaxed">$1</span></div>'
+      /([\-\•]\s+[^\-\•\n]+?)(?=\s+[\-\•]\s)/g,
+      (match) => {
+        return match.trim() + '\n';
+      }
+    );
+    
+    // Ensuite, formater chaque élément de liste sur sa propre ligne
+    formatted = formatted.replace(
+      /^[\-\•]\s+((?:[^\n]|\n(?![\-\•]\s))+)$/gm,
+      (match, content) => {
+        // Nettoyer le contenu (enlever les retours à la ligne multiples)
+        const cleanContent = content.trim().replace(/\n+/g, ' ');
+        return `<div class="ml-6 mb-3 flex items-start gap-3"><span class="text-emerald-600 mt-1.5 shrink-0 font-bold text-lg">•</span><span class="flex-1 text-slate-700 leading-relaxed text-[15px]">${cleanContent}</span></div>`;
+      }
     );
 
     // Formater les listes numérotées
+    // Étape 1: Séparer les éléments de liste qui sont condensés sur la même ligne
+    // Exemple: "1. Premier point 2. Deuxième point" -> "1. Premier point\n2. Deuxième point"
     formatted = formatted.replace(
-      /^(\d+)\.\s+(.+)$/gm,
-      '<div class="ml-6 mb-2 flex items-start gap-3"><span class="font-semibold text-emerald-600 shrink-0 min-w-[24px]">$1.</span><span class="flex-1 text-slate-700 leading-relaxed">$2</span></div>'
+      /(\d+\.\s+[^\n]+?)(?=\s+\d+\.\s)/g,
+      (match) => {
+        return match.trim() + '\n';
+      }
+    );
+    
+    // Étape 2: Formater chaque élément de liste sur sa propre ligne avec un meilleur espacement
+    formatted = formatted.replace(
+      /^(\d+)\.\s+(.+?)(?=\n\d+\.\s|\n\n|$)/gm,
+      (match, num, content) => {
+        // Nettoyer le contenu : enlever les retours à la ligne multiples et les espaces superflus
+        const cleanContent = content.trim().replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ');
+        return `<div class="ml-6 mb-3 flex items-start gap-3"><span class="font-semibold text-emerald-600 shrink-0 min-w-[32px] text-base">${num}.</span><span class="flex-1 text-slate-700 leading-relaxed text-[15px]">${cleanContent}</span></div>`;
+      }
     );
 
     // Mettre en gras les mots-clés importants

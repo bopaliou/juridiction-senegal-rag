@@ -26,6 +26,7 @@ export default function Home() {
   const [expandedSources, setExpandedSources] = useState<{ [key: number]: boolean }>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sourcesSidebarOpen, setSourcesSidebarOpen] = useState(false);
+  const [sourcesSidebarCollapsed, setSourcesSidebarCollapsed] = useState(false);
   const [currentMessageSources, setCurrentMessageSources] = useState<SourceItem[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [globalSuggestedQuestions, setGlobalSuggestedQuestions] = useState<string[]>([]);
@@ -198,6 +199,11 @@ export default function Home() {
     }
 
     if (!currentInput || isLoading) return;
+
+    // Réinitialiser les sources de la question précédente
+    setCurrentMessageSources([]);
+    setSourcesSidebarOpen(false);
+    setSourcesSidebarCollapsed(false);
 
     const userMessage: Message = {
       role: 'user',
@@ -476,10 +482,11 @@ export default function Home() {
         onClose={() => setSourcesSidebarOpen(false)}
         sources={currentMessageSources}
         isLoading={isLoading}
+        onCollapseChange={setSourcesSidebarCollapsed}
       />
 
       {/* Zone principale */}
-      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} ${sourcesSidebarOpen ? 'lg:mr-96' : 'lg:mr-0'}`}>
+      <div className={`flex flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-96' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-16' : 'lg:mr-0'}`}>
         {/* Header moderne et élégant */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
@@ -488,7 +495,13 @@ export default function Home() {
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
         >
-        <div className="mx-auto max-w-3xl space-y-6">
+        <div className={`mx-auto space-y-6 transition-all duration-300 ease-in-out ${
+          sourcesSidebarOpen && sourcesSidebarCollapsed 
+            ? 'max-w-6xl' 
+            : sourcesSidebarOpen && !sourcesSidebarCollapsed 
+            ? 'max-w-3xl' 
+            : 'max-w-3xl'
+        }`}>
           {messages.length === 0 ? (
             <EmptyState
               onQuestionClick={handleSuggestionClick}
@@ -497,10 +510,14 @@ export default function Home() {
           ) : null}
 
           {messages.map((message, index) => (
-            <div key={index} className="flex w-full">
+            <div key={index} className="flex w-full animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
               {message.role === 'user' ? (
                 // Message utilisateur - aligné à droite
-                <div className="ml-auto max-w-[80%] sm:max-w-[75%]">
+                <div className={`ml-auto transition-all duration-300 ease-in-out ${
+                  sourcesSidebarOpen && sourcesSidebarCollapsed 
+                    ? 'max-w-[90%] sm:max-w-[85%]' 
+                    : 'max-w-[80%] sm:max-w-[75%]'
+                }`}>
                   <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-emerald-600 to-teal-600 px-5 py-3.5 text-white shadow-md hover:from-emerald-700 hover:to-teal-700 hover:shadow-lg transition-all duration-200">
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">
                       {message.content}
@@ -509,7 +526,11 @@ export default function Home() {
                 </div>
               ) : (
                 // Message assistant - aligné à gauche
-                <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
+                <div className={`mr-auto transition-all duration-300 ease-in-out ${
+                  sourcesSidebarOpen && sourcesSidebarCollapsed 
+                    ? 'max-w-[90%] sm:max-w-[85%]' 
+                    : 'max-w-[80%] sm:max-w-[75%]'
+                }`}>
                   <div className="group relative rounded-2xl rounded-tl-sm bg-white px-6 py-5 text-gray-900 shadow-md border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all duration-200">
                     {/* Logo de l'assistant */}
                     <div className="absolute -left-3 top-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-white overflow-hidden">
@@ -560,24 +581,46 @@ export default function Home() {
             </div>
           ))}
 
-          {/* Indicateur de chargement */}
+          {/* Indicateur de chargement amélioré avec animation de réflexion */}
           {isLoading && (
-            <div className="flex w-full">
-              <div className="mr-auto max-w-[80%] sm:max-w-[75%]">
-                <div className="rounded-2xl rounded-tl-sm bg-white px-5 py-4 shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-5 w-5 shrink-0">
-                      <div className="absolute inset-0 bg-white rounded"></div>
+            <div className="flex w-full animate-slide-in">
+              <div className={`mr-auto transition-all duration-300 ease-in-out ${
+                sourcesSidebarOpen && sourcesSidebarCollapsed 
+                  ? 'max-w-[90%] sm:max-w-[85%]' 
+                  : 'max-w-[80%] sm:max-w-[75%]'
+              }`}>
+                <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-5 shadow-lg border-2 border-emerald-200/60 backdrop-blur-sm">
+                  <div className="flex items-center gap-4">
+                    {/* Logo animé avec effet de pulsation */}
+                    <div className="relative h-12 w-12 shrink-0">
+                      <div className="absolute inset-0 bg-white rounded-full shadow-md"></div>
+                      <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
                       <Image
                         src="/assets/logo.png"
                         alt="YoonAssist AI"
-                        width={20}
-                        height={20}
-                        className="h-5 w-5 object-contain relative z-10 animate-pulse"
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 object-contain relative z-10 animate-pulse"
+                        style={{ animationDuration: '2s' }}
                       />
                     </div>
-                    <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                    <span className="text-sm text-slate-600">Recherche en cours...</span>
+                    {/* Spinner avec texte animé */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Loader2 className="h-5 w-5 animate-spin text-emerald-600" style={{ animationDuration: '1s' }} />
+                        <span className="text-sm font-medium text-emerald-900 animate-pulse" style={{ animationDuration: '1.5s' }}>
+                          YoonAssist réfléchit...
+                        </span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0s', animationDuration: '1.4s' }}></div>
+                        <div className="h-1.5 w-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s', animationDuration: '1.4s' }}></div>
+                        <div className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s', animationDuration: '1.4s' }}></div>
+                      </div>
+                      <p className="text-xs text-emerald-700/70 mt-2">
+                        Analyse des documents juridiques en cours...
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -602,7 +645,13 @@ export default function Home() {
 
         {/* Zone de saisie fixe en bas */}
         <div className="sticky bottom-0 z-40 w-full border-t border-slate-200/80 bg-white/95 backdrop-blur-sm px-4 py-4 shadow-lg sm:px-6">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
+        <form onSubmit={handleSubmit} className={`mx-auto transition-all duration-300 ease-in-out ${
+          sourcesSidebarOpen && sourcesSidebarCollapsed 
+            ? 'max-w-6xl' 
+            : sourcesSidebarOpen && !sourcesSidebarCollapsed 
+            ? 'max-w-3xl' 
+            : 'max-w-3xl'
+        }`}>
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <textarea

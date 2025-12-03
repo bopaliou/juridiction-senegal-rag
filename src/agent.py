@@ -270,30 +270,57 @@ def classify_question(state: AgentState):
     
     question = state["question"].lower()
     
-    # Liste de mots-clés juridiques pour une classification rapide
+    # Liste étendue de mots-clés juridiques pour une classification rapide
+    # Inclut des variantes, synonymes et termes connexes
     juridique_keywords = [
-        "travail", "travailleur", "employeur", "employé", "salarié", "contrat", 
-        "licenciement", "préavis", "retraite", "syndicat", "grève", "congé", 
-        "salaire", "code du travail", "l.2", "l.69", "article l.",
-        "pénal", "penal", "peine", "infraction", "sanction", "prison", "détenu", 
-        "juge", "tribunal", "procédure", "prescription", "loi 2020", "code pénal",
-        "constitution", "président", "parlement", "pouvoir", "droit fondamental",
-        "budget", "finance", "impôt", "taxe", "fiscal", "déficit", "ressource", 
-        "charge", "plf", "loi de finance",
-        "collectivité", "municipalité", "commune", "région",
-        "aviation", "aérien",
-        "droit", "loi", "décret", "règlement", "juridique", "juridiction",
-        "sénégal", "sénégalais", "sénégalaise"
+        # Droit du travail
+        "travail", "travailleur", "travailleurs", "employeur", "employeurs", "employé", "employés", 
+        "salarié", "salariés", "contrat", "contrats", "licenciement", "licenciements", 
+        "préavis", "retraite", "retraites", "syndicat", "syndicats", "grève", "grèves", 
+        "congé", "congés", "salaire", "salaires", "code du travail", "l.2", "l.69", 
+        "article l.", "articles l.", "aménagement", "peine", "peines",
+        # Droit pénal
+        "pénal", "penal", "peine", "peines", "infraction", "infractions", "sanction", 
+        "sanctions", "prison", "détenu", "détenus", "juge", "juges", "tribunal", 
+        "tribunaux", "procédure", "procédures", "prescription", "loi 2020", "code pénal",
+        "viol", "violence", "pédophilie", "délai", "délais", "recours", "correctionnelle",
+        # Droit constitutionnel
+        "constitution", "constitutionnel", "président", "parlement", "pouvoir", "pouvoirs", 
+        "droit fondamental", "droits fondamentaux", "liberté", "libertés",
+        # Droit financier
+        "budget", "budgets", "finance", "finances", "impôt", "impôts", "taxe", "taxes", 
+        "fiscal", "déficit", "ressource", "ressources", "charge", "charges", "plf", 
+        "loi de finance", "lois de finance", "macroéconomique", "macroéconomiques",
+        # Droit administratif
+        "collectivité", "collectivités", "municipalité", "municipalités", "commune", 
+        "communes", "région", "régions", "administration", "administratif", "fonction publique",
+        # Aviation
+        "aviation", "aérien", "aérienne", "aériennes",
+        # Termes généraux juridiques
+        "droit", "droits", "loi", "lois", "décret", "décrets", "règlement", "règlements", 
+        "juridique", "juridiques", "juridiction", "juridictions", "jurisprudence",
+        "article", "articles", "code", "codes", "texte", "textes", "disposition", "dispositions",
+        # Géographique
+        "sénégal", "sénégalais", "sénégalaise", "sénégalaises",
+        # Questions courantes
+        "comment", "quand", "où", "qui", "quoi", "pourquoi", "combien", "quel", "quelle", 
+        "quels", "quelles", "peut", "peuvent", "doit", "doivent", "peut-on", "peut on",
+        # Termes de procédure
+        "mission", "missions", "rôle", "rôles", "obligation", "obligations", "condition", 
+        "conditions", "règle", "règles", "démarche", "démarches", "processus", "étape", "étapes"
     ]
     
     # Classification rapide basée sur les mots-clés (plus fiable)
     contains_juridique_keyword = any(keyword in question for keyword in juridique_keywords)
     
     # Si aucun mot-clé juridique n'est trouvé, utiliser le LLM pour une classification plus fine
+    # MAIS être très permissif : par défaut, classer comme JURIDIQUE si incertain
     if not contains_juridique_keyword:
         prompt = ChatPromptTemplate.from_messages([
             ("system", """Tu es un classificateur binaire pour un assistant juridique sénégalais.
 Ta tâche est de déterminer si la question concerne le droit sénégalais ou un sujet juridique général.
+
+IMPORTANT : Sois TRÈS PERMISSIF. En cas de doute, classe toujours comme JURIDIQUE.
 
 Une question est JURIDIQUE si elle concerne :
 - Le droit du travail (contrats, licenciement, congés, salaires, retraite, etc.)
@@ -303,16 +330,20 @@ Une question est JURIDIQUE si elle concerne :
 - Le droit administratif (collectivités, organisation administrative, etc.)
 - Toute question sur les lois, décrets, codes, règlements sénégalais
 - Toute question juridique générale même sans mention explicite du Sénégal
+- Toute question qui pourrait avoir une réponse dans des documents juridiques
+- Toute question commençant par "Comment", "Quel", "Quelle", "Quels", "Quelles", "Qui", "Quand", "Où", "Pourquoi" concernant des sujets administratifs, sociaux, ou réglementaires
 
-Une question est AUTRE si elle concerne :
-- La météo, le sport, la cuisine, les loisirs
+Une question est AUTRE UNIQUEMENT si elle concerne clairement :
+- La météo, le sport, la cuisine, les loisirs (sans lien juridique)
 - Des questions techniques non juridiques (programmation, mathématiques pures, etc.)
-- Des questions personnelles sans lien juridique
+- Des questions personnelles sans aucun lien juridique (ex: "Quel est mon nom ?")
+
+RÈGLE D'OR : Si tu hésites entre JURIDIQUE et AUTRE, choisis TOUJOURS JURIDIQUE.
 
 Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
-            ("human", "{question}")
-        ])
-        
+        ("human", "{question}")
+    ])
+    
         try:
             chain = prompt | router_llm
             response = chain.invoke({"question": state["question"]})
@@ -322,15 +353,18 @@ Réponds UNIQUEMENT avec le mot 'JURIDIQUE' ou 'AUTRE', sans autre texte."""),
             print(f"🔍 Classification - Question: {state['question'][:50]}...")
             print(f"🔍 Réponse du LLM: {response.content}")
             
-            # Détection plus robuste de "JURIDIQUE"
-            if "JURIDIQUE" in response_content or response_content.startswith("JURIDIQUE"):
-                category = "JURIDIQUE"
-            else:
+            # Détection très permissive : si "AUTRE" n'est pas explicitement présent, classer comme JURIDIQUE
+            if "AUTRE" in response_content and response_content.startswith("AUTRE") and "JURIDIQUE" not in response_content:
                 category = "AUTRE"
+            else:
+                # Par défaut, classer comme JURIDIQUE (très permissif)
+                category = "JURIDIQUE"
+                print(f"✅ Classification permissive - Question classée comme JURIDIQUE par défaut")
         except Exception as e:
             print(f"⚠️  Erreur lors de la classification LLM: {e}")
             # En cas d'erreur, être permissif et classer comme JURIDIQUE par défaut
             category = "JURIDIQUE"
+            print(f"✅ Classification par défaut après erreur - Question classée comme JURIDIQUE")
     else:
         # Si des mots-clés juridiques sont trouvés, classer directement comme JURIDIQUE
         category = "JURIDIQUE"
@@ -358,6 +392,41 @@ def handle_non_juridique(state: AgentState):
         "suggested_questions": []
     }
 
+def detect_domain_from_question(question: str) -> str:
+    """Détecte le domaine juridique à partir de la question de manière générale."""
+    question_lower = question.lower()
+    
+    # Détection basée sur les mots-clés du domaine
+    domain_keywords = {
+        'penal': ['pénal', 'penal', 'peine', 'peines', 'détenu', 'detenu', 'prison', 'pénitentiaire', 'penitentiaire',
+                  'infraction', 'infractions', 'sanction', 'sanctions', 'tribunal', 'juge', 'procédure', 'procedure',
+                  'prescription', 'aménagement', 'amenagement', 'commission pénitentiaire', 'commission penitentiaire'],
+        'travail': ['travail', 'travailleur', 'travailleurs', 'employeur', 'employeurs', 'employé', 'employés', 'employe', 'employes',
+                    'salarié', 'salariés', 'salarie', 'salaries', 'contrat', 'contrats', 'licenciement', 'préavis', 'preavis',
+                    'retraite', 'syndicat', 'syndicats', 'grève', 'greve', 'congé', 'conge', 'salaire', 'salaires',
+                    'code du travail', 'codedutravail'],
+        'constitution': ['constitution', 'constitutionnel', 'constitutionnelle', 'président', 'president', 'parlement',
+                         'pouvoir', 'pouvoirs', 'droit fondamental', 'droits fondamentaux', 'liberté', 'liberte', 'libertés', 'libertes'],
+        'finance': ['budget', 'budgets', 'finance', 'finances', 'impôt', 'impots', 'impôts', 'taxe', 'taxes', 'fiscal',
+                    'déficit', 'deficit', 'ressource', 'ressources', 'charge', 'charges', 'plf', 'loi de finance', 'lois de finance'],
+        'administration': ['administration', 'administratif', 'administrative', 'fonction publique', 'collectivité', 'collectivités',
+                          'collectivite', 'collectivites', 'municipalité', 'municipalites', 'commune', 'communes', 'région', 'region', 'régions', 'regions'],
+        'aviation': ['aviation', 'aérien', 'aerien', 'aérienne', 'aerienne', 'aériennes', 'aeriennes']
+    }
+    
+    # Compter les correspondances pour chaque domaine
+    domain_scores = {}
+    for domain, keywords in domain_keywords.items():
+        score = sum(1 for keyword in keywords if keyword in question_lower)
+        if score > 0:
+            domain_scores[domain] = score
+    
+    # Retourner le domaine avec le score le plus élevé
+    if domain_scores:
+        return max(domain_scores, key=domain_scores.get)
+    else:
+        return 'general'
+
 def detect_domain_from_source(source_path: str) -> str:
     """Détecte le domaine juridique à partir du chemin de la source."""
     source_lower = source_path.lower()
@@ -380,53 +449,77 @@ def detect_domain_from_source(source_path: str) -> str:
     else:
         return 'general'
 
-# Liste officielle et exhaustive des questions autorisées (issues des documents fournis)
+# Liste officielle et exhaustive des questions autorisées (basées sur les documents disponibles)
 AUTHORIZED_QUESTIONS = [
-    "Quelles sont les missions du juge de l'application des peines au Sénégal ?",
-    "Comment fonctionne la commission pénitentiaire consultative de l'aménagement des peines ?",
-    "Quelles sont les règles de séparation des détenus dans les établissements pénitentiaires ?",
-    "Quelles sont les conditions d'application du travail d'intérêt général ?",
-    "Comment se déroule l'extraction d'un détenu pour comparution devant un juge ?",
-    "Quels sont les droits des détenus provisoires selon le décret 2001-362 ?",
-    "Quel est le rôle des visiteurs de prison dans le système pénitentiaire ?",
-    "Comment la loi 2020-05 modifie-t-elle les peines pour viol au Sénégal ?",
-    "Quelles sont les nouvelles peines prévues pour les actes de pédophilie ?",
-    "Quelles sont les circonstances aggravantes en matière de violences sexuelles ?",
-    "Quels délais de prescription ont été suspendus pendant l'état d'urgence ?",
-    "Comment la loi 2020-16 affecte-t-elle les délais de recours en matière pénale ?",
-    "Quelles sont les règles concernant les contraintes par corps durant la période Covid-19 ?",
-    "Quels dossiers sont jugés par les tribunaux départementaux en matière correctionnelle ?",
-    "Quelles sont les infractions relevant uniquement du tribunal régional ?",
-    "Comment s'effectue le transfert d'une procédure entre le tribunal régional et le tribunal départemental ?",
+    # Questions sur le droit du travail - Dispositions générales (Code du Travail)
     "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
+    "Qu'est-ce qu'un travailleur au sens de l'article L.2 du Code du Travail ?",
+    "Quelles sont les personnes soumises au Code du Travail sénégalais ?",
+    "Qu'est-ce qu'une entreprise selon l'article L.3 du Code du Travail ?",
+    "Qu'est-ce qu'un établissement au sens du Code du Travail ?",
     "Quelles sont les obligations de l'employeur envers les travailleurs ?",
+    "Quel est le droit au travail selon l'article L.1 du Code du Travail ?",
+    "Comment l'État assure-t-il l'égalité de chance en matière d'emploi ?",
+    "Quelles sont les obligations de l'État envers les travailleurs ?",
+    "Le travail forcé est-il interdit au Sénégal selon l'article L.4 ?",
+    "Qu'est-ce que le travail forcé ou obligatoire selon l'article L.4 ?",
+    "Quelles sont les exceptions à l'interdiction du travail forcé ?",
+    "Qu'est-ce que le droit à l'expression des travailleurs selon l'article L.5 ?",
+    "Quel est l'objet du droit d'expression des travailleurs dans l'entreprise ?",
+    "Les opinions des travailleurs peuvent-elles motiver un licenciement selon l'article L.5 ?",
+    "Quelles sont les conditions d'application du droit d'expression des travailleurs ?",
+    "Un travailleur peut-il bénéficier d'avantages supérieurs à ceux du Code du Travail ?",
+    "Les personnes nommées dans un emploi permanent de l'administration sont-elles soumises au Code du Travail ?",
+    
+    # Questions sur les syndicats professionnels (Code du Travail)
     "Quelles sont les règles de création d'un syndicat professionnel ?",
+    "Quel est l'objet des syndicats professionnels selon l'article L.6 ?",
+    "Qui peut constituer un syndicat professionnel selon l'article L.7 ?",
+    "Qui peut adhérer à un syndicat professionnel ?",
+    "Quelles sont les conditions pour créer un syndicat professionnel ?",
+    "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
+    "Où doit-on déposer les statuts d'un syndicat professionnel selon l'article L.8 ?",
+    "Quels documents doivent être déposés pour créer un syndicat ?",
+    "Quel est le délai pour le dépôt des statuts d'un syndicat ?",
+    "Qui délivre le récépissé de reconnaissance d'un syndicat ?",
+    "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
+    "Qui vérifie la régularité des statuts d'un syndicat ?",
+    "Quelles sont les conséquences si un membre ne remplit pas les conditions pour diriger un syndicat ?",
+    "Quand peut-on demander la dissolution d'un syndicat ?",
     "Quelles protections s'appliquent aux travailleurs dans l'exercice du droit d'expression ?",
     "Quelles sont les infractions concernant le travail forcé ?",
     "Quels sont les droits des syndicats devant la justice ?",
-    "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
-    "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
     "Quelles protections s'appliquent aux biens d'un syndicat ?",
-    "Quel est l'âge légal de départ à la retraite au Sénégal ?",
-    "Quels travailleurs peuvent poursuivre leur activité au-delà de 60 ans ?",
-    "Quelles professions sont autorisées à travailler jusqu'à 65 ans ?",
-    "Comment s'applique l'article L.69 modifié du Code du Travail ?",
-    "Un travailleur peut-il continuer d'exercer volontairement après 60 ans ?",
-    "Quels sont les axes stratégiques du budget 2025 ?",
-    "Comment se répartissent les ressources et charges de l'État pour 2025 ?",
-    "Quels sont les objectifs macroéconomiques du PLF 2026 ?",
-    "Quelles taxes nouvelles sont prévues dans la stratégie SUPREC ?",
-    "Quelles sont les mesures d'assainissement des finances publiques en 2026 ?",
-    "Comment évolue le déficit budgétaire entre 2024, 2025 et 2026 ?",
-    "Quels sont les domaines de dépenses prioritaires dans le budget 2026 ?",
-    "Quels textes régissent l'organisation pénitentiaire au Sénégal ?",
-    "Comment contester une décision judiciaire en matière correctionnelle ?",
-    "Quelles sont les obligations de l'État envers les travailleurs ?",
-    "Comment déterminer l'autorité compétente pour une infraction ?",
     "Quelles sont les règles applicables aux syndicats ?",
-    "Quelles sont les récentes réformes impactant le droit pénal sénégalais ?",
-    "Comment fonctionne la procédure d'aménagement de peine ?",
-    "Quel est le rôle de l'État dans la protection sociale selon les budgets 2025/2026 ?",
+    
+    # Questions sur la retraite (Loi sur la retraite)
+    "Quel est l'âge légal de départ à la retraite au Sénégal ?",
+    "Quels sont les conditions pour bénéficier de la retraite ?",
+    "Comment calculer la pension de retraite ?",
+    "Quels travailleurs peuvent poursuivre leur activité au-delà de l'âge de la retraite ?",
+    "Quelles sont les modalités de versement de la pension de retraite ?",
+    "Comment fonctionne le système de retraite au Sénégal ?",
+    "Quelles sont les cotisations nécessaires pour la retraite ?",
+    "Quels sont les droits des retraités ?",
+    "Comment faire une demande de retraite ?",
+    "Quelles sont les conditions d'ancienneté pour la retraite ?",
+    
+    # Questions sur le droit pénal (Loi 84-20 du 02 février 1984)
+    "Quelles sont les infractions prévues par la loi 84-20 du 02 février 1984 ?",
+    "Quelles sont les peines prévues par la loi 84-20 ?",
+    "Comment s'applique la loi 84-20 du 02 février 1984 ?",
+    "Quelles sont les dispositions de la loi 84-20 concernant les infractions pénales ?",
+    "Quels sont les délits réprimés par la loi 84-20 ?",
+    "Quelles sont les sanctions prévues par la loi 84-20 ?",
+    
+    # Questions sur le droit pénal (Loi 2020-05 du 10 janvier 2020)
+    "Quelles sont les modifications apportées par la loi 2020-05 du 10 janvier 2020 ?",
+    "Comment la loi 2020-05 modifie-t-elle les peines pour violences sexuelles ?",
+    "Quelles sont les nouvelles peines prévues par la loi 2020-05 ?",
+    "Quelles sont les infractions concernées par la loi 2020-05 ?",
+    "Comment s'applique la loi 2020-05 du 10 janvier 2020 ?",
+    "Quelles sont les circonstances aggravantes prévues par la loi 2020-05 ?",
+    "Quels sont les délais de prescription modifiés par la loi 2020-05 ?",
 ]
 
 
@@ -590,7 +683,18 @@ def retrieve_noeud(state: AgentState):
     question = state["question"]
     # Use the Chroma retriever to fetch relevant documents for the question
     try:
+        # Récupérer plus de documents initialement pour avoir un meilleur pool
         documents = retriever.invoke(question)
+        
+        # Si le reranker est activé, l'utiliser pour améliorer la pertinence
+        if ENABLE_RERANKER and compressor:
+            try:
+                print(f"🔄 Reranking de {len(documents)} documents...")
+                documents = compressor.compress_documents(documents, question)
+                print(f"✅ {len(documents)} documents sélectionnés après reranking")
+            except Exception as e:
+                print(f"⚠️  Erreur lors du reranking: {e}. Utilisation des documents originaux.")
+        
         return {"documents": documents}
     except Exception as e:
         print(f"❌ ERREUR dans retrieve_noeud: {e}")
@@ -630,8 +734,70 @@ def generate_node(state: AgentState):
     
     # Extraire les mots-clés de la question pour trouver les parties pertinentes
     question_words = set(question.lower().split())
+    # Filtrer les mots-clés pour ne garder que ceux significatifs (plus de 3 caractères)
+    question_keywords = {w for w in question_words if len(w) > 3}
     
-    for idx, doc in enumerate(documents):
+    # Filtrer les documents pour ne garder que ceux qui sont pertinents
+    # Utiliser un système de scoring plus strict
+    question_lower = question.lower()
+    
+    # Extraire les concepts clés spécifiques de la question
+    key_concepts = {w for w in question_lower.split() if len(w) > 4}
+    # Ajouter des concepts spécifiques selon le type de question
+    if 'commission' in question_lower:
+        if 'pénitentiaire' in question_lower or 'penitentiaire' in question_lower:
+            key_concepts.update(['pénitentiaire', 'penitentiaire', 'aménagement', 'amenagement'])
+    
+    relevant_documents = []
+    for doc in documents:
+        if doc.page_content:
+            content_lower = doc.page_content.lower()
+            score = 0
+            
+            # Score basé sur les mots-clés significatifs (plus de 3 caractères)
+            keyword_matches = sum(1 for keyword in question_keywords if keyword in content_lower)
+            score += keyword_matches
+            
+            # Bonus pour les concepts clés spécifiques
+            concept_matches = sum(1 for concept in key_concepts if concept in content_lower)
+            score += concept_matches * 2  # Poids plus élevé pour les concepts clés
+            
+            # Vérifier la cohérence du domaine
+            metadata = doc.metadata if hasattr(doc, 'metadata') and doc.metadata else {}
+            source = metadata.get('source', '')
+            doc_domain = detect_domain_from_source(str(source))
+            
+            # Détecter le domaine de la question
+            question_domain = 'general'
+            if any(word in question_lower for word in ['pénal', 'penal', 'peine', 'peines', 'détenu', 'detenu', 'prison', 'pénitentiaire', 'penitentiaire']):
+                question_domain = 'penal'
+            elif any(word in question_lower for word in ['travail', 'travailleur', 'employeur']):
+                question_domain = 'travail'
+            
+            # Bonus si le domaine correspond
+            if question_domain != 'general' and doc_domain == question_domain:
+                score += 5
+            # Pénalité si le domaine ne correspond pas
+            elif question_domain != 'general' and doc_domain != question_domain and doc_domain != 'general':
+                score -= 3
+            
+            # Un document est pertinent s'il a un score >= 2
+            if score >= 2:
+                relevant_documents.append((score, doc))
+    
+    # Trier par score décroissant (documents les plus pertinents en premier)
+    relevant_documents.sort(reverse=True, key=lambda x: x[0])
+    # Prendre les 3-5 documents les plus pertinents
+    filtered_documents = [doc for _, doc in relevant_documents[:5]]
+    
+    # Si aucun document pertinent n'est trouvé, utiliser les 2 premiers documents (fallback minimal)
+    if not filtered_documents:
+        print("⚠️  Aucun document pertinent trouvé avec les critères stricts. Utilisation des 2 premiers documents.")
+        filtered_documents = documents[:2]  # Limiter à 2 documents max en fallback
+    
+    print(f"📚 {len(filtered_documents)} documents pertinents sélectionnés sur {len(documents)} récupérés")
+    
+    for idx, doc in enumerate(filtered_documents):
         # Extraire les métadonnées
         metadata = doc.metadata if hasattr(doc, 'metadata') and doc.metadata else {}
         source = metadata.get('source', metadata.get('file_path', 'Document juridique'))
@@ -736,24 +902,36 @@ def generate_node(state: AgentState):
     
     context = "\n\n".join(context_parts)
     
+    # Si aucun document pertinent n'a été trouvé, retourner une réponse appropriée
+    if not filtered_documents or not context.strip():
+        return {
+            "answer": "Je ne trouve pas l'information dans les textes fournis.",
+            "sources": ["Aucun document pertinent trouvé pour cette question."],
+            "messages": messages,
+            "suggested_questions": []
+        }
+    
     # Construire le template avec l'historique si disponible
     if history_str:
         template = """TU ES UN ASSISTANT JURIDIQUE SÉNÉGALAIS STRICTEMENT FACTUEL ET DÉTAILLÉ. 
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. SOIS CONCIS ET CLAIR : Limite ta réponse à 3-4 paragraphes maximum. Va droit au but, évite les répétitions et les détails superflus.
+    1. SOIS COMPLET ET DÉTAILLÉ : Fournis une réponse exhaustive qui couvre tous les aspects de la question. Ne sois pas bref - l'utilisateur veut une explication complète et approfondie.
     2. STRUCTURE TA RÉPONSE AVEC HIÉRARCHIE :
-       - Commence par une réponse directe et concise (1-2 phrases)
-       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, etc.
-       - Utilise des listes numérotées (1., 2., 3.) pour les étapes ou processus
+       - Commence par une réponse directe et complète (2-3 phrases qui résument la réponse)
+       - Développe ensuite avec des détails précis, des exemples concrets, et des explications pédagogiques
+       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, les droits, les obligations, etc.
+       - Utilise des listes numérotées (1., 2., 3.) pour les étapes, processus, ou séquences chronologiques
+       - Inclus toujours les chiffres précis, dates, montants, délais, pourcentages mentionnés dans le contexte
        - Termine par les références légales entre crochets [Article X, Code Y]
     3. UTILISE DES LISTES POUR FACILITER LA LECTURE : Au lieu de longs paragraphes, utilise des listes à puces pour les éléments multiples (missions, conditions, droits, obligations, etc.).
-    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile.
-    5. INCLUS TOUJOURS les détails spécifiques : nombres, dates, montants, délais, mais de manière concise.
-    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète.
+    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile. Donne des exemples concrets quand c'est possible.
+    5. INCLUS TOUJOURS TOUS les détails spécifiques du contexte : nombres exacts, dates précises, montants, délais, pourcentages, conditions spécifiques. Ne généralise pas - sois précis.
+    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète et l'explication.
     7. NE METS JAMAIS de titres ou sections : Écris de manière fluide mais structurée avec des listes.
-    8. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
+    8. DÉVELOPPE TES RÉPONSES : Ne sois pas bref. Si la question demande des détails, fournis-les. Si elle demande une explication, explique en profondeur.
+    9. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
     - Question: "Quel est l'âge légal de départ à la retraite ?"
@@ -785,18 +963,21 @@ def generate_node(state: AgentState):
     TON RÔLE est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les extraits de loi CONTEXTE.
     
     RÈGLES CRITIQUES POUR TA RÉPONSE :
-    1. SOIS CONCIS ET CLAIR : Limite ta réponse à 3-4 paragraphes maximum. Va droit au but, évite les répétitions et les détails superflus.
+    1. SOIS COMPLET ET DÉTAILLÉ : Fournis une réponse exhaustive qui couvre tous les aspects de la question. Ne sois pas bref - l'utilisateur veut une explication complète et approfondie.
     2. STRUCTURE TA RÉPONSE AVEC HIÉRARCHIE :
-       - Commence par une réponse directe et concise (1-2 phrases)
-       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, etc.
-       - Utilise des listes numérotées (1., 2., 3.) pour les étapes ou processus
+       - Commence par une réponse directe et complète (2-3 phrases qui résument la réponse)
+       - Développe ensuite avec des détails précis, des exemples concrets, et des explications pédagogiques
+       - Utilise des listes à puces (-) pour les points importants, les missions, les conditions, les droits, les obligations, etc.
+       - Utilise des listes numérotées (1., 2., 3.) pour les étapes, processus, ou séquences chronologiques
+       - Inclus toujours les chiffres précis, dates, montants, délais, pourcentages mentionnés dans le contexte
        - Termine par les références légales entre crochets [Article X, Code Y]
     3. UTILISE DES LISTES POUR FACILITER LA LECTURE : Au lieu de longs paragraphes, utilise des listes à puces pour les éléments multiples (missions, conditions, droits, obligations, etc.).
-    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile.
-    5. INCLUS TOUJOURS les détails spécifiques : nombres, dates, montants, délais, mais de manière concise.
-    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète.
+    4. SOIS UN VRAI ASSISTANT PÉDAGOGIQUE : Explique le droit de manière simple et accessible, sans jargon inutile. Donne des exemples concrets quand c'est possible.
+    5. INCLUS TOUJOURS TOUS les détails spécifiques du contexte : nombres exacts, dates précises, montants, délais, pourcentages, conditions spécifiques. Ne généralise pas - sois précis.
+    6. NE COMMENCE JAMAIS par citer un article : Commence par la réponse concrète et l'explication.
     7. NE METS JAMAIS de titres ou sections : Écris de manière fluide mais structurée avec des listes.
-    8. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
+    8. DÉVELOPPE TES RÉPONSES : Ne sois pas bref. Si la question demande des détails, fournis-les. Si elle demande une explication, explique en profondeur.
+    9. Si le CONTEXTE ne contient pas l'information, réponds : 'Je ne trouve pas l'information dans les textes fournis.'
     
     EXEMPLES DE BONNES RÉPONSES :
     - Question: "Quel est l'âge légal de départ à la retraite ?"
@@ -836,6 +1017,148 @@ def generate_node(state: AgentState):
     # c'est incohérent. On ne doit jamais retourner "Je ne trouve pas" si des sources existent.
     answer_content = response.content.strip()
     
+    # Filtrer les sources pour ne garder que celles qui sont réellement utilisées dans la réponse
+    # Vérifier la cohérence entre la réponse et les sources avec un système de scoring strict
+    answer_lower = answer_content.lower()
+    question_lower = question.lower()
+    
+    # Extraire les concepts clés de la question de manière générale
+    # 1. Mots significatifs (plus de 4 caractères, excluant les mots vides)
+    stop_words = {'comment', 'quelle', 'quelles', 'quels', 'quel', 'qui', 'quoi', 'quand', 'où', 'pourquoi', 'combien', 
+                  'peut', 'peuvent', 'doit', 'doivent', 'sont', 'est', 'être', 'etre', 'dans', 'pour', 'avec', 'sans',
+                  'selon', 'selon', 'selon', 'fonctionne', 'fonctionnent', 'fonctionnement'}
+    question_key_concepts = {w for w in question_lower.split() if len(w) > 4 and w not in stop_words}
+    
+    # 2. Extraire les noms propres et termes techniques (mots avec majuscules ou termes juridiques spécifiques)
+    # Les termes juridiques importants sont généralement des noms composés ou des concepts spécifiques
+    question_words = question_lower.split()
+    for i, word in enumerate(question_words):
+        # Détecter les noms composés (ex: "code du travail", "juge de l'application")
+        if i < len(question_words) - 1:
+            bigram = f"{word} {question_words[i+1]}"
+            if len(bigram.replace(' ', '')) > 8:  # Noms composés significatifs
+                question_key_concepts.add(bigram.replace(' ', ''))
+    
+    # 3. Ajouter les variantes avec/sans accents pour les termes français
+    additional_concepts = set()
+    for concept in question_key_concepts:
+        # Variantes avec accents
+        if 'e' in concept:
+            additional_concepts.add(concept.replace('e', 'é'))
+            additional_concepts.add(concept.replace('e', 'è'))
+        if 'a' in concept:
+            additional_concepts.add(concept.replace('a', 'à'))
+        if 'u' in concept:
+            additional_concepts.add(concept.replace('u', 'ù'))
+    question_key_concepts.update(additional_concepts)
+    
+    # Détecter le domaine de la question de manière générale
+    question_domain = detect_domain_from_question(question_lower)
+    
+    filtered_sources = []
+    source_scores = []
+    
+    for source_json in sources_list:
+        try:
+            source_data = json.loads(source_json)
+            source_content = source_data.get("content", "").lower()
+            source_title = source_data.get("title", "").lower()
+            source_domain = source_data.get("domain", "general")
+            
+            # Score de pertinence (plus le score est élevé, plus la source est pertinente)
+            relevance_score = 0
+            
+            # 1. Vérifier la cohérence du domaine (critère important)
+            if question_domain != 'general' and source_domain == question_domain:
+                relevance_score += 10  # Bonus important pour le même domaine
+            elif question_domain != 'general' and source_domain != question_domain and source_domain != 'general':
+                relevance_score -= 5  # Pénalité si domaine différent
+            
+            # 2. Vérifier la présence des concepts clés de la question dans la source
+            source_concept_matches = sum(1 for concept in question_key_concepts if concept in source_content)
+            if source_concept_matches >= 2:  # Au moins 2 concepts clés
+                relevance_score += source_concept_matches * 3
+            elif source_concept_matches == 1:
+                relevance_score += 1  # Score faible si seulement 1 concept
+            
+            # 3. Vérifier si des phrases significatives de la source apparaissent dans la réponse
+            # Extraire des phrases de la source et vérifier leur présence dans la réponse
+            source_sentences = [s.strip() for s in source_content.split('.') if len(s.strip()) > 20]
+            significant_matches = 0
+            for sentence in source_sentences[:10]:  # Prendre les 10 premières phrases
+                sentence_words = [w for w in sentence.split() if len(w) > 3]
+                if len(sentence_words) >= 4:  # Phrases avec au moins 4 mots significatifs
+                    # Vérifier si au moins 3 mots de la phrase sont dans la réponse
+                    matches = sum(1 for word in sentence_words if word in answer_lower)
+                    if matches >= 3:
+                        significant_matches += 1
+                        relevance_score += 5  # Bonus pour chaque phrase significative
+            
+            # 4. Vérifier si le titre de la source contient des concepts de la question
+            if source_title:
+                title_concept_matches = sum(1 for concept in question_key_concepts if concept in source_title)
+                if title_concept_matches > 0:
+                    relevance_score += title_concept_matches * 2
+            
+            # 5. Vérifier la présence de termes spécifiques dans le contenu de la source
+            # Bonus pour les concepts spécifiques qui apparaissent ensemble (indique une forte pertinence)
+            concept_pairs = []
+            for i, concept1 in enumerate(list(question_key_concepts)[:5]):  # Limiter pour performance
+                for concept2 in list(question_key_concepts)[i+1:6]:
+                    if concept1 in source_content and concept2 in source_content:
+                        relevance_score += 3  # Bonus pour chaque paire de concepts trouvée
+            
+            # 6. Vérifier la cohérence sémantique : si la source contient plusieurs concepts clés ensemble
+            concepts_found = sum(1 for concept in question_key_concepts if concept in source_content)
+            if concepts_found >= 3:  # Au moins 3 concepts clés trouvés
+                relevance_score += 5
+            elif concepts_found == 2:
+                relevance_score += 2
+            
+            # 7. Pénalité pour les sources qui contiennent des mots génériques mais pas les concepts spécifiques
+            # Détecter les mots génériques courants qui peuvent créer des faux positifs
+            generic_words = ['commission', 'conseil', 'comité', 'comite', 'organe', 'institution', 'autorité', 'autorite']
+            generic_in_question = [word for word in generic_words if word in question_lower]
+            
+            if generic_in_question:
+                # Si la source contient un mot générique mais pas les concepts spécifiques
+                for generic_word in generic_in_question:
+                    if generic_word in source_content:
+                        # Vérifier si les concepts spécifiques (hors mots génériques) sont présents
+                        specific_concepts = {c for c in question_key_concepts if c not in generic_words and len(c) > 5}
+                        if specific_concepts:
+                            specific_found = sum(1 for concept in specific_concepts if concept in source_content)
+                            if specific_found == 0 and source_domain != question_domain:
+                                relevance_score -= 10  # Forte pénalité pour faux positif
+            
+            # Une source est pertinente si son score est >= 5
+            if relevance_score >= 5:
+                source_scores.append((relevance_score, source_json))
+                print(f"✅ Source '{source_data.get('title', 'Unknown')}' - Score: {relevance_score}")
+            else:
+                print(f"❌ Source '{source_data.get('title', 'Unknown')}' rejetée - Score: {relevance_score}")
+                
+        except Exception as e:
+            # En cas d'erreur de parsing, ne pas inclure la source
+            print(f"⚠️  Erreur lors du filtrage de la source: {e}")
+    
+    # Trier les sources par score décroissant et prendre les meilleures
+    source_scores.sort(reverse=True, key=lambda x: x[0])
+    filtered_sources = [source_json for score, source_json in source_scores if score >= 5]
+    
+    # Limiter à 3 sources maximum pour éviter la surcharge
+    filtered_sources = filtered_sources[:3]
+    
+    # Si aucune source n'est pertinente mais qu'on a des sources, ne pas en garder
+    # (mieux vaut ne pas avoir de sources que des sources non pertinentes)
+    if not filtered_sources and sources_list:
+        print("⚠️  Aucune source pertinente trouvée. Aucune source ne sera retournée.")
+    
+    # Utiliser les sources filtrées
+    sources_list = filtered_sources if filtered_sources else ["Aucune source pertinente disponible"]
+    
+    print(f"📋 {len(sources_list)} sources cohérentes sélectionnées")
+    
     # Si des sources existent mais que la réponse dit "Je ne trouve pas", c'est incohérent
     # Dans ce cas, on utilise le contexte des documents pour générer une réponse
     if sources_list and len(sources_list) > 0 and answer_content == "Je ne trouve pas l'information dans les textes fournis.":
@@ -868,10 +1191,6 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
                 # En cas d'erreur, utiliser directement un extrait du contexte
                 answer_content = f"D'après les documents juridiques consultés : {context_excerpt}"
     
-    # S'assurer que sources_list n'est jamais vide
-    if not sources_list:
-        sources_list = ["Aucune source disponible"]
-    
     # Générer des questions suggérées basées sur les documents et leur domaine
     # Ne pas générer de questions si la réponse est "Je ne trouve pas" ET qu'il n'y a pas de sources
     if answer_content == "Je ne trouve pas l'information dans les textes fournis." and not sources_list:
@@ -893,7 +1212,21 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
     }
 
 
+# Initialiser le reranker si activé
 compressor = None
+if ENABLE_RERANKER:
+    try:
+        compressor = BGEReranker(
+            model_name="BAAI/bge-reranker-base",
+            top_n=3,  # Limiter à 3 documents les plus pertinents
+            enabled=True
+        )
+        print("✅ Reranker BGE initialisé")
+    except Exception as e:
+        print(f"⚠️  Erreur lors de l'initialisation du reranker: {e}")
+        compressor = None
+else:
+    print("ℹ️  Reranker désactivé (ENABLE_RERANKER=false)")
 
 # Créer le graphe d'agent
 workflow = StateGraph(AgentState)

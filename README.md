@@ -135,30 +135,15 @@ La base de données vectorielle est créée automatiquement lors de l'ingestion.
 3. Ouvrez `http://localhost:3000` dans votre navigateur
 4. Posez vos questions juridiques dans l'interface
 
-## 🚀 Déploiement
+## 🚀 Déploiement sur Render
 
-### Alternatives de Déploiement
-
-Ce projet peut être déployé sur plusieurs plateformes. Consultez **[ALTERNATIVES_DEPLOIEMENT.md](ALTERNATIVES_DEPLOIEMENT.md)** pour une comparaison détaillée des alternatives gratuites et open source à Render.
-
-**Guides disponibles** :
-- **[DEPLOIEMENT_RAILWAY.md](DEPLOIEMENT_RAILWAY.md)** : Guide complet pour Railway (recommandé)
-- **[DEPLOIEMENT_CAPROVER.md](DEPLOIEMENT_CAPROVER.md)** : Guide pour CapRover (open source)
-
-**Recommandations** :
-- **Railway** (Gratuit) : Interface moderne avec crédits gratuits ⭐
-- **CapRover** (Open Source) : Sur VPS gratuit (Oracle Cloud Free Tier)
-- **Fly.io** (Gratuit) : Déploiement cloud simple
-
-### Déploiement sur Render
-
-#### Prérequis
+### Prérequis
 
 - Compte Render avec carte de crédit configurée
 - Token API Render (disponible sur https://dashboard.render.com/account/api-keys)
 - Repository GitHub avec le code
 
-#### Architecture de déploiement
+### Architecture de déploiement
 
 Le projet est déployé avec **deux services séparés** :
 

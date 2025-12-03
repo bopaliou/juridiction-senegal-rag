@@ -125,7 +125,10 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={onClose}
+          onClick={() => {
+            // Sur mobile, fermer complètement
+            onClose();
+          }}
         />
       )}
 

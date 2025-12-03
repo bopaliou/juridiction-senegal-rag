@@ -17,6 +17,7 @@ interface SourcesSidebarProps {
   onClose: () => void;
   sources: SourceItem[];
   isLoading?: boolean;
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
 const getDomainIcon = (domain?: string) => {
@@ -51,10 +52,17 @@ const getDomainColor = (domain?: string) => {
   }
 };
 
-export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = false }: SourcesSidebarProps) {
+export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = false, onCollapseChange }: SourcesSidebarProps) {
   const [visibleSources, setVisibleSources] = useState<SourceItem[]>([]);
   // État pour réduire/agrandir la sidebar
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Notifier le parent du changement d'état
+  useEffect(() => {
+    if (onCollapseChange) {
+      onCollapseChange(isCollapsed);
+    }
+  }, [isCollapsed, onCollapseChange]);
 
   // Charger les sources progressivement
   useEffect(() => {
@@ -77,27 +85,48 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
     return () => clearInterval(interval);
   }, [isOpen, sources]);
 
-  if (!isOpen) return null;
+  // Ne pas rendre null si isOpen est false, mais plutôt masquer visuellement
+  // pour permettre de le réouvrir même quand réduit
+
+  // Gérer le clic en dehors : réduire si ouvert, ne rien faire si déjà réduit (garder visible)
+  const handleOverlayClick = () => {
+    if (!isCollapsed) {
+      // Si ouvert, réduire (mais garder visible)
+      setIsCollapsed(true);
+    }
+    // Si déjà réduit, ne rien faire (garder le sidebar visible en mode réduit)
+  };
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 z-40 bg-black/20 lg:bg-transparent"
-        onClick={onClose}
-      />
+      {/* Overlay - seulement visible si le sidebar est complètement ouvert (pas réduit) */}
+      {isOpen && !isCollapsed && (
+        <div
+          className="fixed inset-0 z-40 bg-black/20 lg:bg-transparent"
+          onClick={handleOverlayClick}
+        />
+      )}
 
-      {/* Sidebar */}
+      {/* Sidebar - toujours visible si isOpen est true, même quand réduit */}
       <aside
         className={`
           fixed right-0 top-0 z-50 h-full transform bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-2xl transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
           ${isCollapsed ? 'w-16' : 'w-full lg:w-96'}
         `}
+        onClick={(e) => {
+          // Si réduit et qu'on clique sur le sidebar, le réagrandir
+          if (isCollapsed) {
+            e.stopPropagation();
+            setIsCollapsed(false);
+          }
+        }}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4">
+          <div className={`flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 transition-all duration-300 ${
+            isCollapsed ? 'px-2 py-4 flex-col gap-3' : 'px-6 py-4'
+          }`}>
             {!isCollapsed && (
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white">
@@ -112,28 +141,43 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
               </div>
             )}
             {isCollapsed && (
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white">
-                <FileText className="h-5 w-5" />
+              <div className="flex flex-col items-center gap-2 w-full">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-md">
+                  <FileText className="h-5 w-5" />
+                </div>
+                {sources.length > 0 && (
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold">
+                    {sources.length}
+                  </div>
+                )}
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${isCollapsed ? 'flex-col w-full' : ''}`}>
               <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCollapsed(!isCollapsed);
+                }}
                 className={`rounded-lg p-2 transition-colors ${
                   isCollapsed 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 w-full' 
                     : 'text-gray-400 hover:bg-white hover:text-gray-600'
                 }`}
                 title={isCollapsed ? "Agrandir" : "Réduire"}
               >
                 {isCollapsed ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
               </button>
-              <button
-                onClick={onClose}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {!isCollapsed && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
 

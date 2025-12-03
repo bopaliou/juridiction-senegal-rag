@@ -58,6 +58,58 @@ body {
   animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Animation de réflexion pour le spinner */
+@keyframes thinking-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes thinking-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+  }
+}
+
+/* Animation fluide pour les transitions */
+@keyframes smooth-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-smooth-fade {
+  animation: smooth-fade 0.3s ease-in-out;
+}
+
+/* Animation de typing pour les messages */
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Transitions fluides pour tous les éléments interactifs */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
