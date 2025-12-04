@@ -186,7 +186,10 @@ async def ask_question(request: SecureQueryRequest):
     except Exception as e:
         # Logger l'erreur complète côté serveur uniquement
         print("\n--- ERREUR INTERNE DE L'AGENT LANGGRAPH ---")
-        traceback.print_exc()
+        print(f"Type d'erreur: {type(e).__name__}")
+        print(f"Message: {str(e)}")
+        import sys
+        traceback.print_exc(file=sys.stdout)
         print("------------------------------------------\n")
         
         # Ne pas exposer les détails de l'erreur au client
