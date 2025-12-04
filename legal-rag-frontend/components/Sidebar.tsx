@@ -1,10 +1,8 @@
 'use client';
 
-import { Plus, Trash2, Settings, X, ChevronLeft, ChevronRight, MessageSquare, Clock, Sparkles, LogOut } from 'lucide-react';
+import { Plus, Trash2, Settings, X, ChevronLeft, ChevronRight, MessageSquare, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -103,10 +101,6 @@ const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
 export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], onChatClick, onCollapseChange, activeConversationId }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const supabase = createClient();
 
   // Utiliser directement chatHistory prop
   const history = chatHistory;
@@ -119,19 +113,6 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
 
   useEffect(() => {
     setMounted(true);
-    
-    // Get current user
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sauvegarder dans localStorage quand chatHistory change
@@ -143,17 +124,6 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
       console.error('Erreur lors de la sauvegarde:', e);
     }
   }, [chatHistory, mounted]);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await supabase.auth.signOut();
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Erreur de déconnexion:', error);
-      setLoggingOut(false);
-    }
-  };
 
   const handleDeleteChat = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,22 +140,6 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
   };
 
   const { todayItems, weekItems, olderItems } = groupHistoryByPeriod(history);
-
-  // Get user display name
-  const getUserDisplayName = () => {
-    if (!user) return 'Utilisateur';
-    return user.user_metadata?.full_name || user.email?.split('@')[0] || 'Utilisateur';
-  };
-
-  // Get user initials for avatar
-  const getUserInitials = () => {
-    const name = getUserDisplayName();
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
 
   return (
     <>
@@ -334,82 +288,20 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
             )}
           </div>
 
-          {/* Pied de page - Profil utilisateur */}
+          {/* Pied de page */}
           <div className="border-t border-white/10 p-4">
             {!isCollapsed ? (
-              <>
-                {/* Profil utilisateur */}
-                <div className="mb-3 flex items-center gap-3 rounded-xl p-3 bg-white/5">
-                  {user?.user_metadata?.avatar_url ? (
-                    <Image
-                      src={user.user_metadata.avatar_url}
-                      alt="Avatar"
-                      width={40}
-                      height={40}
-                      className="h-10 w-10 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0891B2] to-[#14B8A6] text-sm font-bold text-white">
-                      {getUserInitials()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white truncate">
-                      {getUserDisplayName()}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-white/50 truncate">
-                      <Sparkles className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{user?.email || 'Compte gratuit'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Boutons */}
-                <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 rounded-xl p-3 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors">
-                    <Settings className="h-4 w-4" />
-                    <span>Paramètres</span>
-                  </button>
-                  <button 
-                    onClick={handleLogout}
-                    disabled={loggingOut}
-                    className="w-full flex items-center gap-3 rounded-xl p-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors disabled:opacity-50"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>{loggingOut ? 'Déconnexion...' : 'Se déconnecter'}</span>
-                  </button>
-                </div>
-              </>
+              <button className="w-full flex items-center gap-3 rounded-xl p-3 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors">
+                <Settings className="h-4 w-4" />
+                <span>Paramètres</span>
+              </button>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                {user?.user_metadata?.avatar_url ? (
-                  <Image
-                    src={user.user_metadata.avatar_url}
-                    alt="Avatar"
-                    width={36}
-                    height={36}
-                    className="h-9 w-9 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0891B2] to-[#14B8A6] text-xs font-bold text-white">
-                    {getUserInitials()}
-                  </div>
-                )}
-                <button 
-                  className="flex items-center justify-center rounded-xl p-2.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" 
-                  title="Paramètres"
-                >
-                  <Settings className="h-5 w-5" />
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                  className="flex items-center justify-center rounded-xl p-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors disabled:opacity-50" 
-                  title="Se déconnecter"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
+              <button 
+                className="flex items-center justify-center rounded-xl p-2.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" 
+                title="Paramètres"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
             )}
           </div>
         </div>
