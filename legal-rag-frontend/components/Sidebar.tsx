@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Trash2, Settings, User, X, ChevronLeft, ChevronRight, MessageSquare, Clock, Sparkles, LogOut } from 'lucide-react';
+import { Plus, Trash2, Settings, X, ChevronLeft, ChevronRight, MessageSquare, Clock, Sparkles, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';

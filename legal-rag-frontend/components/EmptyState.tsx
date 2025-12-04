@@ -196,14 +196,18 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export default function EmptyState({ onQuestionClick, isLoading = false }: EmptyStateProps) {
+  // Utiliser useMemo pour éviter setState dans useEffect
+  const [randomQuestions] = useState(() => {
+    // Initialisation lazy - exécutée une seule fois
+    return shuffleArray(ALL_CITIZEN_QUESTIONS).slice(0, 4);
+  });
+
   const [mounted, setMounted] = useState(false);
-  const [randomQuestions, setRandomQuestions] = useState<typeof ALL_CITIZEN_QUESTIONS>([]);
 
   useEffect(() => {
-    setMounted(true);
-    // Sélectionner 4 questions aléatoires à chaque montage du composant
-    const shuffled = shuffleArray(ALL_CITIZEN_QUESTIONS);
-    setRandomQuestions(shuffled.slice(0, 4));
+    // Déclencher le montage après le premier render côté client
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   if (!mounted) return null;
