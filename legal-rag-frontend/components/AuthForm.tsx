@@ -37,11 +37,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
             data: {
               full_name: fullName,
             },
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
           },
         });
 
         if (error) throw error;
-        setSuccess('Vérifiez votre email pour confirmer votre inscription.');
+        // Rediriger vers la page de vérification d'email
+        window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,

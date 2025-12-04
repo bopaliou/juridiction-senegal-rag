@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Routes publiques (pas de redirection)
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/forgot-password', '/reset-password']
+  const publicRoutes = ['/login', '/signup', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/verify-email']
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
