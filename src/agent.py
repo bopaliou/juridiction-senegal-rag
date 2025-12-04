@@ -34,7 +34,8 @@ if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY non définie")
 
 # Seuil de pertinence minimum pour les documents (après reranking)
-RELEVANCE_THRESHOLD = 0.5
+# Abaissé à 0.2 pour éviter les faux négatifs (documents pertinents rejetés)
+RELEVANCE_THRESHOLD = 0.2
 
 # =============================================================================
 # LAZY LOADING DES RESSOURCES
@@ -370,13 +371,16 @@ def retrieve_node(state: AgentState) -> dict:
         if not docs:
             return {"context_documents": []}
         
+        # Garder les documents originaux pour fallback
+        original_docs = docs[:3]  # Top 3 originaux
+        
         # Reranking avec FlashRank si disponible
         reranker = get_reranker()
         if reranker:
             try:
                 reranked = reranker.compress_documents(docs, question)
                 
-                # Filtrage strict par score de pertinence
+                # Filtrage par score de pertinence
                 filtered = []
                 for doc in reranked:
                     score = doc.metadata.get('relevance_score', 0)
@@ -384,13 +388,19 @@ def retrieve_node(state: AgentState) -> dict:
                         filtered.append(doc)
                         print(f"   ✅ Score {score:.2f}: {doc.metadata.get('source_name', 'N/A')[:40]}")
                     else:
-                        print(f"   ❌ Score {score:.2f} < {RELEVANCE_THRESHOLD}: rejeté")
+                        print(f"   ⚠️ Score {score:.2f} < {RELEVANCE_THRESHOLD}")
                 
-                docs = filtered if filtered else []
-                print(f"📊 Après reranking: {len(docs)} documents retenus")
+                if filtered:
+                    docs = filtered
+                    print(f"📊 Après reranking: {len(docs)} documents retenus")
+                else:
+                    # FALLBACK: Si tout est filtré, utiliser les top 3 rerankés sans filtre de score
+                    docs = reranked[:3] if reranked else original_docs
+                    print(f"⚠️ Fallback: {len(docs)} documents (sans filtre de score)")
                 
             except Exception as e:
                 print(f"⚠️ Erreur reranking: {e}")
+                docs = original_docs  # Utiliser les originaux en cas d'erreur
         
         # Convertir en format sérialisable
         context_docs = [document_to_source(doc, i) for i, doc in enumerate(docs)]

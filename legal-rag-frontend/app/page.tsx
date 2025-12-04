@@ -43,7 +43,9 @@ export default function Home() {
   const saveConversation = useCallback((conversationId: string, msgs: Message[]) => {
     if (typeof window === 'undefined' || !conversationId || msgs.length === 0) return;
     try {
-      localStorage.setItem(getConversationKey(conversationId), JSON.stringify(msgs));
+      const key = getConversationKey(conversationId);
+      localStorage.setItem(key, JSON.stringify(msgs));
+      console.log(`💾 Conversation sauvegardée: ${key} (${msgs.length} messages)`);
     } catch (e) {
       console.error('Erreur sauvegarde conversation:', e);
     }
@@ -53,9 +55,13 @@ export default function Home() {
   const loadConversation = useCallback((conversationId: string): Message[] => {
     if (typeof window === 'undefined' || !conversationId) return [];
     try {
-      const stored = localStorage.getItem(getConversationKey(conversationId));
+      const key = getConversationKey(conversationId);
+      const stored = localStorage.getItem(key);
+      console.log(`📂 Tentative de chargement: ${key}, trouvé: ${stored ? 'oui' : 'non'}`);
       if (stored) {
-        return JSON.parse(stored) as Message[];
+        const parsed = JSON.parse(stored) as Message[];
+        console.log(`✅ ${parsed.length} messages chargés`);
+        return parsed;
       }
     } catch (e) {
       console.error('Erreur chargement conversation:', e);
