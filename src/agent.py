@@ -267,10 +267,10 @@ def handle_non_juridique(state: AgentState):
     
     return {
         "answer": response.content,
-        # CHANGEMENT : on utilise la clé 'sources'
         "sources": ["Question jugée hors du champ d'expertise juridique."],
         "messages": messages,
-        "suggested_questions": []
+        "suggested_questions": [],
+        "documents": []  # Vider pour éviter erreur de sérialisation msgpack
     }
 
 def detect_domain_from_question(question: str) -> str:
@@ -672,7 +672,8 @@ def generate_node(state: AgentState):
             "answer": "Je ne trouve pas l'information dans les textes fournis.",
             "sources": ["Aucun document trouvé pour cette question."],
             "messages": messages,
-            "suggested_questions": []
+            "suggested_questions": [],
+            "documents": []  # Vider pour éviter erreur de sérialisation
         }
     
     # Extraire les mots-clés de la question pour trouver les parties pertinentes
@@ -886,7 +887,8 @@ def generate_node(state: AgentState):
             "answer": "Je ne trouve pas l'information dans les textes fournis.",
             "sources": ["Aucun document pertinent trouvé pour cette question."],
             "messages": messages,
-            "suggested_questions": []
+            "suggested_questions": [],
+            "documents": []  # Vider pour éviter erreur de sérialisation
         }
     
     # Construire le template avec l'historique si disponible
@@ -1184,9 +1186,10 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
     
     return {
         "answer": answer_content,
-        "sources": sources_list, # <-- CLÉ FINALE POUR L'API avec métadonnées
+        "sources": sources_list,  # CLÉ FINALE POUR L'API avec métadonnées
         "messages": messages,
-        "suggested_questions": suggested_questions
+        "suggested_questions": suggested_questions,
+        "documents": []  # Vider pour éviter erreur de sérialisation msgpack
     }
 
 
