@@ -137,72 +137,76 @@ export default function Home() {
   const parseSources = useCallback((sources: unknown[]): SourceItem[] => {
     if (!sources || !Array.isArray(sources)) return [];
     
-    return sources
-      .map((source, index) => {
-        try {
-          // CAS 1: Objet direct (nouveau format backend avec SourceModel)
-          if (typeof source === 'object' && source !== null) {
-            const obj = source as Record<string, unknown>;
-            return {
+    const result: SourceItem[] = [];
+    
+    sources.forEach((source, index) => {
+      try {
+        // CAS 1: Objet direct (nouveau format backend avec SourceModel)
+        if (typeof source === 'object' && source !== null) {
+          const obj = source as Record<string, unknown>;
+          const content = (obj.content as string) || '';
+          if (content.length > 0) {
+            result.push({
               id: (obj.id as string) || `source_${index}`,
               title: (obj.title as string) || 'Document Juridique',
               url: obj.url as string | undefined,
-              content: (obj.content as string) || '',
+              content,
               page: obj.page as number | undefined,
               domain: obj.domain as string | undefined,
               article: obj.article as string | undefined,
               breadcrumb: obj.breadcrumb as string | undefined,
-            };
+            });
+          }
+          return;
+        }
+        
+        // CAS 2: String JSON (ancien format)
+        if (typeof source === 'string') {
+          const trimmed = source.trim();
+          
+          // Ignorer les messages système
+          if (trimmed === 'Aucune source disponible' || 
+              trimmed === 'Aucune source pertinente disponible' ||
+              trimmed.length === 0) {
+            return;
           }
           
-          // CAS 2: String JSON (ancien format)
-          if (typeof source === 'string') {
-            const trimmed = source.trim();
-            
-            // Ignorer les messages système
-            if (trimmed === 'Aucune source disponible' || 
-                trimmed === 'Aucune source pertinente disponible') {
-              return null;
-            }
-            
-            // Essayer de parser comme JSON
-            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-              try {
-                const parsed = JSON.parse(trimmed);
-                return {
+          // Essayer de parser comme JSON
+          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              const content = parsed.content || '';
+              if (content.length > 0) {
+                result.push({
                   id: parsed.id || `source_${index}`,
                   title: parsed.title || 'Source',
                   url: parsed.url,
-                  content: parsed.content || '',
+                  content,
                   page: parsed.page,
                   domain: parsed.domain,
                   article: parsed.article,
                   breadcrumb: parsed.breadcrumb,
-                };
-              } catch {
-                // Continuer au fallback
+                });
               }
+              return;
+            } catch {
+              // Continuer au fallback
             }
-            
-            // Fallback: texte brut
-            return {
-              id: `source_${index}`,
-              title: 'Information',
-              content: trimmed.length > 800 ? trimmed.substring(0, 800) + '...' : trimmed,
-            };
           }
           
-          return null;
-        } catch (error) {
-          console.warn('Erreur parsing source:', error);
-          return null;
+          // Fallback: texte brut
+          result.push({
+            id: `source_${index}`,
+            title: 'Information',
+            content: trimmed.length > 800 ? trimmed.substring(0, 800) + '...' : trimmed,
+          });
         }
-      })
-      .filter((source): source is SourceItem => 
-        source !== null && 
-        typeof source.content === 'string' && 
-        source.content.length > 0
-      );
+      } catch (error) {
+        console.warn('Erreur parsing source:', error);
+      }
+    });
+    
+    return result;
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent | string) => {
