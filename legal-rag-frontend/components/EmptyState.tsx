@@ -1,39 +1,152 @@
 'use client';
 
-import { Scale, Briefcase, FileText, Gavel, ArrowRight, Sparkles } from 'lucide-react';
+import { Scale, Briefcase, FileText, Gavel, ArrowRight, Sparkles, Users, Clock, Shield, Building } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface EmptyStateProps {
   onQuestionClick: (question: string) => void;
   isLoading?: boolean;
 }
 
-// Questions suggérées basées sur les documents disponibles
-const STARTER_QUESTIONS = [
+// Questions citoyennes - accessibles et pratiques
+const ALL_CITIZEN_QUESTIONS = [
+  // Travail - Questions pratiques
   {
-    icon: Scale,
-    question: "Quel est le droit au travail selon l'article L.1 du Code du Travail ?",
-    category: "Code du Travail",
+    icon: Briefcase,
+    question: "Combien de jours de congé ai-je droit par an ?",
+    category: "Travail",
     color: "cyan"
   },
   {
     icon: Briefcase,
-    question: "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
-    category: "Code du Travail",
+    question: "Mon employeur peut-il me licencier sans préavis ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Que faire si mon employeur ne me paie pas mon salaire ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Comment démissionner de mon travail ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Quels sont mes droits si je suis licencié ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Peut-on m'obliger à faire des heures supplémentaires ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Est-ce que j'ai droit à un contrat de travail écrit ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  {
+    icon: Briefcase,
+    question: "Comment contester un licenciement abusif ?",
+    category: "Travail",
+    color: "cyan"
+  },
+  // Retraite
+  {
+    icon: Clock,
+    question: "À quel âge puis-je partir à la retraite au Sénégal ?",
+    category: "Retraite",
     color: "teal"
   },
   {
-    icon: Gavel,
-    question: "Quelles sont les modifications apportées par la loi 2020-05 du 10 janvier 2020 ?",
-    category: "Droit Pénal",
+    icon: Clock,
+    question: "Comment calculer ma pension de retraite ?",
+    category: "Retraite",
+    color: "teal"
+  },
+  {
+    icon: Clock,
+    question: "Combien d'années faut-il cotiser pour la retraite ?",
+    category: "Retraite",
+    color: "teal"
+  },
+  {
+    icon: Clock,
+    question: "Peut-on continuer à travailler après l'âge de la retraite ?",
+    category: "Retraite",
+    color: "teal"
+  },
+  // Droits fondamentaux
+  {
+    icon: Shield,
+    question: "Le travail forcé est-il interdit au Sénégal ?",
+    category: "Droits",
     color: "green"
   },
   {
-    icon: FileText,
-    question: "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
+    icon: Shield,
+    question: "Ai-je le droit de m'exprimer librement au travail ?",
+    category: "Droits",
+    color: "green"
+  },
+  {
+    icon: Shield,
+    question: "Peut-on me discriminer à l'embauche ?",
+    category: "Droits",
+    color: "green"
+  },
+  {
+    icon: Shield,
+    question: "Quels sont mes droits fondamentaux en tant que travailleur ?",
+    category: "Droits",
+    color: "green"
+  },
+  // Syndicats
+  {
+    icon: Users,
+    question: "Ai-je le droit de créer ou rejoindre un syndicat ?",
     category: "Syndicats",
     color: "navy"
+  },
+  {
+    icon: Users,
+    question: "Comment créer un syndicat dans mon entreprise ?",
+    category: "Syndicats",
+    color: "navy"
+  },
+  {
+    icon: Users,
+    question: "Mon employeur peut-il m'interdire d'adhérer à un syndicat ?",
+    category: "Syndicats",
+    color: "navy"
+  },
+  // Justice
+  {
+    icon: Gavel,
+    question: "Quelles sont les sanctions en cas de harcèlement au travail ?",
+    category: "Justice",
+    color: "green"
+  },
+  {
+    icon: Gavel,
+    question: "Comment porter plainte contre mon employeur ?",
+    category: "Justice",
+    color: "green"
+  },
+  {
+    icon: Gavel,
+    question: "Quelles sont les peines pour violences au Sénégal ?",
+    category: "Justice",
+    color: "green"
   },
 ];
 
@@ -72,11 +185,25 @@ const colorStyles = {
   }
 };
 
+// Fonction pour mélanger un tableau
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function EmptyState({ onQuestionClick, isLoading = false }: EmptyStateProps) {
   const [mounted, setMounted] = useState(false);
+  const [randomQuestions, setRandomQuestions] = useState<typeof ALL_CITIZEN_QUESTIONS>([]);
 
   useEffect(() => {
     setMounted(true);
+    // Sélectionner 4 questions aléatoires à chaque montage du composant
+    const shuffled = shuffleArray(ALL_CITIZEN_QUESTIONS);
+    setRandomQuestions(shuffled.slice(0, 4));
   }, []);
 
   if (!mounted) return null;
@@ -123,7 +250,7 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
           
           {/* Description */}
           <p className="text-xs sm:text-sm md:text-base text-[#64748B] max-w-xl mx-auto leading-relaxed px-2">
-            Posez vos questions sur le Code du Travail, le droit pénal, les syndicats et bien plus encore.
+            Posez vos questions sur vos droits au travail, la retraite, les congés et bien plus encore.
           </p>
         </div>
 
@@ -136,7 +263,7 @@ export default function EmptyState({ onQuestionClick, isLoading = false }: Empty
 
         {/* Grille de suggestions - 1 colonne sur mobile, 2 sur tablette+ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
-          {STARTER_QUESTIONS.map((item, index) => {
+          {randomQuestions.map((item, index) => {
             const Icon = item.icon;
             const styles = colorStyles[item.color as keyof typeof colorStyles];
             

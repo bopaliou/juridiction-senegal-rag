@@ -71,80 +71,56 @@ export default function Home() {
 
     // Générer des questions suggérées initiales au démarrage si aucune n'existe
     if (globalSuggestedQuestions.length === 0) {
-      const AUTHORIZED_QUESTIONS = [
-        // Questions sur le droit du travail - Dispositions générales (Code du Travail)
-        "Qui est considéré comme travailleur selon l'article L.2 du Code du Travail ?",
-        "Qu'est-ce qu'un travailleur au sens de l'article L.2 du Code du Travail ?",
-        "Quelles sont les personnes soumises au Code du Travail sénégalais ?",
-        "Qu'est-ce qu'une entreprise selon l'article L.3 du Code du Travail ?",
-        "Qu'est-ce qu'un établissement au sens du Code du Travail ?",
-        "Quelles sont les obligations de l'employeur envers les travailleurs ?",
-        "Quel est le droit au travail selon l'article L.1 du Code du Travail ?",
-        "Comment l'État assure-t-il l'égalité de chance en matière d'emploi ?",
-        "Quelles sont les obligations de l'État envers les travailleurs ?",
-        "Le travail forcé est-il interdit au Sénégal selon l'article L.4 ?",
-        "Qu'est-ce que le travail forcé ou obligatoire selon l'article L.4 ?",
-        "Quelles sont les exceptions à l'interdiction du travail forcé ?",
-        "Qu'est-ce que le droit à l'expression des travailleurs selon l'article L.5 ?",
-        "Quel est l'objet du droit d'expression des travailleurs dans l'entreprise ?",
-        "Les opinions des travailleurs peuvent-elles motiver un licenciement selon l'article L.5 ?",
-        "Quelles sont les conditions d'application du droit d'expression des travailleurs ?",
-        "Un travailleur peut-il bénéficier d'avantages supérieurs à ceux du Code du Travail ?",
-        "Les personnes nommées dans un emploi permanent de l'administration sont-elles soumises au Code du Travail ?",
+      // Questions citoyennes - accessibles et pratiques
+      const CITIZEN_QUESTIONS = [
+        // Travail - Questions pratiques du quotidien
+        "Combien de jours de congé ai-je droit par an ?",
+        "Mon employeur peut-il me licencier sans préavis ?",
+        "Que faire si mon employeur ne me paie pas mon salaire ?",
+        "Comment démissionner de mon travail ?",
+        "Quels sont mes droits si je suis licencié ?",
+        "Peut-on m'obliger à faire des heures supplémentaires ?",
+        "Est-ce que j'ai droit à un contrat de travail écrit ?",
+        "Comment contester un licenciement abusif ?",
+        "Quelle est la durée légale du travail au Sénégal ?",
+        "Ai-je droit à une pause pendant ma journée de travail ?",
+        "Mon employeur peut-il réduire mon salaire ?",
+        "Quels sont mes droits en cas d'accident de travail ?",
+        "Peut-on me forcer à travailler le dimanche ?",
+        "Ai-je droit à un congé de maternité ?",
+        "Comment calculer mes indemnités de licenciement ?",
         
-        // Questions sur les syndicats professionnels (Code du Travail)
-        "Quelles sont les règles de création d'un syndicat professionnel ?",
-        "Quel est l'objet des syndicats professionnels selon l'article L.6 ?",
-        "Qui peut constituer un syndicat professionnel selon l'article L.7 ?",
-        "Qui peut adhérer à un syndicat professionnel ?",
-        "Quelles sont les conditions pour créer un syndicat professionnel ?",
-        "Comment fonctionne la procédure de dépôt des statuts d'un syndicat ?",
-        "Où doit-on déposer les statuts d'un syndicat professionnel selon l'article L.8 ?",
-        "Quels documents doivent être déposés pour créer un syndicat ?",
-        "Quel est le délai pour le dépôt des statuts d'un syndicat ?",
-        "Qui délivre le récépissé de reconnaissance d'un syndicat ?",
-        "Quelles sont les conditions d'accès aux fonctions de direction syndicale ?",
-        "Qui vérifie la régularité des statuts d'un syndicat ?",
-        "Quelles sont les conséquences si un membre ne remplit pas les conditions pour diriger un syndicat ?",
-        "Quand peut-on demander la dissolution d'un syndicat ?",
-        "Quelles protections s'appliquent aux travailleurs dans l'exercice du droit d'expression ?",
-        "Quelles sont les infractions concernant le travail forcé ?",
-        "Quels sont les droits des syndicats devant la justice ?",
-        "Quelles protections s'appliquent aux biens d'un syndicat ?",
-        "Quelles sont les règles applicables aux syndicats ?",
-        
-        // Questions sur la retraite (Loi sur la retraite)
-        "Quel est l'âge légal de départ à la retraite au Sénégal ?",
-        "Quels sont les conditions pour bénéficier de la retraite ?",
-        "Comment calculer la pension de retraite ?",
-        "Quels travailleurs peuvent poursuivre leur activité au-delà de l'âge de la retraite ?",
-        "Quelles sont les modalités de versement de la pension de retraite ?",
-        "Comment fonctionne le système de retraite au Sénégal ?",
-        "Quelles sont les cotisations nécessaires pour la retraite ?",
-        "Quels sont les droits des retraités ?",
+        // Retraite - Questions pratiques
+        "À quel âge puis-je partir à la retraite au Sénégal ?",
+        "Comment calculer ma pension de retraite ?",
+        "Combien d'années faut-il cotiser pour la retraite ?",
+        "Peut-on continuer à travailler après l'âge de la retraite ?",
         "Comment faire une demande de retraite ?",
-        "Quelles sont les conditions d'ancienneté pour la retraite ?",
+        "Quels sont mes droits en tant que retraité ?",
         
-        // Questions sur le droit pénal (Loi 84-20 du 02 février 1984)
-        "Quelles sont les infractions prévues par la loi 84-20 du 02 février 1984 ?",
-        "Quelles sont les peines prévues par la loi 84-20 ?",
-        "Comment s'applique la loi 84-20 du 02 février 1984 ?",
-        "Quelles sont les dispositions de la loi 84-20 concernant les infractions pénales ?",
-        "Quels sont les délits réprimés par la loi 84-20 ?",
-        "Quelles sont les sanctions prévues par la loi 84-20 ?",
+        // Droits fondamentaux
+        "Le travail forcé est-il interdit au Sénégal ?",
+        "Ai-je le droit de m'exprimer librement au travail ?",
+        "Peut-on me discriminer à l'embauche ?",
+        "Quels sont mes droits fondamentaux en tant que travailleur ?",
+        "Mon employeur peut-il lire mes messages privés ?",
         
-        // Questions sur le droit pénal (Loi 2020-05 du 10 janvier 2020)
-        "Quelles sont les modifications apportées par la loi 2020-05 du 10 janvier 2020 ?",
-        "Comment la loi 2020-05 modifie-t-elle les peines pour violences sexuelles ?",
-        "Quelles sont les nouvelles peines prévues par la loi 2020-05 ?",
-        "Quelles sont les infractions concernées par la loi 2020-05 ?",
-        "Comment s'applique la loi 2020-05 du 10 janvier 2020 ?",
-        "Quelles sont les circonstances aggravantes prévues par la loi 2020-05 ?",
-        "Quels sont les délais de prescription modifiés par la loi 2020-05 ?",
+        // Syndicats
+        "Ai-je le droit de créer ou rejoindre un syndicat ?",
+        "Comment créer un syndicat dans mon entreprise ?",
+        "Mon employeur peut-il m'interdire d'adhérer à un syndicat ?",
+        "Quels sont les avantages d'être membre d'un syndicat ?",
+        
+        // Justice et protection
+        "Quelles sont les sanctions en cas de harcèlement au travail ?",
+        "Comment porter plainte contre mon employeur ?",
+        "Que faire en cas de harcèlement sexuel au travail ?",
+        "Quelles sont les peines pour violences au Sénégal ?",
+        "Comment saisir l'inspection du travail ?",
       ];
-      // Sélectionner aléatoirement 3 à 7 questions
-      const numQuestions = Math.floor(Math.random() * 5) + 3; // Entre 3 et 7
-      const shuffled = [...AUTHORIZED_QUESTIONS].sort(() => Math.random() - 0.5);
+      // Sélectionner aléatoirement 3 à 5 questions
+      const numQuestions = Math.floor(Math.random() * 3) + 3; // Entre 3 et 5
+      const shuffled = [...CITIZEN_QUESTIONS].sort(() => Math.random() - 0.5);
       setGlobalSuggestedQuestions(shuffled.slice(0, numQuestions));
     }
   }, [globalSuggestedQuestions.length]);
