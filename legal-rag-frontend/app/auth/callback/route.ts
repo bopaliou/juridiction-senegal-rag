@@ -8,14 +8,17 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type')
   const next = searchParams.get('next') ?? '/'
 
-  // Construire l'origine depuis la requête
-  const origin = request.nextUrl.origin
+  // Construire l'origine depuis les headers (important pour nginx proxy)
+  const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || 'localhost:3000'
+  const protocol = request.headers.get('x-forwarded-proto') || 'http'
+  const origin = `${protocol}://${host}`
 
   console.log('[Auth Callback] Received:', { 
     code: code ? 'present' : 'missing', 
     token_hash: token_hash ? 'present' : 'missing', 
     type, 
-    origin 
+    origin,
+    host
   })
 
   // Créer la réponse avec redirection
