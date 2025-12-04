@@ -21,10 +21,9 @@ export async function GET(request: NextRequest) {
     host
   })
 
-  // Stocker les cookies à définir
-  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = []
-
-  // Créer le client Supabase
+  // Créer le client Supabase avec gestion des cookies
+  let redirectPath = '/login?error=unknown'
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,40 +32,12 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookies) {
-          cookies.forEach((cookie) => {
-            cookiesToSet.push(cookie)
-          })
+        setAll() {
+          // Les cookies seront gérés par la réponse
         },
       },
     }
   )
-
-  // Helper pour créer une réponse HTML avec redirection client-side
-  const createClientRedirect = (url: string) => {
-    const fullUrl = url.startsWith('/') ? `${origin}${url}` : url
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta http-equiv="refresh" content="0;url=${fullUrl}">
-          <script>window.location.href="${fullUrl}";</script>
-        </head>
-        <body>
-          <p>Redirection en cours...</p>
-        </body>
-      </html>
-    `
-    const response = new NextResponse(html, {
-      status: 200,
-      headers: { 'Content-Type': 'text/html' }
-    })
-    cookiesToSet.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options)
-    })
-    console.log('[Auth Callback] Client redirect to:', fullUrl, 'with', cookiesToSet.length, 'cookies')
-    return response
-  }
 
   // Cas 1: OAuth callback avec code (Google, etc.)
   if (code) {
@@ -79,23 +50,22 @@ export async function GET(request: NextRequest) {
       
       if (error) {
         console.error('[Auth Callback] Error:', error)
-        return createClientRedirect(`/login?error=${encodeURIComponent(error.message)}`)
+        redirectPath = `/login?error=${encodeURIComponent(error.message)}`
+      } else {
+        // Succès
+        if (type === 'recovery') {
+          redirectPath = '/reset-password'
+        } else {
+          redirectPath = next
+        }
       }
-
-      // Succès - rediriger vers la page demandée
-      if (type === 'recovery') {
-        return createClientRedirect('/reset-password')
-      }
-      
-      return createClientRedirect(next)
     } catch (e) {
       console.error('[Auth Callback] Exception:', e)
-      return createClientRedirect('/login?error=callback_error')
+      redirectPath = '/login?error=callback_error'
     }
   }
-
   // Cas 2: Email confirmation ou reset avec token_hash
-  if (token_hash && type) {
+  else if (token_hash && type) {
     try {
       const { error } = await supabase.auth.verifyOtp({
         type: type as 'signup' | 'recovery' | 'email',
@@ -104,21 +74,33 @@ export async function GET(request: NextRequest) {
       console.log('[Auth Callback] OTP result:', { error: error?.message })
 
       if (error) {
-        return createClientRedirect(`/login?error=${encodeURIComponent(error.message)}`)
+        redirectPath = `/login?error=${encodeURIComponent(error.message)}`
+      } else {
+        if (type === 'recovery') {
+          redirectPath = '/reset-password'
+        } else {
+          redirectPath = next
+        }
       }
-
-      if (type === 'recovery') {
-        return createClientRedirect('/reset-password')
-      }
-      
-      return createClientRedirect(next)
     } catch (e) {
       console.error('[Auth Callback] OTP Exception:', e)
-      return createClientRedirect('/login?error=otp_error')
+      redirectPath = '/login?error=otp_error'
     }
+  } else {
+    console.log('[Auth Callback] No code or token_hash')
+    redirectPath = '/login?error=missing_params'
   }
 
-  // Pas de code ni token - erreur
-  console.log('[Auth Callback] No code or token_hash')
-  return createClientRedirect('/login?error=missing_params')
+  // Créer la réponse de redirection
+  const redirectUrl = new URL(redirectPath, origin)
+  const response = NextResponse.redirect(redirectUrl, { status: 302 })
+  
+  // Réappliquer les cookies de session Supabase
+  const session = await supabase.auth.getSession()
+  if (session.data?.session) {
+    // Les cookies sont automatiquement gérés par Supabase SSR
+    console.log('[Auth Callback] Redirecting to:', redirectUrl.toString())
+  }
+  
+  return response
 }
