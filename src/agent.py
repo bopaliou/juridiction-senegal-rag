@@ -3,6 +3,7 @@ from typing import List, TypedDict, Optional
 import os
 import json
 import random
+import gc
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -14,131 +15,9 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-# Custom BGE Reranker implementation
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import torch
-import gc
-
-
-class BGEReranker:
-    """Custom reranker using BGE reranker model from HuggingFace with lazy loading."""
-    
-    def __init__(self, model_name: str = "BAAI/bge-reranker-base", top_n: int = 3, device: Optional[str] = None, enabled: bool = True):
-        self.model_name = model_name
-        self.top_n = top_n
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self._model = None
-        self._tokenizer = None
-        self.enabled = enabled  # Permet de désactiver le reranker pour économiser la mémoire
-    
-    @property
-    def tokenizer(self):
-        """Lazy loading du tokenizer."""
-        if self._tokenizer is None:
-            try:
-                self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            except Exception as e:
-                print(f"⚠️  Erreur lors du chargement du tokenizer: {e}")
-                raise
-        return self._tokenizer
-    
-    @property
-    def model(self):
-        """Lazy loading du modèle avec optimisation mémoire."""
-        if self._model is None:
-            try:
-                print(f"🔄 Chargement du modèle BGE Reranker ({self.model_name})...")
-                # Utiliser torch_dtype=torch.float16 pour réduire la mémoire de moitié
-                # et low_cpu_mem_usage=True pour optimiser le chargement
-                self._model = AutoModelForSequenceClassification.from_pretrained(
-                    self.model_name,
-                    torch_dtype=torch.float16 if self.device == "cpu" else torch.float32,
-                    low_cpu_mem_usage=True,
-                    device_map="auto" if self.device != "cpu" else None,
-                )
-                self._model.eval()
-                self._model.to(self.device)
-                # Forcer le garbage collection après le chargement
-                gc.collect()
-                if self.device == "cpu":
-                    torch.set_num_threads(1)  # Limiter les threads CPU
-                print(f"✅ Modèle BGE Reranker chargé sur {self.device}")
-            except Exception as e:
-                print(f"⚠️  Erreur lors du chargement du modèle: {e}")
-                # Si erreur, essayer sans spécifier dtype
-                try:
-                    self._model = AutoModelForSequenceClassification.from_pretrained(
-                        self.model_name,
-                        low_cpu_mem_usage=True
-                    )
-                    self._model.eval()
-                    self._model.to(self.device)
-                    gc.collect()
-                except Exception as e2:
-                    print(f"❌ Erreur critique lors du chargement du modèle: {e2}")
-                raise
-
-        return self._model
-    
-    def compress_documents(
-        self, documents: List[Document], query: str, batch_size: int = 8
-    ) -> List[Document]:
-        
-        if not documents:
-            return []
-        
-        # Si le reranker est désactivé, retourner simplement les top_n documents
-        if not self.enabled:
-            return documents[:self.top_n]
-        
-        try:
-            # Préparer les paires (query, document)
-            pairs = [[query, doc.page_content] for doc in documents]
-            
-            # Tokeniser et obtenir les scores
-            tokenizer = self.tokenizer
-            model = self.model
-            
-            # Traiter par batch pour éviter les problèmes de mémoire
-            all_scores = []
-            for i in range(0, len(pairs), batch_size):
-                batch = pairs[i:i + batch_size]
-                inputs = tokenizer(
-                    batch,
-                        padding=True,
-                        truncation=True,
-                        return_tensors="pt",
-                        max_length=512
-                    ).to(self.device)
-                    
-                with torch.no_grad():
-                    scores = model(**inputs).logits.view(-1).float()
-                    all_scores.extend(scores.cpu().tolist())
-            
-            # Créer une liste de tuples (score, document) et trier
-            scored_docs = list(zip(all_scores, documents))
-            scored_docs.sort(reverse=True, key=lambda x: x[0])
-            
-            # Retourner les top_n documents
-            return [doc for _, doc in scored_docs[:self.top_n]]
-            
-        except torch.cuda.OutOfMemoryError:
-            print("⚠️  Mémoire GPU insuffisante pour le reranking. Retour des documents originaux.")
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            return documents[:self.top_n]
-        except Exception as e:
-            print(f"⚠️  Erreur lors du reranking: {e}")
-            # En cas d'erreur, retourner les documents originaux
-            if "out of memory" in str(e).lower() or "cuda" in str(e).lower():
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                # Return original documents if reranking fails due to memory
-                return documents[:self.top_n]
-            else:
-                raise
+# FlashRank Reranker - Ultra-lite et super rapide
+# https://docs.langchain.com/oss/python/integrations/retrievers/flashrank-reranker
+from langchain_community.document_compressors import FlashrankRerank
 
 
 load_dotenv()
@@ -1281,18 +1160,18 @@ RÉPONSE (factuelle et basée uniquement sur le contexte):"""
     }
 
 
-# Initialiser le reranker si activé
+# Initialiser le reranker FlashRank si activé
+# FlashRank est ultra-léger et très rapide comparé à BGE
 compressor = None
 if ENABLE_RERANKER:
     try:
-        compressor = BGEReranker(
-            model_name="BAAI/bge-reranker-base",
+        compressor = FlashrankRerank(
             top_n=3,  # Limiter à 3 documents les plus pertinents
-            enabled=True
+            model="ms-marco-MiniLM-L-12-v2"  # Modèle léger et performant
         )
-        print("✅ Reranker BGE initialisé")
+        print("✅ Reranker FlashRank initialisé (ultra-léger)")
     except Exception as e:
-        print(f"⚠️  Erreur lors de l'initialisation du reranker: {e}")
+        print(f"⚠️  Erreur lors de l'initialisation du reranker FlashRank: {e}")
         compressor = None
 else:
     print("ℹ️  Reranker désactivé (ENABLE_RERANKER=false)")
