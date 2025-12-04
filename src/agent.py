@@ -4,6 +4,8 @@ import os
 import json
 import random
 import gc
+import time
+import re
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -571,7 +573,6 @@ def retrieve_noeud(state: AgentState):
     question_lower = question.lower()
     
     # Détecter si la question concerne un article spécifique
-    import re
     article_pattern = re.search(r'article\s*(l\.?\s*)?(\d+)', question_lower)
     specific_article = None
     if article_pattern:
@@ -596,8 +597,6 @@ def retrieve_noeud(state: AgentState):
             print(f"🔍 Recherche améliorée pour Article L.{specific_article}: {search_query}")
         
         # Récupérer plus de documents initialement pour avoir un meilleur pool
-        import time
-        
         retrieval_start = time.time()
         documents = retriever.invoke(search_query)
         retrieval_time = time.time() - retrieval_start
@@ -686,7 +685,6 @@ def generate_node(state: AgentState):
     question_lower = question.lower()
     
     # Détecter si la question concerne un article spécifique
-    import re
     article_pattern = re.search(r'article\s*(l\.?\s*)?(\d+)', question_lower)
     specific_article = None
     if article_pattern:
