@@ -116,7 +116,7 @@ except Exception as e:
 # LLMs
 # Modèle pour le routage (rapide, peu de tokens)
 router_llm = ChatGroq(
-    model_name="llama-3.1-8b-instant",  # Modèle léger pour classification
+    model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
     temperature=0,
     max_tokens=50,
     timeout=30
@@ -124,7 +124,7 @@ router_llm = ChatGroq(
 
 # Modèle pour la génération (plus capable)
 generation_llm = ChatGroq(
-    model_name="llama-3.1-70b-versatile",  # Meilleure limite de tokens
+    model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
     temperature=0,
     max_tokens=2000,
     timeout=60
