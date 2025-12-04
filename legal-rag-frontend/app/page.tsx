@@ -469,6 +469,46 @@ export default function Home() {
     setSidebarOpen(false);
   };
 
+  // Gérer le clic sur une citation d'article pour afficher la source
+  const handleArticleClick = useCallback((articleText: string, messageSources?: string[]) => {
+    if (!messageSources || messageSources.length === 0) return;
+    
+    // Parser les sources du message
+    const parsedSources = parseSources(messageSources);
+    
+    // Chercher la source qui correspond le mieux à l'article cité
+    const articleLower = articleText.toLowerCase();
+    
+    // Essayer de trouver une source correspondante
+    let matchedSource = parsedSources.find(source => {
+      const titleLower = source.title.toLowerCase();
+      const contentLower = source.content.toLowerCase();
+      
+      // Vérifier si l'article est mentionné dans le titre ou le contenu
+      if (articleLower.includes('code du travail') || articleLower.includes('travail')) {
+        return titleLower.includes('travail') || titleLower.includes('codedutravail');
+      }
+      if (articleLower.includes('code pénal') || articleLower.includes('code penal') || articleLower.includes('pénal')) {
+        return titleLower.includes('pénal') || titleLower.includes('penal');
+      }
+      if (articleLower.includes('constitution')) {
+        return titleLower.includes('constitution');
+      }
+      
+      // Recherche générique
+      return contentLower.includes(articleText.toLowerCase().replace(/article\s+/i, ''));
+    });
+    
+    // Si pas de correspondance exacte, prendre la première source
+    if (!matchedSource && parsedSources.length > 0) {
+      matchedSource = parsedSources[0];
+    }
+    
+    // Ouvrir le sidebar des sources avec les sources du message
+    setCurrentMessageSources(parsedSources);
+    setSourcesSidebarOpen(true);
+  }, [parseSources]);
+
   return (
     <div className="flex h-screen bg-white">
       {/* Sidebar gauche (historique) */}
@@ -569,7 +609,10 @@ export default function Home() {
                       
                       {/* Message */}
                       <div className="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm sm:rounded-tl-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm border border-[#E2E8F0]">
-                        <FormattedResponse content={message.content} />
+                        <FormattedResponse 
+                          content={message.content} 
+                          onArticleClick={(articleText) => handleArticleClick(articleText, message.sources)}
+                        />
                       </div>
 
                       {/* Bouton pour ouvrir le sidebar des sources */}
