@@ -1,29 +1,69 @@
+"""
+API FastAPI pour l'Agent Juridique Sénégalais RAG.
+Gère le parsing des sources JSON et la validation Pydantic.
+"""
+
+import asyncio
+import json
+import logging
+import os
+import traceback
+import sys
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import List, Optional, Union
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
-from typing import List
-import traceback
-import os
-import asyncio
-from contextlib import asynccontextmanager
+from langchain_core.messages import HumanMessage, AIMessage
 
 from src.agent import agent_app
-from src.security import SecureQueryRequest, sanitize_input
+from src.security import SecureQueryRequest
 from src.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
     RequestLoggingMiddleware,
 )
-from langchain_core.messages import HumanMessage, AIMessage
 
-# Configuration depuis les variables d'environnement
+# =============================================================================
+# CONFIGURATION DU LOGGING
+# =============================================================================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s - %(name)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger("api")
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
 ).split(",")
 
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "120"))  # 2 minutes par défaut
+
+
+# =============================================================================
+# MODÈLES PYDANTIC
+# =============================================================================
+
+class SourceModel(BaseModel):
+    """Modèle pour une source juridique structurée."""
+    id: str = Field(default="unknown", description="Identifiant unique de la source")
+    title: str = Field(default="Document Juridique", description="Titre de la source")
+    content: str = Field(default="", description="Extrait du contenu")
+    article: Optional[str] = Field(default=None, description="Numéro d'article si applicable")
+    breadcrumb: Optional[str] = Field(default=None, description="Contexte hiérarchique")
+    url: Optional[str] = Field(default=None, description="URL de la source si disponible")
+    page: Optional[Union[str, int]] = Field(default=None, description="Numéro de page")
+    domain: Optional[str] = Field(default=None, description="Domaine juridique")
 
 
 class MessageHistory(BaseModel):
@@ -33,27 +73,125 @@ class MessageHistory(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    """Modèle de réponse de l'API."""
+    """Modèle de réponse de l'API avec sources typées."""
     reponse: str
-    sources: List[str]
+    sources: List[SourceModel] = []
     history: List[MessageHistory] = []
     suggested_questions: List[str] = []
 
 
+# =============================================================================
+# PARSING DES SOURCES
+# =============================================================================
+
+def parse_sources(raw_sources: List) -> List[SourceModel]:
+    """
+    Parse intelligemment les sources renvoyées par l'agent.
+    
+    Gère les cas:
+    - String JSON valide: '{"title": "Code...", "content": "..."}'
+    - Dictionnaire Python
+    - String simple (message d'erreur ou fallback)
+    
+    Args:
+        raw_sources: Liste mixte de sources (str, dict, etc.)
+        
+    Returns:
+        Liste de SourceModel validés
+    """
+    parsed_sources: List[SourceModel] = []
+    
+    if not raw_sources:
+        return []
+    
+    for idx, item in enumerate(raw_sources):
+        try:
+            data = None
+            
+            # CAS 1: String JSON (commence par { ou [)
+            if isinstance(item, str):
+                item_stripped = item.strip()
+                
+                # Ignorer les messages système/erreur
+                if item_stripped in [
+                    "Aucune source pertinente disponible",
+                    "Aucune source disponible",
+                    "Aucun document trouvé pour cette question.",
+                    "Question jugée hors du champ d'expertise juridique."
+                ]:
+                    logger.debug(f"Source ignorée (message système): {item_stripped[:50]}")
+                    continue
+                
+                # Tenter le parsing JSON
+                if item_stripped.startswith('{') or item_stripped.startswith('['):
+                    try:
+                        data = json.loads(item_stripped)
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"Erreur parsing JSON source {idx}: {e}")
+                        # Fallback: créer une source basique
+                        data = {
+                            "id": f"source_{idx}",
+                            "title": "Document Juridique",
+                            "content": item_stripped[:500]
+                        }
+                else:
+                    # String simple - créer une source info
+                    data = {
+                        "id": f"info_{idx}",
+                        "title": "Information",
+                        "content": item_stripped[:500]
+                    }
+            
+            # CAS 2: Dictionnaire Python
+            elif isinstance(item, dict):
+                data = item
+            
+            # CAS 3: Autre type - ignorer
+            else:
+                logger.warning(f"Type de source non supporté: {type(item)}")
+                continue
+            
+            # Valider et créer le SourceModel
+            if data:
+                # Assurer les champs obligatoires
+                if 'id' not in data:
+                    data['id'] = f"source_{idx}"
+                if 'title' not in data:
+                    data['title'] = "Document Juridique"
+                if 'content' not in data:
+                    data['content'] = ""
+                
+                # Tronquer le contenu si trop long
+                if len(data.get('content', '')) > 10000:
+                    data['content'] = data['content'][:10000] + "..."
+                
+                source = SourceModel(**data)
+                parsed_sources.append(source)
+                logger.debug(f"Source parsée: {source.title[:40]}")
+                
+        except Exception as e:
+            logger.error(f"Erreur parsing source {idx}: {e}")
+            continue
+    
+    return parsed_sources
+
+
+# =============================================================================
+# APPLICATION FASTAPI
+# =============================================================================
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Gestion du cycle de vie de l'application."""
-    # Startup
-    print("🚀 Démarrage de l'API Agent Juridique Sénégalais RAG...")
+    logger.info("🚀 Démarrage de l'API Agent Juridique Sénégalais RAG...")
     yield
-    # Shutdown
-    print("🛑 Arrêt de l'API...")
+    logger.info("🛑 Arrêt de l'API...")
 
 
 app = FastAPI(
     title="Agent Juridique Sénégalais RAG API",
     description="API sécurisée pour interagir avec l'agent juridique basé sur RAG.",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -63,46 +201,49 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(GZipMiddleware, minimum_size=1000)  # Compression pour les réponses > 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Configuration CORS sécurisée
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # Limiter aux méthodes nécessaires
-    allow_headers=["Content-Type", "Authorization"],  # Limiter les en-têtes
-    expose_headers=["X-Process-Time"],  # Exposer uniquement les en-têtes nécessaires
-    max_age=3600,  # Cache des prérequêtes CORS pendant 1 heure
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["X-Process-Time"],
+    max_age=3600,
 )
 
+
+# =============================================================================
+# ENDPOINTS
+# =============================================================================
 
 @app.get("/health")
 async def health_check():
     """Endpoint de santé pour vérifier que l'API fonctionne."""
-    # Vérifier si Chroma DB existe
-    import os
-    from pathlib import Path
     chroma_db_path = Path("data/chroma_db")
     db_ready = chroma_db_path.exists() and any(chroma_db_path.iterdir())
     
     return {
         "status": "healthy" if db_ready else "initializing",
         "service": "Agent Juridique Sénégalais RAG API",
+        "version": "2.0.0",
         "database_ready": db_ready
     }
+
 
 @app.post("/ask", response_model=QueryResponse)
 async def ask_question(request: SecureQueryRequest):
     """
-    Endpoint principal : Reçoit une question, interroge l'agent, 
-    et retourne la réponse avec les sources.
+    Endpoint principal: interroge l'agent et retourne une réponse structurée.
     
     Sécurisé avec validation, rate limiting, et timeout.
     """
+    logger.info(f"📥 Question reçue: {request.question[:50]}...")
+    
     try:
-        # Invoke avec timeout pour éviter les requêtes trop longues
-        # Note: Le checkpointer est désactivé pour éviter les erreurs de sérialisation des Documents
+        # Invoke avec timeout
         try:
             final_state = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -112,77 +253,75 @@ async def ask_question(request: SecureQueryRequest):
                 timeout=REQUEST_TIMEOUT
             )
         except asyncio.TimeoutError:
+            logger.warning(f"⏱️ Timeout après {REQUEST_TIMEOUT}s")
             raise HTTPException(
                 status_code=504,
                 detail=f"La requête a pris plus de {REQUEST_TIMEOUT} secondes. Veuillez reformuler votre question."
             )
         
-        # Les sources sont déjà extraites dans les nœuds (generate_node ou handle_non_juridique)
-        sources = final_state.get("sources", ["Aucune source disponible"])
+        # =================================================================
+        # PARSING DES SOURCES (JSON → SourceModel)
+        # =================================================================
+        raw_sources = final_state.get("sources", [])
+        parsed_sources = parse_sources(raw_sources)
         
-        # Ne pas sanitizer les sources (React les sécurise automatiquement)
-        # Seulement filtrer les sources vides et limiter la longueur
-        filtered_sources = [
-            source[:10000] if len(source) > 10000 else source
-            for source in sources 
-            if source and source != "Aucune source disponible"
-        ]
+        logger.info(f"📚 {len(parsed_sources)} sources parsées")
         
-        if not filtered_sources:
-            filtered_sources = ["Aucune source disponible"]
-        
-        # Extraire et formater l'historique (les 5 derniers messages)
+        # =================================================================
+        # EXTRACTION DE L'HISTORIQUE
+        # =================================================================
         messages = final_state.get("messages", [])
-        history = []
+        history: List[MessageHistory] = []
         
-        # Prendre les 5 derniers messages (10 messages max pour 5 échanges)
         recent_messages = messages[-10:] if len(messages) > 10 else messages
         
         for msg in recent_messages:
-            if isinstance(msg, HumanMessage):
-                # Limiter la longueur mais ne pas encoder HTML (React le gère)
-                content = msg.content[:5000] if len(msg.content) > 5000 else msg.content
-                history.append(MessageHistory(role="user", content=content))
-            elif isinstance(msg, AIMessage):
-                # Limiter la longueur mais ne pas encoder HTML (React le gère)
-                content = msg.content[:10000] if len(msg.content) > 10000 else msg.content
-                history.append(MessageHistory(role="assistant", content=content))
+            try:
+                if isinstance(msg, HumanMessage):
+                    content = msg.content[:5000] if len(msg.content) > 5000 else msg.content
+                    history.append(MessageHistory(role="user", content=content))
+                elif isinstance(msg, AIMessage):
+                    content = msg.content[:10000] if len(msg.content) > 10000 else msg.content
+                    history.append(MessageHistory(role="assistant", content=content))
+            except Exception as e:
+                logger.warning(f"Erreur parsing message: {e}")
         
-        # Récupérer les questions suggérées depuis l'état
+        # =================================================================
+        # QUESTIONS SUGGÉRÉES
+        # =================================================================
         suggested_questions_raw = final_state.get("suggested_questions", [])
         suggested_questions = [
             q[:200] if len(q) > 200 else q
-            for q in suggested_questions_raw[:5]  # Limiter à 5 questions max
+            for q in suggested_questions_raw[:5]
             if q and len(q.strip()) > 0
         ]
         
-        # Ne pas sanitizer la réponse (React la sécurise automatiquement)
-        # Seulement limiter la longueur
+        # =================================================================
+        # RÉPONSE
+        # =================================================================
         answer = final_state.get("answer", "Aucune réponse générée")
         if len(answer) > 50000:
             answer = answer[:50000]
         
+        logger.info(f"✅ Réponse générée ({len(answer)} caractères)")
+        
         return QueryResponse(
             reponse=answer,
-            sources=filtered_sources,
+            sources=parsed_sources,
             history=history,
             suggested_questions=suggested_questions
         )
+        
     except HTTPException:
-        # Re-raise les HTTPException sans modification
         raise
     except Exception as e:
-        # Logger l'erreur complète côté serveur uniquement
-        print("\n--- ERREUR INTERNE DE L'AGENT LANGGRAPH ---")
-        print(f"Type d'erreur: {type(e).__name__}")
-        print(f"Message: {str(e)}")
-        import sys
+        logger.error("--- ERREUR INTERNE ---")
+        logger.error(f"Type: {type(e).__name__}")
+        logger.error(f"Message: {str(e)}")
         traceback.print_exc(file=sys.stdout)
-        print("------------------------------------------\n")
+        logger.error("----------------------")
         
-        # Ne pas exposer les détails de l'erreur au client
         raise HTTPException(
             status_code=500,
             detail="Une erreur interne est survenue. Veuillez réessayer plus tard."
         ) from e
-    
