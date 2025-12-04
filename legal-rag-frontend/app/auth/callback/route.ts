@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   })
 
   // Créer une réponse temporaire pour collecter les cookies
-  let response = NextResponse.next({ request })
+  const response = NextResponse.next({ request })
   
   // Créer le client Supabase avec gestion des cookies
   const supabase = createServerClient(
