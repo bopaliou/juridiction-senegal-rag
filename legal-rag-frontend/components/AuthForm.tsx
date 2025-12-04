@@ -184,7 +184,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Votre nom"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors"
+                    className="w-full pl-10 pr-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors placeholder:text-slate-400"
                     required
                   />
                 </div>
@@ -202,7 +202,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"
-                  className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors placeholder:text-slate-400"
                   required
                 />
               </div>
@@ -219,7 +219,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors"
+                  className="w-full pl-10 pr-12 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-xl focus:border-[#0891B2] focus:ring-0 outline-none transition-colors placeholder:text-slate-400"
                   required
                   minLength={6}
                 />
