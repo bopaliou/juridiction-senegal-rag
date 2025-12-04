@@ -634,6 +634,16 @@ export default function Home() {
                         </div>
                       )}
 
+                      {/* Disclaimer */}
+                      <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-amber-50/80 border border-amber-200 rounded-lg sm:rounded-xl">
+                        <div className="flex items-start gap-2">
+                          <span className="text-amber-500 text-sm sm:text-base shrink-0">⚠️</span>
+                          <p className="text-[10px] sm:text-xs text-amber-700 leading-relaxed">
+                            <strong className="font-semibold">Avertissement :</strong> Ces informations sont fournies à titre indicatif uniquement et ne constituent pas un avis juridique. Pour toute situation spécifique, consultez un professionnel du droit qualifié.
+                          </p>
+                        </div>
+                      </div>
+
                       {/* Questions suggérées */}
                       {message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
                         <SuggestedQuestions
