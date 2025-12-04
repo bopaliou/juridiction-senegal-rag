@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Send, Loader2, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
@@ -10,6 +11,7 @@ import EmptyState from '@/components/EmptyState';
 import FormattedResponse from '@/components/FormattedResponse';
 import Header from '@/components/Header';
 import { askQuestion, ApiError } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,6 +21,7 @@ interface Message {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +35,27 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [globalSuggestedQuestions, setGlobalSuggestedQuestions] = useState<string[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Vérifier l'authentification au chargement
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+      
+      setIsCheckingAuth(false);
+    };
+
+    checkAuth();
+  }, [router]);
 
   // Clé localStorage pour les messages d'une conversation
   const getConversationKey = (id: string) => `lexsenegal_conversation_${id}`;
