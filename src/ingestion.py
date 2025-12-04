@@ -19,6 +19,7 @@ import warnings
 import logging
 import re
 import gc
+import time
 
 load_dotenv()
 
@@ -38,6 +39,60 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_PATH = BASE_DIR / "data"
 DATA_DB_PATH = BASE_DIR / "data" / "chroma_db"
 
+# =================================================================
+# MAPPING DES NOMS DE SOURCES OFFICIELS
+# =================================================================
+# Ce dictionnaire mappe les noms de fichiers PDF vers leurs titres officiels
+# pour un affichage propre dans l'interface utilisateur
+
+SOURCE_MAPPING = {
+    # Codes principaux
+    "codedutravail.pdf": "Code du Travail",
+    "codedutravail": "Code du Travail",
+    "code_du_travail.pdf": "Code du Travail",
+    "code_travail.pdf": "Code du Travail",
+    "codetravail.pdf": "Code du Travail",
+    
+    "codepenal.pdf": "Code Pénal",
+    "code_penal.pdf": "Code Pénal",
+    "code-penal.pdf": "Code Pénal",
+    
+    "codecivil.pdf": "Code Civil",
+    "code_civil.pdf": "Code Civil",
+    
+    "codefamille.pdf": "Code de la Famille",
+    "code_famille.pdf": "Code de la Famille",
+    "code-famille.pdf": "Code de la Famille",
+    
+    "constitution.pdf": "Constitution du Sénégal",
+    "constitution_senegal.pdf": "Constitution du Sénégal",
+    
+    "cocc.pdf": "Code des Obligations Civiles et Commerciales",
+    "code_obligations.pdf": "Code des Obligations Civiles et Commerciales",
+    
+    # Lois spécifiques
+    "loi-2020-05-du-10-janvier-2020.pdf": "Loi 2020-05 du 10 janvier 2020 (Criminalisation du viol)",
+    "loi-2020-05-du-10-JANVIER-2020.pdf": "Loi 2020-05 du 10 janvier 2020 (Criminalisation du viol)",
+    "loi-84-20-du-02-fevrier-1984.pdf": "Loi 84-20 du 02 février 1984",
+    "Loi-84-20-du-02-fevrier-1984.pdf": "Loi 84-20 du 02 février 1984",
+    
+    # Autres codes
+    "code_collectivites.pdf": "Code des Collectivités Locales",
+    "code_aviation.pdf": "Code de l'Aviation Civile",
+    "code_environnement.pdf": "Code de l'Environnement",
+    "code_commerce.pdf": "Code de Commerce",
+    "code_douanes.pdf": "Code des Douanes",
+    "code_impots.pdf": "Code Général des Impôts",
+}
+
+# Mapping des URLs vers noms officiels
+WEB_SOURCE_MAPPING = {
+    "conseilconstitutionnel.sn": "Constitution du Sénégal",
+    "code-des-collectivites-locales": "Code des Collectivités Locales",
+    "code-de-laviation-civile": "Code de l'Aviation Civile",
+    "mises-jour-de-la-constitution": "Mises à jour de la Constitution",
+}
+
 # URLs des sources web
 WEB_SOURCES = [
     "https://conseilconstitutionnel.sn/la-constitution/",
@@ -45,6 +100,50 @@ WEB_SOURCES = [
     "https://primature.sn/publications/lois-et-reglements/code-de-laviation-civile",
     "https://primature.sn/publications/lois-et-reglements/mises-jour-de-la-constitution"
 ]
+
+
+def get_official_source_name(source_path: str) -> str:
+    """
+    Obtient le nom officiel d'une source à partir de son chemin ou URL.
+    
+    Args:
+        source_path: Chemin du fichier ou URL
+        
+    Returns:
+        Nom officiel formaté de la source
+    """
+    # Extraire le nom du fichier
+    filename = Path(source_path).name.lower()
+    
+    # Vérifier dans le mapping des PDFs
+    if filename in SOURCE_MAPPING:
+        return SOURCE_MAPPING[filename]
+    
+    # Vérifier avec le stem (sans extension)
+    stem = Path(source_path).stem.lower()
+    if stem in SOURCE_MAPPING:
+        return SOURCE_MAPPING[stem]
+    
+    # Vérifier si c'est une URL web
+    source_lower = source_path.lower()
+    for url_part, official_name in WEB_SOURCE_MAPPING.items():
+        if url_part in source_lower:
+            return official_name
+    
+    # Fallback: Nettoyer et formater le nom de fichier
+    name = Path(source_path).stem
+    # Remplacer les séparateurs courants
+    name = name.replace('_', ' ').replace('-', ' ')
+    # Supprimer les répétitions (ex: "codedutravailtravail" -> "code du travail")
+    name = re.sub(r'(\w+)\1+', r'\1', name, flags=re.IGNORECASE)
+    # Ajouter des espaces avant les majuscules (camelCase)
+    name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+    # Title case
+    name = name.title()
+    # Nettoyer les espaces multiples
+    name = re.sub(r'\s+', ' ', name).strip()
+    
+    return name
 
 
 class SenegalLegalChunker:
@@ -58,7 +157,7 @@ class SenegalLegalChunker:
     # Patterns de détection de la hiérarchie légale
     HIERARCHY_PATTERNS = {
         'livre': re.compile(
-            r'^[\s]*(?:LIVRE|Livre)\s+([IVXLCDM]+|PREMIER|DEUXIÈME|TROISIÈME|QUATRIÈME|CINQUIÈME|PREMIER|SECOND|\d+)',
+            r'^[\s]*(?:LIVRE|Livre)\s+([IVXLCDM]+|PREMIER|DEUXIÈME|TROISIÈME|QUATRIÈME|CINQUIÈME|SECOND|\d+)',
             re.IGNORECASE | re.MULTILINE
         ),
         'titre': re.compile(
@@ -81,13 +180,45 @@ class SenegalLegalChunker:
         re.IGNORECASE | re.MULTILINE
     )
     
-    # Patterns pour le nettoyage OCR
-    OCR_NOISE_PATTERNS = [
-        re.compile(r'---\s*PAGE\s*\d+\s*---', re.IGNORECASE),
-        re.compile(r'page\s*\d+\s*/\s*\d+', re.IGNORECASE),
-        re.compile(r'^\s*JURISCONSULT\s*$', re.IGNORECASE | re.MULTILINE),
-        re.compile(r'^\s*\d+\s*$', re.MULTILINE),  # Numéros de page isolés
-        re.compile(r'\x0c'),  # Form feed characters
+    # Patterns pour le nettoyage avancé
+    CLEANING_PATTERNS = [
+        # Pagination et navigation
+        (re.compile(r'---\s*PAGE\s*\d+\s*---', re.IGNORECASE), ''),
+        (re.compile(r'page\s*\d+\s*/\s*\d+', re.IGNORECASE), ''),
+        (re.compile(r'^\s*\d+\s*/\s*\d+\s*$', re.MULTILINE), ''),
+        
+        # Numéros de page isolés et résidus de pied de page
+        (re.compile(r'^\s*\d{1,4}\s*[;.]?\s*$', re.MULTILINE), ''),
+        (re.compile(r'^\s*-\s*\d+\s*-\s*$', re.MULTILINE), ''),
+        
+        # Mentions "(suite)" après les articles coupés
+        (re.compile(r'\(suite\)', re.IGNORECASE), ''),
+        (re.compile(r'\(Suite\)', re.IGNORECASE), ''),
+        (re.compile(r'\.\.\.\s*suite', re.IGNORECASE), ''),
+        
+        # En-têtes/pieds de page répétés
+        (re.compile(r'^\s*JURISCONSULT\s*$', re.IGNORECASE | re.MULTILINE), ''),
+        (re.compile(r'^\s*Journal\s+Officiel\s*$', re.IGNORECASE | re.MULTILINE), ''),
+        (re.compile(r'^\s*J\.?O\.?\s+\d+.*$', re.IGNORECASE | re.MULTILINE), ''),
+        
+        # Noms de documents répétés/mal formatés
+        (re.compile(r'Codedutravailtravail', re.IGNORECASE), 'Code du Travail'),
+        (re.compile(r'Codedutravail(?![\w])', re.IGNORECASE), 'Code du Travail'),
+        (re.compile(r'CodeduTravail', re.IGNORECASE), 'Code du Travail'),
+        (re.compile(r'CODEDUTRAVAIL', re.IGNORECASE), 'Code du Travail'),
+        (re.compile(r'Codepenal(?![\w])', re.IGNORECASE), 'Code Pénal'),
+        (re.compile(r'CODEPENAL', re.IGNORECASE), 'Code Pénal'),
+        
+        # Form feed et caractères spéciaux
+        (re.compile(r'\x0c'), ''),  # Form feed
+        (re.compile(r'\x00'), ''),  # Null
+        (re.compile(r'[\x01-\x08\x0b\x0e-\x1f]'), ''),  # Autres caractères de contrôle
+        
+        # Lignes avec seulement des tirets ou underscores
+        (re.compile(r'^[\s_\-=]{5,}$', re.MULTILINE), ''),
+        
+        # Points de suspension excessifs
+        (re.compile(r'\.{4,}'), '...'),
     ]
     
     def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):
@@ -104,7 +235,7 @@ class SenegalLegalChunker:
     
     def clean_text(self, text: str) -> str:
         """
-        Nettoie le texte du bruit OCR et des artefacts de pagination.
+        Nettoie le texte du bruit OCR, des artefacts de pagination et des erreurs courantes.
         
         Args:
             text: Texte brut à nettoyer
@@ -112,21 +243,32 @@ class SenegalLegalChunker:
         Returns:
             Texte nettoyé
         """
+        if not text:
+            return ''
+        
         cleaned = text
         
-        # Appliquer les patterns de nettoyage
-        for pattern in self.OCR_NOISE_PATTERNS:
-            cleaned = pattern.sub('', cleaned)
+        # Appliquer tous les patterns de nettoyage
+        for pattern, replacement in self.CLEANING_PATTERNS:
+            cleaned = pattern.sub(replacement, cleaned)
         
-        # Normaliser les espaces multiples
+        # Normaliser les espaces multiples (mais garder un seul espace)
         cleaned = re.sub(r' {2,}', ' ', cleaned)
         
-        # Normaliser les sauts de ligne multiples
+        # Normaliser les sauts de ligne multiples (max 2 consécutifs)
         cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
         
         # Supprimer les espaces en début/fin de ligne
-        cleaned = '\n'.join(line.strip() for line in cleaned.split('\n'))
+        lines = []
+        for line in cleaned.split('\n'):
+            stripped = line.strip()
+            # Ignorer les lignes qui ne contiennent que des espaces ou ponctuation
+            if stripped and not re.match(r'^[\s\.\,\;\:\-\_\=]+$', stripped):
+                lines.append(stripped)
         
+        cleaned = '\n'.join(lines)
+        
+        # Supprimer les lignes vides au début et à la fin
         return cleaned.strip()
     
     def get_breadcrumb(self) -> str:
@@ -153,7 +295,6 @@ class SenegalLegalChunker:
         for level, pattern in self.HIERARCHY_PATTERNS.items():
             match = pattern.search(text)
             if match:
-                # Extraire le numéro/nom du niveau
                 level_value = match.group(1).strip()
                 level_name = level.capitalize()
                 self.current_breadcrumb[level] = f"{level_name} {level_value}"
@@ -179,6 +320,10 @@ class SenegalLegalChunker:
         
         for i, match in enumerate(matches):
             article_num = match.group(1).strip()
+            # Nettoyer le numéro d'article
+            article_num = re.sub(r'\s+', ' ', article_num)
+            article_num = article_num.split('\n')[0].strip()  # Prendre seulement la première ligne
+            
             start_pos = match.start()
             
             # La fin de l'article est le début du prochain article ou la fin du texte
@@ -192,7 +337,37 @@ class SenegalLegalChunker:
         
         return articles
     
-    def chunk_article(self, article_num: str, article_content: str, breadcrumb: str, metadata: dict) -> List[Document]:
+    def format_chunk_content(self, source_name: str, breadcrumb: str, article_num: str, content: str) -> str:
+        """
+        Formate le contenu d'un chunk avec une structure claire pour l'affichage.
+        
+        Args:
+            source_name: Nom officiel de la source
+            breadcrumb: Fil d'ariane contextuel
+            article_num: Numéro de l'article
+            content: Contenu de l'article
+            
+        Returns:
+            Contenu formaté
+        """
+        parts = []
+        
+        # En-tête structuré
+        parts.append(f"Source: {source_name}")
+        
+        if breadcrumb:
+            parts.append(f"Contexte: {breadcrumb}")
+        
+        if article_num:
+            parts.append(f"Article {article_num}")
+        
+        parts.append("")  # Ligne vide avant le contenu
+        parts.append(content)
+        
+        return '\n'.join(parts)
+    
+    def chunk_article(self, article_num: str, article_content: str, breadcrumb: str, 
+                      metadata: dict, source_name: str) -> List[Document]:
         """
         Découpe un article en chunks si nécessaire.
         
@@ -201,64 +376,79 @@ class SenegalLegalChunker:
             article_content: Contenu complet de l'article
             breadcrumb: Fil d'ariane contextuel
             metadata: Métadonnées du document source
+            source_name: Nom officiel de la source
             
         Returns:
             Liste de Documents (chunks)
         """
         chunks = []
         
-        # Construire le préfixe contextuel
-        context_prefix = ""
-        if breadcrumb:
-            context_prefix = f"[{breadcrumb}]\n"
-        context_prefix += f"Article {article_num}\n\n"
+        # Nettoyer le contenu de l'article
+        clean_content = self.clean_text(article_content)
+        if not clean_content:
+            return []
+        
+        # Formater le contenu complet
+        formatted_content = self.format_chunk_content(source_name, breadcrumb, article_num, clean_content)
         
         # Si l'article tient dans un seul chunk
-        full_content = context_prefix + article_content
-        if len(full_content) <= self.chunk_size:
+        if len(formatted_content) <= self.chunk_size:
             chunk_metadata = {
                 **metadata,
+                'source_name': source_name,
                 'article': f"Article {article_num}",
                 'breadcrumb': breadcrumb,
                 'chunk_type': 'article_complet'
             }
-            chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
+            chunks.append(Document(page_content=formatted_content, metadata=chunk_metadata))
         else:
             # Découper l'article en plusieurs chunks avec chevauchement
-            # Essayer de couper aux phrases
-            sentences = re.split(r'(?<=[.!?])\s+', article_content)
-            current_chunk = context_prefix
+            sentences = re.split(r'(?<=[.!?])\s+', clean_content)
+            current_chunk_content = ""
             chunk_idx = 0
             
             for sentence in sentences:
-                if len(current_chunk) + len(sentence) + 1 <= self.chunk_size:
-                    current_chunk += sentence + ' '
+                test_content = current_chunk_content + sentence + ' '
+                header = f"Source: {source_name}\nContexte: {breadcrumb}\nArticle {article_num}"
+                if chunk_idx > 0:
+                    header += " (suite)"
+                header += "\n\n"
+                
+                if len(header + test_content) <= self.chunk_size:
+                    current_chunk_content = test_content
                 else:
                     # Sauvegarder le chunk actuel
-                    if current_chunk.strip():
+                    if current_chunk_content.strip():
+                        full_content = header + current_chunk_content.strip()
                         chunk_metadata = {
                             **metadata,
+                            'source_name': source_name,
                             'article': f"Article {article_num}",
                             'breadcrumb': breadcrumb,
                             'chunk_type': 'article_partiel',
                             'chunk_index': chunk_idx
                         }
-                        chunks.append(Document(page_content=current_chunk.strip(), metadata=chunk_metadata))
+                        chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
                         chunk_idx += 1
                     
-                    # Commencer un nouveau chunk avec contexte
-                    current_chunk = f"[{breadcrumb}] Article {article_num} (suite)\n\n{sentence} "
+                    current_chunk_content = sentence + ' '
             
             # Ajouter le dernier chunk
-            if current_chunk.strip() and len(current_chunk) > len(context_prefix):
+            if current_chunk_content.strip():
+                header = f"Source: {source_name}\nContexte: {breadcrumb}\nArticle {article_num}"
+                if chunk_idx > 0:
+                    header += " (suite)"
+                header += "\n\n"
+                full_content = header + current_chunk_content.strip()
                 chunk_metadata = {
                     **metadata,
+                    'source_name': source_name,
                     'article': f"Article {article_num}",
                     'breadcrumb': breadcrumb,
                     'chunk_type': 'article_partiel',
                     'chunk_index': chunk_idx
                 }
-                chunks.append(Document(page_content=current_chunk.strip(), metadata=chunk_metadata))
+                chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
         
         return chunks
     
@@ -283,6 +473,9 @@ class SenegalLegalChunker:
             logger.warning(f"⚠️ Document vide après nettoyage: {metadata.get('source', 'inconnu')}")
             return []
         
+        # Obtenir le nom officiel de la source
+        source_name = get_official_source_name(metadata.get('source', ''))
+        
         chunks = []
         
         # Extraire les articles
@@ -299,29 +492,32 @@ class SenegalLegalChunker:
                     self.update_breadcrumb(preamble)
                     breadcrumb = self.get_breadcrumb()
                     
-                    # Découper le préambule si nécessaire
-                    if len(preamble) <= self.chunk_size:
+                    preamble_content = self.format_chunk_content(source_name, breadcrumb, "", preamble)
+                    
+                    if len(preamble_content) <= self.chunk_size:
                         chunk_metadata = {
                             **metadata,
+                            'source_name': source_name,
                             'breadcrumb': breadcrumb,
                             'chunk_type': 'preambule'
                         }
-                        chunks.append(Document(page_content=preamble, metadata=chunk_metadata))
+                        chunks.append(Document(page_content=preamble_content, metadata=chunk_metadata))
                     else:
-                        # Utiliser un splitter basique pour le préambule
                         splitter = RecursiveCharacterTextSplitter(
                             chunk_size=self.chunk_size,
                             chunk_overlap=self.chunk_overlap
                         )
                         preamble_chunks = splitter.split_text(preamble)
                         for i, pc in enumerate(preamble_chunks):
+                            formatted = self.format_chunk_content(source_name, breadcrumb, "", pc)
                             chunk_metadata = {
                                 **metadata,
+                                'source_name': source_name,
                                 'breadcrumb': breadcrumb,
                                 'chunk_type': 'preambule',
                                 'chunk_index': i
                             }
-                            chunks.append(Document(page_content=pc, metadata=chunk_metadata))
+                            chunks.append(Document(page_content=formatted, metadata=chunk_metadata))
             
             # Traiter chaque article
             for article_num, article_content, start_pos, end_pos in articles:
@@ -331,7 +527,7 @@ class SenegalLegalChunker:
                 breadcrumb = self.get_breadcrumb()
                 
                 # Découper l'article
-                article_chunks = self.chunk_article(article_num, article_content, breadcrumb, metadata)
+                article_chunks = self.chunk_article(article_num, article_content, breadcrumb, metadata, source_name)
                 chunks.extend(article_chunks)
         else:
             # Aucun article détecté - utiliser un découpage par paragraphes
@@ -345,7 +541,6 @@ class SenegalLegalChunker:
                 if not para:
                     continue
                 
-                # Mettre à jour le fil d'ariane
                 self.update_breadcrumb(para)
                 
                 if len(current_chunk) + len(para) + 2 <= self.chunk_size:
@@ -353,23 +548,27 @@ class SenegalLegalChunker:
                 else:
                     if current_chunk.strip():
                         breadcrumb = self.get_breadcrumb()
+                        formatted = self.format_chunk_content(source_name, breadcrumb, "", current_chunk.strip())
                         chunk_metadata = {
                             **metadata,
+                            'source_name': source_name,
                             'breadcrumb': breadcrumb,
                             'chunk_type': 'paragraphe'
                         }
-                        chunks.append(Document(page_content=current_chunk.strip(), metadata=chunk_metadata))
+                        chunks.append(Document(page_content=formatted, metadata=chunk_metadata))
                     current_chunk = para + '\n\n'
             
             # Dernier chunk
             if current_chunk.strip():
                 breadcrumb = self.get_breadcrumb()
+                formatted = self.format_chunk_content(source_name, breadcrumb, "", current_chunk.strip())
                 chunk_metadata = {
                     **metadata,
+                    'source_name': source_name,
                     'breadcrumb': breadcrumb,
                     'chunk_type': 'paragraphe'
                 }
-                chunks.append(Document(page_content=current_chunk.strip(), metadata=chunk_metadata))
+                chunks.append(Document(page_content=formatted, metadata=chunk_metadata))
         
         return chunks
 
@@ -398,6 +597,37 @@ def group_pdf_pages_by_file(documents: List[Document]) -> Dict[str, str]:
         result[source] = '\n\n'.join(content for _, content in pages)
     
     return result
+
+
+def safe_rmtree(path: Path, max_retries: int = 3, delay: float = 1.0) -> bool:
+    """
+    Supprime un répertoire de manière sécurisée avec gestion des erreurs Windows.
+    
+    Args:
+        path: Chemin du répertoire à supprimer
+        max_retries: Nombre maximum de tentatives
+        delay: Délai entre les tentatives (secondes)
+        
+    Returns:
+        True si suppression réussie, False sinon
+    """
+    if not path.exists():
+        return True
+    
+    for attempt in range(max_retries):
+        try:
+            shutil.rmtree(path)
+            return True
+        except PermissionError as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"⚠️ Fichiers verrouillés, tentative {attempt + 2}/{max_retries}...")
+                gc.collect()
+                time.sleep(delay)
+            else:
+                logger.error(f"❌ Impossible de supprimer {path}: {e}")
+                logger.info("💡 Essayez de fermer les applications qui utilisent la base de données.")
+                return False
+    return False
 
 
 def ingest_documents():
@@ -445,12 +675,13 @@ def ingest_documents():
         legal_chunker = SenegalLegalChunker(chunk_size=1500, chunk_overlap=200)
         
         for source_path, full_text in pdf_files.items():
-            logger.info(f"   📄 Traitement: {Path(source_path).name}")
+            official_name = get_official_source_name(source_path)
+            logger.info(f"   📄 Traitement: {official_name}")
             
             metadata = {
                 'source': source_path,
                 'source_type': 'pdf',
-                'document_name': Path(source_path).stem
+                'document_name': official_name
             }
             
             file_chunks = legal_chunker.chunk_document(full_text, metadata)
@@ -486,9 +717,12 @@ def ingest_documents():
         
         web_chunks = web_splitter.split_documents(documents_web)
         
-        # Ajouter les métadonnées
+        # Ajouter les métadonnées avec noms officiels
         for chunk in web_chunks:
+            source_url = chunk.metadata.get('source', '')
+            official_name = get_official_source_name(source_url)
             chunk.metadata['source_type'] = 'web'
+            chunk.metadata['source_name'] = official_name
             chunk.metadata['chunk_type'] = 'web_content'
         
         all_chunks.extend(web_chunks)
@@ -521,7 +755,9 @@ def ingest_documents():
     # =================================================================
     if DATA_DB_PATH.exists():
         logger.warning(f"⚠️ Suppression de l'ancienne base: {DATA_DB_PATH}")
-        shutil.rmtree(DATA_DB_PATH)
+        if not safe_rmtree(DATA_DB_PATH):
+            logger.error("❌ Impossible de supprimer l'ancienne base. Abandon.")
+            return
     
     DATA_DB_PATH.mkdir(parents=True, exist_ok=True)
     
@@ -584,7 +820,6 @@ def ingest_documents():
     logger.info("🔄 Vérification de la persistance...")
     
     try:
-        import time
         time.sleep(2)
         
         # Vérifier les fichiers créés
@@ -610,12 +845,13 @@ def ingest_documents():
         
         # Test de récupération
         logger.info("🔍 Test de récupération...")
-        test_results = db_check.similarity_search("Article L.2 Code du Travail", k=3)
+        test_results = db_check.similarity_search("Article L.2 du Code du Travail", k=3)
         if test_results:
             logger.info(f"✅ Test réussi: {len(test_results)} résultat(s)")
             for i, res in enumerate(test_results[:2]):
                 preview = res.page_content[:150].replace('\n', ' ')
-                logger.info(f"   {i+1}. {preview}...")
+                source_name = res.metadata.get('source_name', 'N/A')
+                logger.info(f"   {i+1}. [{source_name}] {preview}...")
         
     except Exception as e:
         logger.error(f"⚠️ Erreur lors de la vérification: {e}")
