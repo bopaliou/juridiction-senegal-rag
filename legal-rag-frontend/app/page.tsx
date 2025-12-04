@@ -90,11 +90,30 @@ export default function Home() {
       const storedHistory = localStorage.getItem('lexsenegal_chat_history');
       if (storedHistory) {
         const parsed = JSON.parse(storedHistory);
-        // Filtrer les doublons lors du chargement
+        
+        // Filtrer les doublons
         const uniqueHistory = parsed.filter((item: any, index: number, self: any[]) => 
           index === self.findIndex((t: any) => t.id === item.id)
         );
-        setChatHistory(uniqueHistory.map((item: any) => ({
+        
+        // Filtrer les entrées qui n'ont PAS de messages sauvegardés (anciennes conversations)
+        const validHistory = uniqueHistory.filter((item: any) => {
+          if (!item.id) return false;
+          const messagesKey = `lexsenegal_conversation_${item.id}`;
+          const hasMessages = localStorage.getItem(messagesKey) !== null;
+          if (!hasMessages) {
+            console.log(`🗑️ Suppression entrée orpheline: ${item.id}`);
+          }
+          return hasMessages;
+        });
+        
+        // Mettre à jour localStorage si des entrées ont été supprimées
+        if (validHistory.length !== uniqueHistory.length) {
+          localStorage.setItem('lexsenegal_chat_history', JSON.stringify(validHistory));
+          console.log(`✅ Historique nettoyé: ${uniqueHistory.length - validHistory.length} entrées orphelines supprimées`);
+        }
+        
+        setChatHistory(validHistory.map((item: any) => ({
           ...item,
           date: new Date(item.date),
         })));
@@ -529,10 +548,36 @@ export default function Home() {
   }, []);
 
   const handleChatClick = useCallback((chatId: string) => {
+    if (!chatId) {
+      console.warn('⚠️ chatId vide, ignoré');
+      return;
+    }
+    
     // Charger la conversation depuis localStorage
     const savedMessages = loadConversation(chatId);
     
-    // Mettre à jour l'état
+    // Si pas de messages sauvegardés, supprimer cette entrée de l'historique
+    if (savedMessages.length === 0) {
+      console.log(`⚠️ Conversation ${chatId} sans messages - suppression de l'historique`);
+      
+      // Supprimer de l'historique local
+      setChatHistory(prev => {
+        const updated = prev.filter(item => item.id !== chatId);
+        // Mettre à jour localStorage
+        try {
+          localStorage.setItem('lexsenegal_chat_history', JSON.stringify(updated));
+        } catch (e) {
+          console.error('Erreur suppression historique:', e);
+        }
+        return updated;
+      });
+      
+      // Fermer le sidebar et ne pas charger
+      setSidebarOpen(false);
+      return;
+    }
+    
+    // Mettre à jour l'état avec les messages chargés
     setSessionId(chatId);
     setActiveConversationId(chatId);
     setMessages(savedMessages);
@@ -546,7 +591,7 @@ export default function Home() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
     
-    console.log(`📂 Conversation ${chatId} chargée (${savedMessages.length} messages)`);
+    console.log(`✅ Conversation ${chatId} chargée (${savedMessages.length} messages)`);
   }, [loadConversation]);
 
   // Gérer le clic sur une citation d'article pour afficher la source
