@@ -635,23 +635,27 @@ export default function Home() {
                       </div>
 
                       {/* Bouton pour ouvrir le sidebar des sources */}
-                      {message.sources && message.sources.length > 0 && (
-                        <div className="mt-2 sm:mt-3">
-                          <button
-                            onClick={() => {
-                              const parsedSources = parseSources(message.sources || []);
-                              setCurrentMessageSources(parsedSources);
-                              setSourcesSidebarOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg border border-[#E2E8F0] bg-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[#475569] shadow-sm transition-all hover:border-[#0891B2] hover:text-[#0891B2] hover:shadow-md"
-                          >
-                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <span>
-                              {message.sources.length} source{message.sources.length > 1 ? 's' : ''}
-                            </span>
-                          </button>
-                        </div>
-                      )}
+                      {(() => {
+                        const parsedSources = message.sources ? parseSources(message.sources) : [];
+                        if (parsedSources.length === 0) return null;
+                        
+                        return (
+                          <div className="mt-2 sm:mt-3">
+                            <button
+                              onClick={() => {
+                                setCurrentMessageSources(parsedSources);
+                                setSourcesSidebarOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg border border-[#E2E8F0] bg-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[#475569] shadow-sm transition-all hover:border-[#0891B2] hover:text-[#0891B2] hover:shadow-md"
+                            >
+                              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span>
+                                {parsedSources.length} source{parsedSources.length > 1 ? 's' : ''}
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      })()}
 
                       {/* Disclaimer */}
                       <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-amber-50/80 border border-amber-200 rounded-lg sm:rounded-xl">
