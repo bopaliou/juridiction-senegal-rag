@@ -233,6 +233,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
               </div>
             </div>
 
+            {/* Lien mot de passe oublié (uniquement sur login) */}
+            {mode === 'login' && (
+              <div className="text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-slate-500 hover:text-[#0891B2] transition-colors"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading || googleLoading}
