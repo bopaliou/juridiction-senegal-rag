@@ -619,6 +619,18 @@ export default function Home() {
     setSourcesSidebarOpen(true);
   }, [parseSources]);
 
+  // Afficher un loader pendant la vérification de l'authentification
+  if (isCheckingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2]">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-[#0891B2]" />
+          <p className="mt-4 text-sm text-slate-600">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-white">
       {/* Sidebar gauche (historique) */}
