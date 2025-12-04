@@ -21,9 +21,10 @@ export async function GET(request: NextRequest) {
     host
   })
 
-  // Créer le client Supabase avec gestion des cookies
-  let redirectPath = '/login?error=unknown'
+  // Créer une réponse temporaire pour collecter les cookies
+  let response = NextResponse.next({ request })
   
+  // Créer le client Supabase avec gestion des cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -32,12 +33,16 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll() {
-          // Les cookies seront gérés par la réponse
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
   )
+
+  let redirectPath = '/login?error=unknown'
 
   // Cas 1: OAuth callback avec code (Google, etc.)
   if (code) {
@@ -91,16 +96,23 @@ export async function GET(request: NextRequest) {
     redirectPath = '/login?error=missing_params'
   }
 
-  // Créer la réponse de redirection
+  // Créer la réponse de redirection avec les cookies
   const redirectUrl = new URL(redirectPath, origin)
-  const response = NextResponse.redirect(redirectUrl, { status: 302 })
+  const redirectResponse = NextResponse.redirect(redirectUrl, { status: 302 })
   
-  // Réappliquer les cookies de session Supabase
-  const session = await supabase.auth.getSession()
-  if (session.data?.session) {
-    // Les cookies sont automatiquement gérés par Supabase SSR
-    console.log('[Auth Callback] Redirecting to:', redirectUrl.toString())
-  }
+  // Copier tous les cookies de la réponse temporaire vers la réponse de redirection
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, {
+      path: cookie.path,
+      domain: cookie.domain,
+      maxAge: cookie.maxAge,
+      httpOnly: cookie.httpOnly,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite as 'lax' | 'strict' | 'none' | undefined,
+    })
+  })
   
-  return response
+  console.log('[Auth Callback] Redirecting to:', redirectUrl.toString(), 'with', redirectResponse.cookies.getAll().length, 'cookies')
+  
+  return redirectResponse
 }
