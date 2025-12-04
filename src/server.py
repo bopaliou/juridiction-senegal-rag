@@ -101,25 +101,13 @@ async def ask_question(request: SecureQueryRequest):
     Sécurisé avec validation, rate limiting, et timeout.
     """
     try:
-        # Utiliser le checkpointer avec un thread_id pour maintenir l'historique
-        config = {"configurable": {"thread_id": request.thread_id}}
-        
-        # Récupérer l'état précédent depuis le checkpointer pour obtenir l'historique
-        # Si c'est une nouvelle conversation, l'état sera None
-        try:
-            # Obtenir l'état actuel depuis le checkpointer
-            current_state = agent_app.get_state(config)
-            previous_messages = current_state.values.get("messages", []) if current_state else []
-        except Exception:  # noqa: BLE001
-            previous_messages = []
-        
         # Invoke avec timeout pour éviter les requêtes trop longues
+        # Note: Le checkpointer est désactivé pour éviter les erreurs de sérialisation des Documents
         try:
             final_state = await asyncio.wait_for(
                 asyncio.to_thread(
                     agent_app.invoke,
-                    {"question": request.question, "messages": previous_messages},
-                    config=config
+                    {"question": request.question, "messages": []}
                 ),
                 timeout=REQUEST_TIMEOUT
             )

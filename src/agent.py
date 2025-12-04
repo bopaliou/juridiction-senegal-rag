@@ -1234,5 +1234,7 @@ workflow.add_edge("retrieve", "generate")
 workflow.add_edge("generate", END)
 workflow.add_edge("non_juridique", END)
 
-# Compiler le graphe avec le checkpointer pour la mémoire
-agent_app = workflow.compile(checkpointer=memory)
+# Compiler le graphe SANS checkpointer pour éviter les erreurs de sérialisation
+# Les objets Document de LangChain ne sont pas sérialisables par msgpack
+# La mémoire de conversation est gérée manuellement via les messages
+agent_app = workflow.compile()
