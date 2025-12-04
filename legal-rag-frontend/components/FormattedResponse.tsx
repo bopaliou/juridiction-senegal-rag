@@ -23,7 +23,7 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
     let listType: 'ul' | 'ol' | null = null;
 
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
+      const line = lines[i].trim();
       if (!line) {
         if (inList) {
           result.push(listType === 'ol' ? '</ol>' : '</ul>');
@@ -38,7 +38,7 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
       if (numberedMatch) {
         if (!inList || listType !== 'ol') {
           if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-          result.push('<ol class="list">');
+          result.push('<ol class="legal-list numbered">');
           inList = true;
           listType = 'ol';
         }
@@ -51,7 +51,7 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
       if (bulletMatch) {
         if (!inList || listType !== 'ul') {
           if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
-          result.push('<ul class="list">');
+          result.push('<ul class="legal-list bullets">');
           inList = true;
           listType = 'ul';
         }
@@ -68,7 +68,7 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
 
       // Titre de section
       if (line.endsWith(':') && line.length < 80) {
-        result.push(`<h4 class="title">${formatInlineText(line)}</h4>`);
+        result.push(`<h4 class="section-heading">${formatInlineText(line)}</h4>`);
       } else {
         result.push(`<p>${formatInlineText(line)}</p>`);
       }
@@ -93,14 +93,14 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
     // Italique *texte*
     formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
     
-    // Citations d'articles entre crochets [Article X du Code Y]
+    // Citations d'articles entre crochets [Article X du Code Y] - badge professionnel
     formatted = formatted.replace(
       /\[([^\]]*(?:Article|Art\.?)[^\]]*)\]/gi, 
-      '<button type="button" class="cite" data-article="$1">📜 $1</button>'
+      '<button type="button" class="article-badge" data-article="$1"><span class="badge-icon">⚖️</span><span class="badge-text">$1</span></button>'
     );
     
     // Autres références entre crochets
-    formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="ref">[$1]</span>');
+    formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="text-ref">[$1]</span>');
 
     return formatted;
   }
@@ -117,100 +117,158 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
   };
 
   return (
-    <div className="response" onClick={handleClick}>
+    <div className="legal-response" onClick={handleClick}>
       <style jsx>{`
-        .response {
+        .legal-response {
           font-size: 15px;
-          line-height: 1.7;
-          color: #334155;
+          line-height: 1.75;
+          color: #374151;
+          font-family: system-ui, -apple-system, sans-serif;
         }
         
-        .response :global(p) {
-          margin: 0 0 0.75rem;
+        .legal-response :global(p) {
+          margin: 0 0 1rem;
         }
         
-        .response :global(p:last-child) {
+        .legal-response :global(p:last-child) {
           margin-bottom: 0;
         }
         
-        .response :global(strong) {
+        .legal-response :global(strong) {
           font-weight: 600;
-          color: #1e293b;
+          color: #111827;
         }
         
-        .response :global(em) {
+        .legal-response :global(em) {
           font-style: italic;
+          color: #4b5563;
         }
         
-        .response :global(.title) {
+        /* Titres de section */
+        .legal-response :global(.section-heading) {
           font-size: 14px;
-          font-weight: 600;
-          color: #0891b2;
-          margin: 1rem 0 0.5rem;
+          font-weight: 700;
+          color: #0d9488;
+          margin: 1.25rem 0 0.625rem;
+          padding-bottom: 0.375rem;
+          border-bottom: 2px solid #99f6e4;
           text-transform: uppercase;
-          letter-spacing: 0.025em;
+          letter-spacing: 0.05em;
         }
         
-        .response :global(.title:first-child) {
+        .legal-response :global(.section-heading:first-child) {
           margin-top: 0;
         }
         
-        .response :global(.list) {
-          margin: 0.5rem 0;
-          padding-left: 1.25rem;
+        /* Listes juridiques */
+        .legal-response :global(.legal-list) {
+          margin: 0.75rem 0;
+          padding: 0;
+          list-style: none;
         }
         
-        .response :global(.list li) {
-          margin-bottom: 0.375rem;
-          padding-left: 0.25rem;
+        .legal-response :global(.legal-list li) {
+          position: relative;
+          padding: 0.625rem 0.875rem 0.625rem 2rem;
+          margin-bottom: 0.5rem;
+          background: linear-gradient(to right, #f0fdfa, #f8fafc);
+          border-radius: 0.5rem;
+          border-left: 3px solid #14b8a6;
         }
         
-        .response :global(ol.list) {
-          list-style: decimal;
+        .legal-response :global(.legal-list li:last-child) {
+          margin-bottom: 0;
         }
         
-        .response :global(ul.list) {
-          list-style: disc;
+        .legal-response :global(.legal-list.bullets li::before) {
+          content: "•";
+          position: absolute;
+          left: 0.75rem;
+          color: #14b8a6;
+          font-weight: bold;
+          font-size: 1.25rem;
+          line-height: 1.4;
         }
         
-        .response :global(ul.list li::marker) {
-          color: #0891b2;
+        .legal-response :global(.legal-list.numbered) {
+          counter-reset: item;
         }
         
-        .response :global(ol.list li::marker) {
-          color: #0891b2;
-          font-weight: 600;
+        .legal-response :global(.legal-list.numbered li::before) {
+          counter-increment: item;
+          content: counter(item) ".";
+          position: absolute;
+          left: 0.625rem;
+          color: #0d9488;
+          font-weight: 700;
+          font-size: 0.875rem;
         }
         
-        /* Citation d'article - badge élégant */
-        .response :global(.cite) {
+        /* Badge de citation d'article - Design professionnel */
+        .legal-response :global(.article-badge) {
           display: inline-flex;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.375rem;
           font-size: 0.8125rem;
-          font-weight: 500;
-          color: #0891b2;
-          background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%);
-          padding: 0.25rem 0.625rem;
-          border-radius: 1rem;
-          border: 1px solid #99f6e4;
+          font-weight: 600;
+          color: #0f766e;
+          background: linear-gradient(135deg, #ccfbf1 0%, #d1fae5 100%);
+          padding: 0.375rem 0.75rem;
+          border-radius: 2rem;
+          border: 1.5px solid #5eead4;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
-          margin: 0.125rem 0;
+          margin: 0.25rem 0.125rem;
+          box-shadow: 0 1px 3px rgba(20, 184, 166, 0.1);
+          white-space: nowrap;
         }
         
-        .response :global(.cite:hover) {
-          background: linear-gradient(135deg, #cffafe 0%, #ccfbf1 100%);
-          border-color: #5eead4;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(8, 145, 178, 0.15);
+        .legal-response :global(.article-badge:hover) {
+          background: linear-gradient(135deg, #99f6e4 0%, #a7f3d0 100%);
+          border-color: #2dd4bf;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
         }
         
-        .response :global(.ref) {
-          font-size: 0.8125rem;
-          color: #64748b;
+        .legal-response :global(.article-badge:active) {
+          transform: translateY(0);
+        }
+        
+        .legal-response :global(.badge-icon) {
+          font-size: 0.875rem;
+        }
+        
+        .legal-response :global(.badge-text) {
+          max-width: 280px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        /* Référence simple */
+        .legal-response :global(.text-ref) {
+          font-size: 0.875rem;
+          color: #6b7280;
           font-style: italic;
+        }
+        
+        @media (max-width: 640px) {
+          .legal-response {
+            font-size: 14px;
+          }
+          
+          .legal-response :global(.legal-list li) {
+            padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+          }
+          
+          .legal-response :global(.article-badge) {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+          }
+          
+          .legal-response :global(.badge-text) {
+            max-width: 180px;
+          }
         }
       `}</style>
       <div dangerouslySetInnerHTML={{ __html: formattedContent }} />

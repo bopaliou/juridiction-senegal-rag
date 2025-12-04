@@ -50,58 +50,65 @@ export default function SuggestedQuestions({
   if (!questions || questions.length === 0) return null;
 
   return (
-    <div className="relative mt-4 sm:mt-5 md:mt-6 w-full overflow-hidden">
-      {/* Bouton de défilement gauche */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-[#F8FAFC] hover:shadow-xl hover:scale-110 border border-[#E2E8F0]"
-          aria-label="Défiler vers la gauche"
-        >
-          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-[#0891B2]" />
-        </button>
-      )}
-
-      {/* Container avec défilement horizontal */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-10 md:px-12 py-1.5 sm:py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        onScroll={() => {
-          if (scrollContainerRef.current) {
-            const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-            setCanScrollLeft(scrollLeft > 0);
-            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-          }
-        }}
-      >
-        {questions.map((question, index) => (
-          <button
-            key={index}
-            onClick={() => onQuestionClick(question)}
-            disabled={isLoading}
-            className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-xl border-2 border-[#E2E8F0] bg-white px-3 py-2 sm:px-4 sm:py-2.5 text-left font-medium text-[#475569] shadow-sm transition-all duration-300 hover:border-[#0891B2]/40 hover:bg-gradient-to-r hover:from-[#0891B2]/5 hover:to-[#14B8A6]/5 hover:text-[#0891B2] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 max-w-[280px] sm:max-w-[320px]"
-          >
-            {/* Effet de brillance au hover */}
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-            
-            <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] transition-all duration-300 group-hover:bg-[#0891B2]/10">
-              <Sparkles className="h-3 w-3 text-[#94A3B8] transition-colors duration-300 group-hover:text-[#0891B2]" />
-            </div>
-            <span className="relative z-10 text-[11px] sm:text-xs leading-tight line-clamp-2">{question}</span>
-          </button>
-        ))}
+    <div className="relative mt-4 w-full">
+      {/* Label */}
+      <div className="flex items-center gap-2 mb-2.5 px-1">
+        <Sparkles className="h-3.5 w-3.5 text-[#0891B2]" />
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Questions suggérées</span>
       </div>
 
-      {/* Bouton de défilement droit */}
-      {canScrollRight && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-[#F8FAFC] hover:shadow-xl hover:scale-110 border border-[#E2E8F0]"
-          aria-label="Défiler vers la droite"
+      {/* Container */}
+      <div className="relative overflow-hidden">
+        {/* Bouton gauche */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md transition-all hover:bg-white hover:shadow-lg hover:scale-110 border border-slate-200"
+            aria-label="Défiler vers la gauche"
+          >
+            <ChevronLeft className="h-4 w-4 text-[#0891B2]" />
+          </button>
+        )}
+
+        {/* Questions scrollables */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-2.5 overflow-x-auto px-1 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={() => {
+            if (scrollContainerRef.current) {
+              const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+              setCanScrollLeft(scrollLeft > 0);
+              setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+            }
+          }}
         >
-          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-[#0891B2]" />
-        </button>
-      )}
+          {questions.map((question, index) => (
+            <button
+              key={index}
+              onClick={() => onQuestionClick(question)}
+              disabled={isLoading}
+              className="group shrink-0 flex items-center gap-2.5 rounded-xl bg-white border border-slate-200 px-3.5 py-2.5 text-left text-sm text-slate-600 shadow-sm transition-all duration-200 hover:border-[#0891B2]/50 hover:bg-[#f0fdfa] hover:text-[#0891B2] hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed max-w-[300px]"
+              style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#0891B2]/10 to-[#14b8a6]/10 transition-colors group-hover:from-[#0891B2]/20 group-hover:to-[#14b8a6]/20">
+                <Sparkles className="h-3 w-3 text-[#0891B2]" />
+              </span>
+              <span className="font-medium line-clamp-2 leading-snug">{question}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Bouton droit */}
+        {canScrollRight && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md transition-all hover:bg-white hover:shadow-lg hover:scale-110 border border-slate-200"
+            aria-label="Défiler vers la droite"
+          >
+            <ChevronRight className="h-4 w-4 text-[#0891B2]" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

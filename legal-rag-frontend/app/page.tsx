@@ -693,86 +693,83 @@ export default function Home() {
           {messages.map((message, index) => (
             <div key={index} className="flex w-full animate-slide-in" style={{ animationDelay: `${index * 0.05}s` }}>
               {message.role === 'user' ? (
-                // Message utilisateur - aligné à droite
+                // Message utilisateur - aligné à droite, design moderne
                 <div className={`ml-auto transition-all duration-300 ease-in-out ${
                   !sourcesSidebarOpen || sourcesSidebarCollapsed 
-                    ? 'max-w-[92%] sm:max-w-[85%] md:max-w-[75%]' 
-                    : 'max-w-[88%] sm:max-w-[80%] md:max-w-[70%]'
+                    ? 'max-w-[90%] sm:max-w-[80%] md:max-w-[70%]' 
+                    : 'max-w-[85%] sm:max-w-[75%] md:max-w-[65%]'
                 }`}>
-                  <div className="bg-gradient-to-br from-[#0891B2] to-[#0E7490] text-white rounded-xl sm:rounded-2xl rounded-br-sm sm:rounded-br-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-md">
-                    <p className="whitespace-pre-wrap text-[13px] sm:text-[14px] md:text-[15px] leading-relaxed">
+                  <div className="bg-gradient-to-br from-[#0891B2] via-[#0E7490] to-[#0d9488] text-white rounded-2xl rounded-br-md px-4 py-3 sm:px-5 sm:py-4 shadow-lg" style={{ boxShadow: '0 4px 20px rgba(8, 145, 178, 0.25)' }}>
+                    <p className="whitespace-pre-wrap text-sm sm:text-[15px] leading-relaxed font-medium">
                       {message.content}
                     </p>
                   </div>
                 </div>
               ) : (
-                // Message assistant - aligné à gauche
+                // Message assistant - card élégante
                 <div className={`mr-auto transition-all duration-300 ease-in-out ${
                   !sourcesSidebarOpen || sourcesSidebarCollapsed 
                     ? 'max-w-[98%] sm:max-w-[95%] md:max-w-[90%]' 
                     : 'max-w-[95%] sm:max-w-[90%] md:max-w-[85%]'
                 }`}>
-                  <div className="flex gap-2 sm:gap-3 md:gap-4">
-                    {/* Avatar - plus petit sur mobile */}
+                  <div className="flex gap-3 sm:gap-4">
+                    {/* Avatar avec anneau */}
                     <div className="shrink-0">
-                      <div className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-lg sm:rounded-xl bg-white shadow-md overflow-hidden border border-[#E2E8F0]">
-                        <Image
-                          src="/assets/logo.png"
-                          alt="YoonAssist AI"
-                          width={40}
-                          height={40}
-                          className="h-full w-full object-contain"
-                        />
+                      <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-[#0891B2] to-[#14b8a6] p-0.5 shadow-lg">
+                        <div className="h-full w-full rounded-[10px] bg-white overflow-hidden">
+                          <Image
+                            src="/assets/logo.png"
+                            alt="YoonAssist AI"
+                            width={44}
+                            height={44}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Contenu */}
-                    <div className="flex-1 min-w-0">
-                      {/* Nom de l'assistant */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                        <span className="text-xs sm:text-sm font-semibold text-[#0F2942]">YoonAssist</span>
-                        <span className="text-[8px] sm:text-[10px] font-medium text-[#0891B2] bg-[#0891B2]/10 px-1.5 sm:px-2 py-0.5 rounded-full">AI</span>
+                    {/* Contenu de la réponse */}
+                    <div className="flex-1 min-w-0 space-y-3">
+                      {/* En-tête */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#0F2942]">YoonAssist</span>
+                        <span className="text-[10px] font-semibold text-white bg-gradient-to-r from-[#0891B2] to-[#14b8a6] px-2 py-0.5 rounded-full shadow-sm">IA</span>
                       </div>
                       
-                      {/* Message */}
-                      <div className="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm sm:rounded-tl-md px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm border border-[#E2E8F0]">
+                      {/* Card de réponse */}
+                      <div className="bg-gradient-to-br from-white to-slate-50/80 rounded-2xl rounded-tl-md px-4 py-4 sm:px-5 sm:py-5 shadow-md border border-slate-100/80" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)' }}>
                         <FormattedResponse 
                           content={message.content} 
                           onArticleClick={(articleText) => handleArticleClick(articleText, message.sources)}
                         />
                       </div>
 
-                      {/* Bouton pour ouvrir le sidebar des sources */}
-                      {(() => {
-                        const parsedSources = message.sources ? parseSources(message.sources) : [];
-                        if (parsedSources.length === 0) return null;
-                        
-                        return (
-                          <div className="mt-3 sm:mt-4">
+                      {/* Bouton sources + disclaimer dans une row */}
+                      <div className="flex flex-wrap items-start gap-3">
+                        {/* Bouton sources */}
+                        {(() => {
+                          const parsedSources = message.sources ? parseSources(message.sources) : [];
+                          if (parsedSources.length === 0) return null;
+                          
+                          return (
                             <button
                               onClick={() => {
                                 setCurrentMessageSources(parsedSources);
                                 setSourcesSidebarOpen(true);
                               }}
-                              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-2.5 sm:px-5 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-                              style={{ boxShadow: '0 4px 15px rgba(8, 145, 178, 0.3)' }}
+                              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.03] active:scale-[0.98]"
+                              style={{ boxShadow: '0 3px 12px rgba(8, 145, 178, 0.3)' }}
                             >
-                              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                              <span>
-                                Voir {parsedSources.length} source{parsedSources.length > 1 ? 's' : ''}
-                              </span>
+                              <FileText className="h-4 w-4" />
+                              <span>{parsedSources.length} source{parsedSources.length > 1 ? 's' : ''}</span>
                             </button>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
 
-                      {/* Disclaimer */}
-                      <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-amber-50/80 border border-amber-200 rounded-lg sm:rounded-xl">
-                        <div className="flex items-start gap-2">
-                          <span className="text-amber-500 text-sm sm:text-base shrink-0">⚠️</span>
-                          <p className="text-[10px] sm:text-xs text-amber-700 leading-relaxed">
-                            <strong className="font-semibold">Avertissement :</strong> Ces informations sont fournies à titre indicatif uniquement et ne constituent pas un avis juridique. Pour toute situation spécifique, consultez un professionnel du droit qualifié.
-                          </p>
+                        {/* Disclaimer compact */}
+                        <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-2 bg-amber-50/60 border border-amber-100 rounded-full text-[11px] text-amber-700">
+                          <span className="shrink-0">⚠️</span>
+                          <span>Information indicative. Consultez un professionnel pour un avis juridique.</span>
                         </div>
                       </div>
 
