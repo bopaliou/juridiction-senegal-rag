@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { signIn, signUp, resetPassword } from '@/lib/auth/actions'
 import { Mail, Lock, User, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -66,6 +67,18 @@ export default function AuthForm({ mode = 'login' }: AuthFormProps) {
   return (
     <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
       <div className="mb-8 text-center">
+        {/* Logo */}
+        <div className="mb-6 flex justify-center">
+          <div className="h-16 w-16 rounded-xl overflow-hidden bg-gradient-to-br from-[#0891B2] to-[#14B8A6] p-2">
+            <Image
+              src="/assets/logo.png"
+              alt="YoonAssist"
+              width={64}
+              height={64}
+              className="h-full w-full object-contain"
+            />
+          </div>
+        </div>
         <h2 className="text-3xl font-bold text-[#0F2942]">
           {currentMode === 'signup' && 'Créer un compte'}
           {currentMode === 'login' && 'Connexion'}
