@@ -1,68 +1,96 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const code = searchParams.get('code')
-    const token_hash = searchParams.get('token_hash')
-    const type = searchParams.get('type')
-    const next = searchParams.get('next') ?? '/'
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get('code')
+  const token_hash = searchParams.get('token_hash')
+  const type = searchParams.get('type')
+  const next = searchParams.get('next') ?? '/'
 
-    // Obtenir l'origine correcte depuis les headers
-    const headersList = await headers()
-    const host = headersList.get('host') || '172.233.114.185'
-    const protocol = headersList.get('x-forwarded-proto') || 'http'
-    const origin = `${protocol}://${host}`
+  // Construire l'origine depuis la requête
+  const origin = request.nextUrl.origin
 
-    console.log('[Auth Callback] Processing:', { code: !!code, token_hash: !!token_hash, type, origin })
+  console.log('[Auth Callback] Received:', { 
+    code: code ? 'present' : 'missing', 
+    token_hash: token_hash ? 'present' : 'missing', 
+    type, 
+    origin 
+  })
 
-    const supabase = await createClient()
+  // Créer la réponse avec redirection
+  const redirectUrl = new URL(next, origin)
+  let response = NextResponse.redirect(redirectUrl)
 
-    // Cas 1: OAuth callback avec code (Google, etc.)
-    if (code) {
-      try {
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        console.log('[Auth Callback] Exchange result:', { error: error?.message })
-        
-        if (!error) {
-          if (type === 'recovery') {
-            return NextResponse.redirect(`${origin}/reset-password`)
-          }
-          return NextResponse.redirect(`${origin}${next}`)
-        }
-      } catch (e) {
-        console.error('[Auth Callback] Exchange error:', e)
-      }
+  // Créer le client Supabase avec gestion des cookies via request/response
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
     }
+  )
 
-    // Cas 2: Email confirmation ou reset avec token_hash
-    if (token_hash && type) {
-      try {
-        const { error } = await supabase.auth.verifyOtp({
-          type: type as 'signup' | 'recovery' | 'email',
-          token_hash,
-        })
-        console.log('[Auth Callback] OTP verify result:', { error: error?.message })
-
-        if (!error) {
-          if (type === 'recovery') {
-            return NextResponse.redirect(`${origin}/reset-password`)
-          }
-          return NextResponse.redirect(`${origin}${next}`)
-        }
-      } catch (e) {
-        console.error('[Auth Callback] OTP error:', e)
+  // Cas 1: OAuth callback avec code (Google, etc.)
+  if (code) {
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      console.log('[Auth Callback] Exchange result:', { 
+        success: !!data?.session, 
+        error: error?.message 
+      })
+      
+      if (error) {
+        console.error('[Auth Callback] Error:', error)
+        return NextResponse.redirect(new URL(`/login?error=${error.message}`, origin))
       }
-    }
 
-    // Erreur - rediriger avec message
-    console.log('[Auth Callback] Redirecting to login with error')
-    return NextResponse.redirect(`${origin}/login?error=link_expired`)
-    
-  } catch (error) {
-    console.error('[Auth Callback] Fatal error:', error)
-    return NextResponse.redirect('http://172.233.114.185/login?error=server_error')
+      // Succès - rediriger vers la page demandée
+      if (type === 'recovery') {
+        return NextResponse.redirect(new URL('/reset-password', origin))
+      }
+      
+      return response
+    } catch (e) {
+      console.error('[Auth Callback] Exception:', e)
+      return NextResponse.redirect(new URL('/login?error=callback_error', origin))
+    }
   }
+
+  // Cas 2: Email confirmation ou reset avec token_hash
+  if (token_hash && type) {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        type: type as 'signup' | 'recovery' | 'email',
+        token_hash,
+      })
+      console.log('[Auth Callback] OTP result:', { error: error?.message })
+
+      if (error) {
+        return NextResponse.redirect(new URL(`/login?error=${error.message}`, origin))
+      }
+
+      if (type === 'recovery') {
+        return NextResponse.redirect(new URL('/reset-password', origin))
+      }
+      
+      return response
+    } catch (e) {
+      console.error('[Auth Callback] OTP Exception:', e)
+      return NextResponse.redirect(new URL('/login?error=otp_error', origin))
+    }
+  }
+
+  // Pas de code ni token - erreur
+  console.log('[Auth Callback] No code or token_hash')
+  return NextResponse.redirect(new URL('/login?error=missing_params', origin))
 }
