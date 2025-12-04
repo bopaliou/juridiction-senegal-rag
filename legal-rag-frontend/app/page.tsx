@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Loader2, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';

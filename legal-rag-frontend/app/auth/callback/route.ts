@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   // Créer la réponse avec redirection
   const redirectUrl = new URL(next, origin)
-  let response = NextResponse.redirect(redirectUrl)
+  const response = NextResponse.redirect(redirectUrl)
 
   // Créer le client Supabase avec gestion des cookies via request/response
   const supabase = createServerClient(
