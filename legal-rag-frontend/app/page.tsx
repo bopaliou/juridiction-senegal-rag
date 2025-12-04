@@ -134,60 +134,75 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const parseSources = useCallback((sources: string[]): SourceItem[] => {
+  const parseSources = useCallback((sources: unknown[]): SourceItem[] => {
+    if (!sources || !Array.isArray(sources)) return [];
+    
     return sources
       .map((source, index) => {
         try {
-          // Essayer de parser comme JSON d'abord
-          const parsed = JSON.parse(source);
-          return {
-            id: parsed.id || `source_${index}`,
-            title: parsed.title || 'Source',
-            url: parsed.url,
-            content: parsed.content || '',
-            page: parsed.page,
-            domain: parsed.domain,
-          };
-        } catch {
-          // Si ce n'est pas du JSON, parser l'ancien format
-          const lines = source.split('\n\n');
-          let title = 'Source';
-          let content = source;
-          let url: string | undefined;
-          let page: number | undefined;
-
-          // Extraire l'URL si présente
-          const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
-          if (urlMatch) {
-            url = urlMatch[1];
+          // CAS 1: Objet direct (nouveau format backend avec SourceModel)
+          if (typeof source === 'object' && source !== null) {
+            const obj = source as Record<string, unknown>;
+            return {
+              id: (obj.id as string) || `source_${index}`,
+              title: (obj.title as string) || 'Document Juridique',
+              url: obj.url as string | undefined,
+              content: (obj.content as string) || '',
+              page: obj.page as number | undefined,
+              domain: obj.domain as string | undefined,
+              article: obj.article as string | undefined,
+              breadcrumb: obj.breadcrumb as string | undefined,
+            };
           }
-
-          // Si la source commence par un nom de document et page
-          const titleMatch = source.match(/^([^(]+(?:\(page (\d+)\))?)/);
-          if (titleMatch) {
-            title = titleMatch[1].trim();
-            if (titleMatch[2]) {
-              page = parseInt(titleMatch[2], 10);
+          
+          // CAS 2: String JSON (ancien format)
+          if (typeof source === 'string') {
+            const trimmed = source.trim();
+            
+            // Ignorer les messages système
+            if (trimmed === 'Aucune source disponible' || 
+                trimmed === 'Aucune source pertinente disponible') {
+              return null;
             }
-            // Enlever le titre du contenu
-            content = source.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n\\n?`, 'i'), '').trim();
+            
+            // Essayer de parser comme JSON
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try {
+                const parsed = JSON.parse(trimmed);
+                return {
+                  id: parsed.id || `source_${index}`,
+                  title: parsed.title || 'Source',
+                  url: parsed.url,
+                  content: parsed.content || '',
+                  page: parsed.page,
+                  domain: parsed.domain,
+                  article: parsed.article,
+                  breadcrumb: parsed.breadcrumb,
+                };
+              } catch {
+                // Continuer au fallback
+              }
+            }
+            
+            // Fallback: texte brut
+            return {
+              id: `source_${index}`,
+              title: 'Information',
+              content: trimmed.length > 800 ? trimmed.substring(0, 800) + '...' : trimmed,
+            };
           }
-
-          // Nettoyer le contenu (enlever les URLs répétées)
-          if (url) {
-            content = content.replace(url, '').trim();
-          }
-
-          return {
-            id: `source_${index}`,
-            title,
-            url,
-            content: content.length > 800 ? content.substring(0, 800) + '...' : content,
-            page,
-          };
+          
+          return null;
+        } catch (error) {
+          console.warn('Erreur parsing source:', error);
+          return null;
         }
       })
-      .filter((source) => source.content && source.content.length > 0);
+      .filter((source): source is SourceItem => 
+        source !== null && 
+        typeof source.content === 'string' && 
+        source.content.length > 0
+      );
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent | string) => {

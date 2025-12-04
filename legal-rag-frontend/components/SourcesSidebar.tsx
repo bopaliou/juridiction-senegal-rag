@@ -10,6 +10,8 @@ export interface SourceItem {
   content: string;
   page?: number;
   domain?: string;
+  article?: string;
+  breadcrumb?: string;
 }
 
 interface SourcesSidebarProps {
@@ -254,10 +256,23 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${styles.icon} text-white shadow-md`}>
                                 {getDomainIcon(source?.domain)}
                               </div>
-                              <h3 className="font-bold text-[#0F2942] line-clamp-2 text-base">
-                                {source?.title || 'Source'}
-                              </h3>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-[#0F2942] line-clamp-2 text-base">
+                                  {source?.title || 'Source'}
+                                </h3>
+                                {source?.article && (
+                                  <p className="text-sm font-semibold text-[#0891B2] mt-0.5">
+                                    {source.article}
+                                  </p>
+                                )}
+                              </div>
                             </div>
+                            
+                            {source?.breadcrumb && (
+                              <p className="text-xs text-[#64748B] mb-2 italic">
+                                📍 {source.breadcrumb}
+                              </p>
+                            )}
                             
                             <div className="flex flex-wrap items-center gap-2">
                               {source?.domain && (
