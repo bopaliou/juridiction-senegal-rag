@@ -109,12 +109,6 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
     return () => clearInterval(interval);
   }, [isOpen, sources]);
 
-  const handleOverlayClick = () => {
-    if (!isCollapsed) {
-      setIsCollapsed(true);
-    }
-  };
-
   return (
     <>
       {/* Overlay - visible uniquement sur mobile/tablette */}

@@ -22,6 +22,56 @@ export interface ChatHistoryItem {
   date: Date;
 }
 
+// Composant HistorySection extrait pour éviter re-création à chaque render
+interface HistorySectionProps {
+  title: string;
+  items: ChatHistoryItem[];
+  activeConversationId?: string | null;
+  onChatClick?: (chatId: string) => void;
+  onDeleteChat: (id: string, e: React.MouseEvent) => void;
+}
+
+function HistorySection({ title, items, activeConversationId, onChatClick, onDeleteChat }: HistorySectionProps) {
+  return (
+    <div className="mb-6">
+      <h3 className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-[#0891B2]">
+        {title}
+      </h3>
+      <div className="space-y-1">
+        {items.map((item) => {
+          const isActive = activeConversationId === item.id;
+          return (
+            <div
+              key={item.id}
+              onClick={() => onChatClick && onChatClick(item.id)}
+              className={`sidebar-item group ${
+                isActive 
+                  ? 'bg-gradient-to-r from-[#0891B2]/20 to-[#14B8A6]/10 border-l-2 border-[#0891B2]' 
+                  : ''
+              }`}
+            >
+              <MessageSquare className={`h-4 w-4 shrink-0 ${
+                isActive ? 'text-[#0891B2]' : 'text-[#64748B] group-hover:text-[#0891B2]'
+              }`} />
+              <div className={`flex-1 truncate text-sm ${
+                isActive ? 'text-[#0F2942] font-medium' : 'text-[#475569] group-hover:text-[#0F2942]'
+              }`}>
+                {item.title}
+              </div>
+              <button
+                onClick={(e) => onDeleteChat(item.id, e)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-100"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-[#94A3B8] hover:text-red-500" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
   const uniqueHistory = history.filter((item, index, self) => 
     index === self.findIndex((t) => t.id === item.id)
@@ -158,45 +208,6 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
     return name.substring(0, 2).toUpperCase();
   };
 
-  const HistorySection = ({ title, items }: { title: string; items: ChatHistoryItem[] }) => (
-    <div className="mb-6">
-      <h3 className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-[#0891B2]">
-        {title}
-      </h3>
-      <div className="space-y-1">
-        {items.map((item) => {
-          const isActive = activeConversationId === item.id;
-          return (
-            <div
-              key={item.id}
-              onClick={() => onChatClick && onChatClick(item.id)}
-              className={`sidebar-item group ${
-                isActive 
-                  ? 'bg-gradient-to-r from-[#0891B2]/20 to-[#14B8A6]/10 border-l-2 border-[#0891B2]' 
-                  : ''
-              }`}
-            >
-              <MessageSquare className={`h-4 w-4 shrink-0 ${
-                isActive ? 'text-[#0891B2]' : 'text-[#64748B] group-hover:text-[#0891B2]'
-              }`} />
-              <div className={`flex-1 truncate text-sm ${
-                isActive ? 'text-[#0F2942] font-medium' : 'text-[#475569] group-hover:text-[#0F2942]'
-              }`}>
-                {item.title}
-              </div>
-              <button
-                onClick={(e) => handleDeleteChat(item.id, e)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-100"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-[#94A3B8] hover:text-red-500" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   return (
     <>
       {/* Overlay pour mobile et tablette uniquement */}
@@ -327,9 +338,9 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
             ) : (
               /* Mode étendu */
               <>
-                {todayItems.length > 0 && <HistorySection title="Aujourd'hui" items={todayItems} />}
-                {weekItems.length > 0 && <HistorySection title="Cette semaine" items={weekItems} />}
-                {olderItems.length > 0 && <HistorySection title="Plus ancien" items={olderItems} />}
+                {todayItems.length > 0 && <HistorySection title="Aujourd'hui" items={todayItems} activeConversationId={activeConversationId} onChatClick={onChatClick} onDeleteChat={handleDeleteChat} />}
+                {weekItems.length > 0 && <HistorySection title="Cette semaine" items={weekItems} activeConversationId={activeConversationId} onChatClick={onChatClick} onDeleteChat={handleDeleteChat} />}
+                {olderItems.length > 0 && <HistorySection title="Plus ancien" items={olderItems} activeConversationId={activeConversationId} onChatClick={onChatClick} onDeleteChat={handleDeleteChat} />}
                 
                 {history.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
