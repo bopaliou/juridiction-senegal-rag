@@ -217,6 +217,20 @@ body {
   animation: bounce-dot 1.4s ease-in-out 0.4s infinite;
 }
 
+/* Bounce Subtle pour bouton flottant */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
 /* Scale In */
 @keyframes scale-in {
   from {
