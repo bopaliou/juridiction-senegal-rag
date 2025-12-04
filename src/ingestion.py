@@ -221,6 +221,9 @@ class SenegalLegalChunker:
         (re.compile(r'\.{4,}'), '...'),
     ]
     
+    # Seuil pour déclencher le sub-chunking (en caractères)
+    LONG_ARTICLE_THRESHOLD = 2000
+    
     def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):
         """
         Initialise le chunker.
@@ -232,6 +235,14 @@ class SenegalLegalChunker:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.current_breadcrumb: Dict[str, str] = {}
+        
+        # Splitter secondaire pour les articles longs
+        self.sub_chunker = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", "\n", ". ", "! ", "? ", "; ", ", ", " ", ""],
+            keep_separator=True
+        )
     
     def clean_text(self, text: str) -> str:
         """
@@ -337,7 +348,8 @@ class SenegalLegalChunker:
         
         return articles
     
-    def format_chunk_content(self, source_name: str, breadcrumb: str, article_num: str, content: str) -> str:
+    def format_chunk_content(self, source_name: str, breadcrumb: str, article_num: str, 
+                              content: str, part_info: Optional[str] = None) -> str:
         """
         Formate le contenu d'un chunk avec une structure claire pour l'affichage.
         
@@ -346,6 +358,7 @@ class SenegalLegalChunker:
             breadcrumb: Fil d'ariane contextuel
             article_num: Numéro de l'article
             content: Contenu de l'article
+            part_info: Information sur la partie (ex: "(Partie 1/3)")
             
         Returns:
             Contenu formaté
@@ -359,7 +372,10 @@ class SenegalLegalChunker:
             parts.append(f"Contexte: {breadcrumb}")
         
         if article_num:
-            parts.append(f"Article {article_num}")
+            article_label = f"Article {article_num}"
+            if part_info:
+                article_label += f" {part_info}"
+            parts.append(article_label)
         
         parts.append("")  # Ligne vide avant le contenu
         parts.append(content)
@@ -369,7 +385,10 @@ class SenegalLegalChunker:
     def chunk_article(self, article_num: str, article_content: str, breadcrumb: str, 
                       metadata: dict, source_name: str) -> List[Document]:
         """
-        Découpe un article en chunks si nécessaire.
+        Découpe un article en chunks si nécessaire (Sub-Chunking pour articles longs).
+        
+        Utilise RecursiveCharacterTextSplitter pour garantir qu'aucun contenu n'est tronqué,
+        même pour les articles très longs (plusieurs pages).
         
         Args:
             article_num: Numéro de l'article
@@ -388,67 +407,91 @@ class SenegalLegalChunker:
         if not clean_content:
             return []
         
-        # Formater le contenu complet
-        formatted_content = self.format_chunk_content(source_name, breadcrumb, article_num, clean_content)
+        # Calculer la taille de l'en-tête pour ajuster les limites
+        header_template = f"Source: {source_name}\nContexte: {breadcrumb}\nArticle {article_num}\n\n"
+        header_size = len(header_template) + 20  # +20 pour "(Partie X/Y)" potentiel
         
-        # Si l'article tient dans un seul chunk
-        if len(formatted_content) <= self.chunk_size:
-            chunk_metadata = {
-                **metadata,
-                'source_name': source_name,
-                'article': f"Article {article_num}",
-                'breadcrumb': breadcrumb,
-                'chunk_type': 'article_complet'
-            }
-            chunks.append(Document(page_content=formatted_content, metadata=chunk_metadata))
-        else:
-            # Découper l'article en plusieurs chunks avec chevauchement
-            sentences = re.split(r'(?<=[.!?])\s+', clean_content)
-            current_chunk_content = ""
-            chunk_idx = 0
+        # Taille effective pour le contenu
+        effective_chunk_size = self.chunk_size - header_size
+        
+        # =================================================================
+        # CAS 1: Article court (< LONG_ARTICLE_THRESHOLD caractères)
+        # =================================================================
+        if len(clean_content) < self.LONG_ARTICLE_THRESHOLD:
+            formatted_content = self.format_chunk_content(source_name, breadcrumb, article_num, clean_content)
             
-            for sentence in sentences:
-                test_content = current_chunk_content + sentence + ' '
-                header = f"Source: {source_name}\nContexte: {breadcrumb}\nArticle {article_num}"
-                if chunk_idx > 0:
-                    header += " (suite)"
-                header += "\n\n"
-                
-                if len(header + test_content) <= self.chunk_size:
-                    current_chunk_content = test_content
-                else:
-                    # Sauvegarder le chunk actuel
-                    if current_chunk_content.strip():
-                        full_content = header + current_chunk_content.strip()
-                        chunk_metadata = {
-                            **metadata,
-                            'source_name': source_name,
-                            'article': f"Article {article_num}",
-                            'breadcrumb': breadcrumb,
-                            'chunk_type': 'article_partiel',
-                            'chunk_index': chunk_idx
-                        }
-                        chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
-                        chunk_idx += 1
-                    
-                    current_chunk_content = sentence + ' '
-            
-            # Ajouter le dernier chunk
-            if current_chunk_content.strip():
-                header = f"Source: {source_name}\nContexte: {breadcrumb}\nArticle {article_num}"
-                if chunk_idx > 0:
-                    header += " (suite)"
-                header += "\n\n"
-                full_content = header + current_chunk_content.strip()
+            # Si même formaté ça tient dans un chunk
+            if len(formatted_content) <= self.chunk_size:
                 chunk_metadata = {
                     **metadata,
                     'source_name': source_name,
                     'article': f"Article {article_num}",
                     'breadcrumb': breadcrumb,
-                    'chunk_type': 'article_partiel',
-                    'chunk_index': chunk_idx
+                    'chunk_type': 'article_complet',
+                    'total_parts': 1,
+                    'part_number': 1
                 }
-                chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
+                chunks.append(Document(page_content=formatted_content, metadata=chunk_metadata))
+                return chunks
+        
+        # =================================================================
+        # CAS 2: Article long (>= LONG_ARTICLE_THRESHOLD caractères)
+        # Utilisation du Sub-Chunking avec RecursiveCharacterTextSplitter
+        # =================================================================
+        
+        # Découper le contenu en sous-parties avec le splitter secondaire
+        sub_chunks = self.sub_chunker.split_text(clean_content)
+        total_parts = len(sub_chunks)
+        
+        if total_parts == 0:
+            return []
+        
+        # Si après split on n'a qu'une partie, créer un seul document
+        if total_parts == 1:
+            formatted_content = self.format_chunk_content(source_name, breadcrumb, article_num, sub_chunks[0])
+            chunk_metadata = {
+                **metadata,
+                'source_name': source_name,
+                'article': f"Article {article_num}",
+                'breadcrumb': breadcrumb,
+                'chunk_type': 'article_complet',
+                'total_parts': 1,
+                'part_number': 1
+            }
+            chunks.append(Document(page_content=formatted_content, metadata=chunk_metadata))
+            return chunks
+        
+        # Créer un document pour chaque sous-partie avec indication de la partie
+        for part_idx, sub_content in enumerate(sub_chunks, start=1):
+            # Formater l'en-tête avec indication de la partie
+            part_indicator = f"(Partie {part_idx}/{total_parts})"
+            article_label = f"{article_num} {part_indicator}"
+            
+            # Construire le contenu formaté
+            parts = []
+            parts.append(f"Source: {source_name}")
+            if breadcrumb:
+                parts.append(f"Contexte: {breadcrumb}")
+            parts.append(f"Article {article_label}")
+            parts.append("")  # Ligne vide
+            parts.append(sub_content.strip())
+            
+            full_content = '\n'.join(parts)
+            
+            # Métadonnées enrichies
+            chunk_metadata = {
+                **metadata,
+                'source_name': source_name,
+                'article': f"Article {article_num}",
+                'article_display': f"Article {article_label}",
+                'breadcrumb': breadcrumb,
+                'chunk_type': 'article_partiel',
+                'part_number': part_idx,
+                'total_parts': total_parts,
+                'chunk_index': part_idx - 1
+            }
+            
+            chunks.append(Document(page_content=full_content, metadata=chunk_metadata))
         
         return chunks
     
