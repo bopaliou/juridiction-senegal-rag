@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Loader2, ChevronDown, ChevronUp, Menu, FileText } from 'lucide-react';
+import { Send, Loader2, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Sidebar, { ChatHistoryItem } from '@/components/Sidebar';
 import SourcesSidebar, { SourceItem } from '@/components/SourcesSidebar';
@@ -23,7 +23,7 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const [expandedSources, setExpandedSources] = useState<{ [key: number]: boolean }>({});
+  const [, setExpandedSources] = useState<{ [key: number]: boolean }>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sourcesSidebarOpen, setSourcesSidebarOpen] = useState(false);
@@ -484,42 +484,6 @@ export default function Home() {
       }
     }
   }, [input, isLoading, sessionId, messages.length, parseSources]);
-
-  const formatSourceText = (source: string): { title: string; content: string } => {
-    // Extraire le titre (première ligne ou partie avant \n\n)
-    const lines = source.split('\n\n');
-    let title = 'Source';
-    let content = source;
-
-    // Si la source commence par un nom de document et page
-    const titleMatch = source.match(/^([^(]+(?:\(page \d+\))?)/);
-    if (titleMatch) {
-      title = titleMatch[1].trim();
-      // Enlever le titre du contenu
-      content = source.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n\\n?`, 'i'), '').trim();
-    }
-
-    // Si le contenu est trop long, extraire la partie la plus pertinente (premiers 500 caractères)
-    // et ajouter "..." si nécessaire
-    const maxLength = 800;
-    if (content.length > maxLength) {
-      // Essayer de trouver un point de coupure naturel (phrase complète)
-      const truncated = content.substring(0, maxLength);
-      const lastPeriod = truncated.lastIndexOf('.');
-      const lastNewline = truncated.lastIndexOf('\n');
-      const cutPoint = Math.max(lastPeriod, lastNewline);
-      
-      if (cutPoint > maxLength * 0.7) {
-        // Si on trouve un bon point de coupure, l'utiliser
-        content = content.substring(0, cutPoint + 1) + '...';
-      } else {
-        // Sinon, couper au maxLength
-        content = truncated + '...';
-      }
-    }
-
-    return { title, content };
-  };
 
   // Les questions suggérées viennent uniquement du backend (liste autorisée de 45 questions)
   // La fonction generateSuggestedQuestions a été supprimée car elle utilisait des questions non autorisées

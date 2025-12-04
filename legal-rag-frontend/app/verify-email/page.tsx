@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
-import { Mail, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Mail, XCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';

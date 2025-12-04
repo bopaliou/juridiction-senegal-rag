@@ -1,8 +1,8 @@
 'use client';
 
-import { Scale, Briefcase, FileText, Gavel, ArrowRight, Sparkles, Users, Clock, Shield, Building } from 'lucide-react';
+import { Briefcase, Gavel, ArrowRight, Sparkles, Users, Clock, Shield } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 interface EmptyStateProps {
   onQuestionClick: (question: string) => void;
