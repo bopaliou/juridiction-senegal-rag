@@ -11,6 +11,7 @@ interface SidebarProps {
   chatHistory?: ChatHistoryItem[];
   onChatClick?: (chatId: string) => void;
   onCollapseChange?: (isCollapsed: boolean) => void;
+  activeConversationId?: string | null;
 }
 
 export interface ChatHistoryItem {
@@ -47,7 +48,7 @@ const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
   return { todayItems, weekItems, olderItems };
 };
 
-export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], onChatClick, onCollapseChange }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], onChatClick, onCollapseChange, activeConversationId }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
@@ -118,24 +119,35 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
         {title}
       </h3>
       <div className="space-y-1">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => onChatClick && onChatClick(item.id)}
-            className="sidebar-item group"
-          >
-            <MessageSquare className="h-4 w-4 shrink-0 text-[#64748B] group-hover:text-[#0891B2]" />
-            <div className="flex-1 truncate text-sm text-[#475569] group-hover:text-[#0F2942]">
-              {item.title}
-            </div>
-            <button
-              onClick={(e) => handleDeleteChat(item.id, e)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-100"
+        {items.map((item) => {
+          const isActive = activeConversationId === item.id;
+          return (
+            <div
+              key={item.id}
+              onClick={() => onChatClick && onChatClick(item.id)}
+              className={`sidebar-item group ${
+                isActive 
+                  ? 'bg-gradient-to-r from-[#0891B2]/20 to-[#14B8A6]/10 border-l-2 border-[#0891B2]' 
+                  : ''
+              }`}
             >
-              <Trash2 className="h-3.5 w-3.5 text-[#94A3B8] hover:text-red-500" />
-            </button>
-          </div>
-        ))}
+              <MessageSquare className={`h-4 w-4 shrink-0 ${
+                isActive ? 'text-[#0891B2]' : 'text-[#64748B] group-hover:text-[#0891B2]'
+              }`} />
+              <div className={`flex-1 truncate text-sm ${
+                isActive ? 'text-[#0F2942] font-medium' : 'text-[#475569] group-hover:text-[#0F2942]'
+              }`}>
+                {item.title}
+              </div>
+              <button
+                onClick={(e) => handleDeleteChat(item.id, e)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-100"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-[#94A3B8] hover:text-red-500" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
