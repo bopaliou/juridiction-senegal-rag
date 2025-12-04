@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updatePassword } from '@/lib/auth/actions'
+import { createClient } from '@/lib/supabase/client'
 import { Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -14,6 +15,25 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+
+  // Vérifier qu'il y a une session valide de réinitialisation
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      // Si pas de session, rediriger vers login
+      if (!session) {
+        router.push('/login?error=reset_link_expired')
+        return
+      }
+      
+      setIsCheckingSession(false)
+    }
+
+    checkSession()
+  }, [router])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -47,6 +67,18 @@ export default function ResetPasswordPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Afficher un loader pendant la vérification de la session
+  if (isCheckingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2] p-4">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-[#0891B2]" />
+          <p className="mt-4 text-sm text-slate-600">Vérification de la session...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
