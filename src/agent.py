@@ -480,8 +480,32 @@ RÉPONSE:"""
     
     messages.append(AIMessage(content=answer))
     
+    # COHÉRENCE: Si le LLM dit qu'il n'a pas l'info, ne pas afficher de sources
+    no_info_phrases = [
+        "je ne dispose pas",
+        "je n'ai pas trouvé",
+        "je ne trouve pas",
+        "pas d'information",
+        "aucune information",
+        "je ne peux pas répondre",
+        "information non disponible",
+    ]
+    
+    answer_lower = answer.lower()
+    has_no_info = any(phrase in answer_lower for phrase in no_info_phrases)
+    
+    if has_no_info:
+        # Le LLM indique qu'il n'a pas l'info → pas de sources
+        print("⚠️ Réponse 'pas d'info' détectée → sources vidées pour cohérence")
+        return {
+            "answer": answer,
+            "sources": [],
+            "messages": messages,
+            "suggested_questions": [],
+            "context_documents": []
+        }
+    
     # Les sources sont EXACTEMENT les documents qui ont servi au contexte
-    # Pas de recalcul post-génération
     sources_list = [json.dumps(doc) for doc in context_docs]
     
     # Générer les questions suggérées
@@ -492,7 +516,7 @@ RÉPONSE:"""
         "sources": sources_list,
         "messages": messages,
         "suggested_questions": suggested,
-        "context_documents": []  # Vider pour éviter la duplication
+        "context_documents": []
     }
 
 
