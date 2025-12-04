@@ -15,7 +15,7 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
 
     // Séparer les éléments de liste condensés
     text = text.replace(/(\d+\.)\s+([^0-9\n]+?)(?=\s*\d+\.)/g, '$1 $2\n');
-    text = text.replace(/([-•])\s+([^-•\n]+?)(?=\s*[-•])/g, '$1 $2\n');
+    text = text.replace(/([-•*])\s+([^-•*\n]+?)(?=\s*[-•*])/g, '$1 $2\n');
 
     const lines = text.split('\n');
     const result: string[] = [];
@@ -46,8 +46,8 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
         continue;
       }
 
-      // Listes à puces
-      const bulletMatch = line.match(/^[-•]\s+(.+)$/);
+      // Listes à puces (tiret, puce, ou astérisque)
+      const bulletMatch = line.match(/^[-•*]\s+(.+)$/);
       if (bulletMatch) {
         if (!inList || listType !== 'ul') {
           if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
@@ -87,11 +87,15 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Gras **texte**
-    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Gras **texte** → remplacer par balise strong
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     
-    // Italique *texte*
+    // Italique *texte* → remplacer par balise em (seulement si pas double astérisque)
     formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+    
+    // Nettoyer les astérisques orphelins qui restent (puces mal formatées)
+    formatted = formatted.replace(/^\*\s+/gm, '• ');
+    formatted = formatted.replace(/\s\*\s/g, ' • ');
     
     // Citations d'articles entre crochets [Article X du Code Y] - badge professionnel
     formatted = formatted.replace(

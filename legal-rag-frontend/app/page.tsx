@@ -836,8 +836,11 @@ export default function Home() {
             </div>
           )}
 
-          {/* Questions suggérées globales */}
+          {/* Questions suggérées globales - seulement si pas de questions dans le dernier message */}
           {!isLoading && globalSuggestedQuestions.length > 0 && (
+            messages.length === 0 || 
+            !messages[messages.length - 1]?.suggestedQuestions?.length
+          ) && (
             <div className="mt-6 w-full">
               <SuggestedQuestions
                 questions={globalSuggestedQuestions}
