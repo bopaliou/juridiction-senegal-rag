@@ -103,11 +103,13 @@ const groupHistoryByPeriod = (history: ChatHistoryItem[]) => {
 export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], onChatClick, onCollapseChange, activeConversationId }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const supabase = createClient();
+
+  // Utiliser directement chatHistory prop
+  const history = chatHistory;
 
   useEffect(() => {
     if (onCollapseChange) {
@@ -127,42 +129,18 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-    
-    if (chatHistory && chatHistory.length > 0) {
-      setHistory(chatHistory);
-      try {
-        localStorage.setItem('lexsenegal_chat_history', JSON.stringify(chatHistory));
-      } catch (e) {
-        console.error('Erreur lors de la sauvegarde:', e);
-      }
-    } else {
-      try {
-        const stored = localStorage.getItem('lexsenegal_chat_history');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const loadedHistory = parsed.map((item: any) => ({
-            ...item,
-            date: new Date(item.date),
-          }));
-          setHistory(loadedHistory);
-        }
-      } catch (e) {
-        console.error('Erreur lors du chargement:', e);
-      }
-    }
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sauvegarder dans localStorage quand chatHistory change
   useEffect(() => {
-    if (!mounted) return;
-    setHistory(chatHistory);
-    if (chatHistory && chatHistory.length > 0) {
-      try {
-        localStorage.setItem('lexsenegal_chat_history', JSON.stringify(chatHistory));
-      } catch (e) {
-        console.error('Erreur lors de la sauvegarde:', e);
-      }
+    if (!mounted || chatHistory.length === 0) return;
+    try {
+      localStorage.setItem('lexsenegal_chat_history', JSON.stringify(chatHistory));
+    } catch (e) {
+      console.error('Erreur lors de la sauvegarde:', e);
     }
   }, [chatHistory, mounted]);
 
@@ -180,12 +158,13 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory = [], 
   const handleDeleteChat = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updatedHistory = history.filter((item) => item.id !== id);
-    setHistory(updatedHistory);
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('lexsenegal_chat_history', JSON.stringify(updatedHistory));
-      } catch (e) {
-        console.error('Erreur lors de la sauvegarde:', e);
+        // Recharger pour synchroniser l'état
+        window.location.reload();
+      } catch (err) {
+        console.error('Erreur lors de la sauvegarde:', err);
       }
     }
   };
