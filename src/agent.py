@@ -596,14 +596,46 @@ def retrieve_noeud(state: AgentState):
             print(f"🔍 Recherche améliorée pour Article L.{specific_article}: {search_query}")
         
         # Récupérer plus de documents initialement pour avoir un meilleur pool
+        import time
+        
+        retrieval_start = time.time()
         documents = retriever.invoke(search_query)
+        retrieval_time = time.time() - retrieval_start
+        
+        print(f"📊 Retrieval: {len(documents)} docs en {retrieval_time:.3f}s")
+        
+        # Garder l'ordre original pour comparaison
+        original_order = [doc.metadata.get('source', 'unknown')[:50] for doc in documents[:5]]
         
         # Si le reranker est activé, l'utiliser pour améliorer la pertinence
         if ENABLE_RERANKER and compressor:
             try:
-                print(f"🔄 Reranking de {len(documents)} documents...")
-                documents = compressor.compress_documents(documents, question)
-                print(f"✅ {len(documents)} documents sélectionnés après reranking")
+                print(f"🔄 Reranking de {len(documents)} documents avec FlashRank...")
+                
+                rerank_start = time.time()
+                reranked_documents = compressor.compress_documents(documents, question)
+                rerank_time = time.time() - rerank_start
+                
+                # Métriques de reranking
+                reranked_order = [doc.metadata.get('source', 'unknown')[:50] for doc in reranked_documents[:5]]
+                
+                # Calculer combien de documents ont changé de position
+                order_changed = sum(1 for i, doc in enumerate(reranked_order) if i < len(original_order) and doc != original_order[i])
+                
+                print(f"✅ Reranking terminé en {rerank_time:.3f}s")
+                print(f"📊 Métriques reranking:")
+                print(f"   - Documents avant: {len(documents)} → après: {len(reranked_documents)}")
+                print(f"   - Temps reranking: {rerank_time:.3f}s")
+                print(f"   - Positions changées: {order_changed}/{min(len(original_order), len(reranked_order))}")
+                
+                # Afficher les scores de pertinence si disponibles
+                for i, doc in enumerate(reranked_documents[:3]):
+                    relevance_score = doc.metadata.get('relevance_score', 'N/A')
+                    source = doc.metadata.get('source', 'unknown')[:40]
+                    print(f"   - Top {i+1}: {source}... (score: {relevance_score})")
+                
+                documents = reranked_documents
+                
             except Exception as e:
                 print(f"⚠️  Erreur lors du reranking: {e}. Utilisation des documents originaux.")
         
