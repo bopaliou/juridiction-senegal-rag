@@ -626,29 +626,44 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
     # Trier par score décroissant et sélectionner les meilleures
     question_scores.sort(reverse=True, key=lambda x: x[0])
     
-    # Sélectionner exactement 3 questions les plus pertinentes
+    # Sélectionner exactement 3 questions les plus pertinentes avec randomisation
     num_questions = 3
     
     if len(question_scores) >= num_questions:
-        # Prendre les 3 meilleures questions avec les scores les plus élevés
-        # Si plusieurs questions ont le même score, on peut en prendre aléatoirement parmi celles-ci
-        # Mais on privilégie toujours les scores les plus élevés
-        top_questions = question_scores[:num_questions * 2]  # Prendre 2x plus pour avoir du choix si scores égaux
+        # Prendre les questions avec un bon score (>= 2) et ajouter de la variété
+        top_questions = question_scores[:num_questions * 4]  # Prendre 4x plus pour avoir du choix
         
-        # Grouper par score et prendre les meilleures
+        # Grouper les questions par plage de score pour ajouter de la variété
+        high_score_questions = [(s, q) for s, q in top_questions if s >= 5]
+        medium_score_questions = [(s, q) for s, q in top_questions if 2 <= s < 5]
+        low_score_questions = [(s, q) for s, q in top_questions if 0 < s < 2]
+        
+        # Mélanger chaque groupe pour ajouter de l'aléatoire
+        random.shuffle(high_score_questions)
+        random.shuffle(medium_score_questions)
+        random.shuffle(low_score_questions)
+        
+        # Sélectionner en priorité les questions à score élevé, puis moyen, puis faible
         selected = []
-        for score, q in top_questions:
+        for score, q in high_score_questions:
             if len(selected) >= num_questions:
                 break
-            # Si le score est significatif (au moins 2 points), l'inclure
-            if score >= 2:
-                selected.append(q)
-            elif len(selected) < num_questions and score > 0:
-                # Si on n'a pas encore 3 questions et que le score est > 0, l'inclure
-                selected.append(q)
+            selected.append(q)
+        
+        for score, q in medium_score_questions:
+            if len(selected) >= num_questions:
+                break
+            selected.append(q)
+        
+        for score, q in low_score_questions:
+            if len(selected) >= num_questions:
+                break
+            selected.append(q)
     else:
-        # Si pas assez de questions avec score, prendre toutes celles disponibles
-        selected = [q for _, q in question_scores[:num_questions]]
+        # Si pas assez de questions avec score, prendre toutes celles disponibles avec shuffle
+        all_scored = [q for _, q in question_scores[:num_questions * 2]]
+        random.shuffle(all_scored)
+        selected = all_scored[:num_questions]
     
     # Si on n'a pas assez de questions pertinentes (score > 0), compléter avec des questions du même domaine
     if len(selected) < num_questions:
@@ -675,8 +690,12 @@ def generate_suggested_questions(question: str, documents: List[Document], answe
             random.shuffle(remaining)
             selected.extend(remaining[:num_questions - len(selected)])
     
+    # Mélanger l'ordre final des questions sélectionnées pour plus de variété
+    final_selection = selected[:num_questions]
+    random.shuffle(final_selection)
+    
     # Retourner exactement 3 questions
-    return selected[:num_questions]
+    return final_selection
 
 
 def retrieve_noeud(state: AgentState):
