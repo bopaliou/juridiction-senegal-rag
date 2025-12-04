@@ -105,11 +105,26 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
     // Markdown italique *texte*
     formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
     
-    // Références légales [Article X]
+    // Références légales complètes entre crochets [Article X du Code Y]
+    formatted = formatted.replace(
+      /\[([^\]]*(?:Article|Art\.?)[^\]]*(?:Code|Constitution|Loi)[^\]]*)\]/gi, 
+      '<span class="legal-ref-badge"><span class="legal-ref-icon">⚖️</span><span class="legal-ref-text">$1</span></span>'
+    );
+    
+    // Autres références entre crochets [texte quelconque]
     formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="legal-ref">📄 $1</span>');
     
-    // Articles de loi (L.1, L.2, etc.)
-    formatted = formatted.replace(/\b(Article\s+)?(L\.\d+)/gi, '<span class="article-ref">$1$2</span>');
+    // Articles complets avec le nom du code (ex: "Article L.2 du Code du Travail", "Article 320 du Code Pénal")
+    formatted = formatted.replace(
+      /\b(Article\s+(?:L\.?)?\d+(?:\s+(?:du|de la|de l['']?)?\s*(?:Code\s+(?:du\s+)?(?:Travail|Pénal|Penal|Civil)|Constitution(?:\s+du\s+Sénégal)?|Loi\s+\d{4}-\d+)[^\.,;:!?\n]*)?)/gi,
+      '<span class="article-citation">$1</span>'
+    );
+    
+    // Articles simples (L.1, L.2, etc.) qui n'ont pas été capturés
+    formatted = formatted.replace(
+      /(?<!<span class="article-citation">.*)\b(L\.\d+)\b(?![^<]*<\/span>)/gi, 
+      '<span class="article-ref">$1</span>'
+    );
 
     return formatted;
   }
@@ -200,6 +215,52 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
           color: #334155;
         }
         
+        /* Citation d'article complète avec badge */
+        .formatted-response :global(.article-citation) {
+          display: inline-flex;
+          align-items: center;
+          font-weight: 600;
+          color: #0f2942;
+          background: linear-gradient(135deg, #f0fdfa 0%, #e0f7fa 100%);
+          padding: 0.25rem 0.625rem;
+          border-radius: 0.375rem;
+          border: 1px solid #0891b2;
+          box-shadow: 0 1px 2px rgba(8, 145, 178, 0.1);
+          font-size: 0.9em;
+          margin: 0 0.125rem;
+        }
+        
+        .formatted-response :global(.article-citation)::before {
+          content: "§";
+          margin-right: 0.375rem;
+          color: #0891b2;
+          font-weight: 700;
+        }
+        
+        /* Référence légale avec badge complet (entre crochets) */
+        .formatted-response :global(.legal-ref-badge) {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
+          font-size: 0.8em;
+          color: #0f2942;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.5rem;
+          margin: 0.75rem 0;
+          border: 1px solid #f59e0b;
+          box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);
+        }
+        
+        .formatted-response :global(.legal-ref-icon) {
+          font-size: 1.1em;
+        }
+        
+        .formatted-response :global(.legal-ref-text) {
+          font-weight: 600;
+        }
+        
+        /* Petite référence simple (entre crochets sans article) */
         .formatted-response :global(.legal-ref) {
           display: inline-flex;
           align-items: center;
@@ -209,10 +270,11 @@ export default function FormattedResponse({ content }: FormattedResponseProps) {
           background: #f1f5f9;
           padding: 0.125rem 0.5rem;
           border-radius: 0.25rem;
-          margin: 0.5rem 0;
+          margin: 0.25rem 0;
           border: 1px solid #e2e8f0;
         }
         
+        /* Article simple (L.1, L.2, etc.) */
         .formatted-response :global(.article-ref) {
           font-weight: 600;
           color: #0891b2;
