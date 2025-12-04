@@ -114,15 +114,17 @@ except Exception as e:
     retriever = None
 
 # LLMs
+# Modèle pour le routage (rapide, peu de tokens)
 router_llm = ChatGroq(
-    model_name="openai/gpt-oss-120b",
+    model_name="llama-3.1-8b-instant",  # Modèle léger pour classification
     temperature=0,
     max_tokens=50,
     timeout=30
 )
 
+# Modèle pour la génération (plus capable)
 generation_llm = ChatGroq(
-    model_name="openai/gpt-oss-120b",
+    model_name="llama-3.1-70b-versatile",  # Meilleure limite de tokens
     temperature=0,
     max_tokens=2000,
     timeout=60
