@@ -42,13 +42,29 @@ export async function GET(request: NextRequest) {
     }
   )
 
-  // Helper pour créer une réponse avec les cookies
-  const createRedirectResponse = (url: string) => {
-    const response = NextResponse.redirect(new URL(url, origin))
+  // Helper pour créer une réponse HTML avec redirection client-side
+  const createClientRedirect = (url: string) => {
+    const fullUrl = url.startsWith('/') ? `${origin}${url}` : url
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta http-equiv="refresh" content="0;url=${fullUrl}">
+          <script>window.location.href="${fullUrl}";</script>
+        </head>
+        <body>
+          <p>Redirection en cours...</p>
+        </body>
+      </html>
+    `
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' }
+    })
     cookiesToSet.forEach(({ name, value, options }) => {
       response.cookies.set(name, value, options)
     })
-    console.log('[Auth Callback] Redirecting to:', url, 'with', cookiesToSet.length, 'cookies')
+    console.log('[Auth Callback] Client redirect to:', fullUrl, 'with', cookiesToSet.length, 'cookies')
     return response
   }
 
@@ -63,18 +79,18 @@ export async function GET(request: NextRequest) {
       
       if (error) {
         console.error('[Auth Callback] Error:', error)
-        return createRedirectResponse(`/login?error=${encodeURIComponent(error.message)}`)
+        return createClientRedirect(`/login?error=${encodeURIComponent(error.message)}`)
       }
 
       // Succès - rediriger vers la page demandée
       if (type === 'recovery') {
-        return createRedirectResponse('/reset-password')
+        return createClientRedirect('/reset-password')
       }
       
-      return createRedirectResponse(next)
+      return createClientRedirect(next)
     } catch (e) {
       console.error('[Auth Callback] Exception:', e)
-      return createRedirectResponse('/login?error=callback_error')
+      return createClientRedirect('/login?error=callback_error')
     }
   }
 
@@ -88,21 +104,21 @@ export async function GET(request: NextRequest) {
       console.log('[Auth Callback] OTP result:', { error: error?.message })
 
       if (error) {
-        return createRedirectResponse(`/login?error=${encodeURIComponent(error.message)}`)
+        return createClientRedirect(`/login?error=${encodeURIComponent(error.message)}`)
       }
 
       if (type === 'recovery') {
-        return createRedirectResponse('/reset-password')
+        return createClientRedirect('/reset-password')
       }
       
-      return createRedirectResponse(next)
+      return createClientRedirect(next)
     } catch (e) {
       console.error('[Auth Callback] OTP Exception:', e)
-      return createRedirectResponse('/login?error=otp_error')
+      return createClientRedirect('/login?error=otp_error')
     }
   }
 
   // Pas de code ni token - erreur
   console.log('[Auth Callback] No code or token_hash')
-  return createRedirectResponse('/login?error=missing_params')
+  return createClientRedirect('/login?error=missing_params')
 }
