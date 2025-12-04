@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { BookOpen, Scale } from 'lucide-react';
 
 interface FormattedResponseProps {
   content: string;
@@ -101,25 +100,19 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
     // Markdown italique *texte*
     formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
     
-    // Références légales complètes entre crochets [Article X du Code Y]
+    // Références légales entre crochets [Article X du Code Y] - style discret en fin de texte
     formatted = formatted.replace(
-      /\[([^\]]*(?:Article|Art\.?)[^\]]*(?:Code|Constitution|Loi)[^\]]*)\]/gi, 
-      '<button type="button" class="legal-ref-badge" data-article="$1"><span class="legal-ref-icon"></span><span class="legal-ref-text">$1</span></button>'
+      /\[([^\]]*(?:Article|Art\.?)[^\]]*)\]/gi, 
+      '<button type="button" class="legal-ref" data-article="$1">$1</button>'
     );
     
     // Autres références entre crochets
-    formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="legal-ref">$1</span>');
+    formatted = formatted.replace(/\[([^\]]+)\]/g, '<span class="ref-simple">$1</span>');
     
-    // Articles complets avec le nom du code (cliquables)
+    // Articles complets avec le nom du code (cliquables) - style élégant inline
     formatted = formatted.replace(
       /\b(Article\s+(?:L\.?)?\d+(?:\s+(?:du|de la|de l['']?)?\s*(?:Code\s+(?:du\s+)?(?:Travail|Pénal|Penal|Civil)|Constitution(?:\s+du\s+Sénégal)?|Loi\s+\d{4}-\d+)[^\.,;:!?\n]*)?)/gi,
-      '<button type="button" class="article-citation" data-article="$1"><span class="article-icon"></span>$1</button>'
-    );
-    
-    // Articles simples (L.1, L.2, etc.)
-    formatted = formatted.replace(
-      /(?<!<button[^>]*>.*)\b(L\.\d+)\b(?![^<]*<\/button>)/gi, 
-      '<span class="article-ref">$1</span>'
+      '<button type="button" class="article-link" data-article="$1">$1</button>'
     );
 
     return formatted;
@@ -223,100 +216,56 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
           color: #334155;
         }
         
-        /* Citation d'article cliquable */
-        .formatted-response :global(.article-citation) {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
+        /* Citation d'article inline - élégant et discret */
+        .formatted-response :global(.article-link) {
+          color: #0891b2;
           font-weight: 600;
-          font-size: 0.9em;
-          color: #0f2942;
-          background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
-          padding: 0.25rem 0.625rem;
-          border-radius: 0.375rem;
-          border: 1px solid #0891b2;
-          box-shadow: 0 1px 3px rgba(8, 145, 178, 0.15);
-          margin: 0 0.125rem;
+          background: none;
+          border: none;
+          padding: 0;
+          margin: 0;
           cursor: pointer;
-          transition: all 0.2s ease;
+          text-decoration: underline;
+          text-decoration-style: dotted;
+          text-underline-offset: 2px;
+          transition: all 0.15s ease;
           font-family: inherit;
+          font-size: inherit;
         }
         
-        .formatted-response :global(.article-citation:hover) {
-          background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
-          box-shadow: 0 2px 6px rgba(8, 145, 178, 0.25);
-          transform: translateY(-1px);
+        .formatted-response :global(.article-link:hover) {
+          color: #0e7490;
+          text-decoration-style: solid;
         }
         
-        .formatted-response :global(.article-citation:active) {
-          transform: translateY(0);
-        }
-        
-        .formatted-response :global(.article-icon)::before {
-          content: "📜";
-          font-size: 0.9em;
-        }
-        
-        /* Référence légale avec badge (entre crochets) */
-        .formatted-response :global(.legal-ref-badge) {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
-          font-size: 0.85em;
-          font-weight: 600;
-          color: #92400e;
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          padding: 0.375rem 0.75rem;
-          border-radius: 0.5rem;
-          margin: 0.5rem 0.125rem;
-          border: 1px solid #f59e0b;
-          box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-family: inherit;
-        }
-        
-        .formatted-response :global(.legal-ref-badge:hover) {
-          background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-          box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
-          transform: translateY(-1px);
-        }
-        
-        .formatted-response :global(.legal-ref-icon)::before {
-          content: "⚖️";
-          font-size: 1em;
-        }
-        
-        .formatted-response :global(.legal-ref-text) {
-          font-weight: 600;
-        }
-        
-        /* Petite référence simple */
+        /* Référence légale entre crochets - badge discret */
         .formatted-response :global(.legal-ref) {
           display: inline-flex;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.8rem;
+          font-size: 0.8em;
+          font-weight: 500;
           color: #64748b;
           background: #f1f5f9;
-          padding: 0.125rem 0.5rem;
+          padding: 0.2rem 0.5rem;
           border-radius: 0.25rem;
-          margin: 0.25rem 0;
           border: 1px solid #e2e8f0;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+          margin: 0.125rem;
         }
         
-        .formatted-response :global(.legal-ref)::before {
-          content: "📋";
-          font-size: 0.85em;
+        .formatted-response :global(.legal-ref:hover) {
+          background: #e2e8f0;
+          color: #475569;
+          border-color: #cbd5e1;
         }
         
-        /* Article simple (L.1, L.2) */
-        .formatted-response :global(.article-ref) {
-          font-weight: 600;
-          color: #0891b2;
-          background: rgba(8, 145, 178, 0.1);
-          padding: 0.125rem 0.375rem;
-          border-radius: 0.25rem;
+        /* Référence simple (sans article) */
+        .formatted-response :global(.ref-simple) {
+          font-size: 0.8em;
+          color: #94a3b8;
+          font-style: italic;
         }
       `}</style>
       <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
