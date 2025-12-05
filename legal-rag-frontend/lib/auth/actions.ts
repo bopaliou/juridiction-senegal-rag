@@ -19,6 +19,12 @@ function translateError(errorMessage: string): string {
     'Forbidden': 'Accès refusé. Veuillez contacter le support si le problème persiste.',
     'Email link is invalid or has expired': 'Le lien a expiré ou est invalide. Veuillez demander un nouveau lien.',
     'Token has expired or is invalid': 'Le lien a expiré. Veuillez demander un nouveau lien.',
+    'New password should be different': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
+    'New password should be different from the old password': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
+    'Password should be different': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
+    'same password': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
+    'new password is the same': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
+    'password is the same': 'Le nouveau mot de passe doit être différent de votre mot de passe actuel. Veuillez choisir un autre mot de passe.',
   }
 
   // Chercher une correspondance exacte ou partielle
