@@ -101,10 +101,8 @@ export default function Home() {
     try {
       const key = getConversationKey(conversationId);
       const stored = localStorage.getItem(key);
-      console.log(`📂 Tentative de chargement: ${key}, trouvé: ${stored ? 'oui' : 'non'}`);
       if (stored) {
         const parsed = JSON.parse(stored) as Message[];
-        console.log(`✅ ${parsed.length} messages chargés`);
         return parsed;
       }
     } catch (e) {
@@ -144,17 +142,12 @@ export default function Home() {
         const validHistory = uniqueHistory.filter((item: any) => {
           if (!item.id) return false;
           const messagesKey = `lexsenegal_conversation_${item.id}`;
-          const hasMessages = localStorage.getItem(messagesKey) !== null;
-          if (!hasMessages) {
-            console.log(`🗑️ Suppression entrée orpheline: ${item.id}`);
-          }
-          return hasMessages;
+          return localStorage.getItem(messagesKey) !== null;
         });
         
         // Mettre à jour localStorage si des entrées ont été supprimées
         if (validHistory.length !== uniqueHistory.length) {
           localStorage.setItem('lexsenegal_chat_history', JSON.stringify(validHistory));
-          console.log(`✅ Historique nettoyé: ${uniqueHistory.length - validHistory.length} entrées orphelines supprimées`);
         }
         
         setChatHistory(validHistory.map((item: any) => ({
@@ -552,12 +545,10 @@ export default function Home() {
       localStorage.setItem('lexsenegal_session_id', newSessionId);
     }
     
-    console.log('🆕 Nouvelle conversation créée:', newSessionId);
   }, []);
 
   const handleChatClick = useCallback((chatId: string) => {
     if (!chatId) {
-      console.warn('⚠️ chatId vide, ignoré');
       return;
     }
     
@@ -566,7 +557,6 @@ export default function Home() {
     
     // Si pas de messages sauvegardés, supprimer cette entrée de l'historique
     if (savedMessages.length === 0) {
-      console.log(`⚠️ Conversation ${chatId} sans messages - suppression de l'historique`);
       
       // Supprimer de l'historique local
       setChatHistory(prev => {
@@ -599,7 +589,6 @@ export default function Home() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
     
-    console.log(`✅ Conversation ${chatId} chargée (${savedMessages.length} messages)`);
   }, [loadConversation]);
 
   // Gérer le clic sur une citation d'article pour afficher la source

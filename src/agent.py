@@ -102,9 +102,9 @@ def get_reranker():
                 top_n=4,
                 model="ms-marco-MiniLM-L-12-v2"
             )
-            print("✅ FlashRank Reranker chargé")
+            pass  # Reranker chargé avec succès
         except Exception as e:
-            print(f"ℹ️ Reranker indisponible: {e}")
+            pass  # Reranker indisponible, utilisation sans reranking
             _reranker = False  # Marquer comme non disponible
     return _reranker if _reranker else None
 
@@ -113,9 +113,7 @@ def get_reranker():
 try:
     db = get_db()
     retriever = get_retriever()
-    print(f"✅ Base de données chargée: {CHROMA_DB_PATH}")
 except Exception as e:
-    print(f"❌ Erreur d'initialisation: {e}")
     db = None
     retriever = None
 
@@ -327,7 +325,6 @@ def classify_question(state: AgentState) -> dict:
     
     # Classification rapide par mots-clés
     if any(kw in question for kw in JURIDIQUE_KEYWORDS):
-        print(f"✅ Question juridique (mots-clés)")
         return {"category": "JURIDIQUE", "messages": messages}
     
     # Classification LLM pour les cas ambigus
@@ -344,7 +341,6 @@ En cas de doute, réponds 'JURIDIQUE'."""),
     except Exception:
         category = "JURIDIQUE"
     
-    print(f"📊 Classification: {category}")
     return {"category": category, "messages": messages}
 
 
@@ -368,13 +364,11 @@ def retrieve_node(state: AgentState) -> dict:
     question = state["question"]
     
     if not retriever:
-        print("❌ Retriever non disponible")
         return {"context_documents": []}
     
     try:
         # Récupération initiale
         docs = retriever.invoke(question)
-        print(f"📊 Récupérés: {len(docs)} documents")
         
         if not docs:
             return {"context_documents": []}
@@ -394,14 +388,11 @@ def retrieve_node(state: AgentState) -> dict:
                     # Prendre les top documents rerankés (déjà triés par pertinence)
                     # Utiliser au moins 3 documents pour avoir du contexte
                     docs = reranked[:max(3, len(reranked))]
-                    print(f"📊 Après reranking: {len(docs)} documents retenus (top rerankés)")
                 else:
                     # Fallback si reranking échoue
                     docs = original_docs
-                    print(f"⚠️ Reranking vide, utilisation des originaux")
                 
             except Exception as e:
-                print(f"⚠️ Erreur reranking: {e}")
                 docs = original_docs  # Utiliser les originaux en cas d'erreur
         
         # Convertir en format sérialisable
@@ -410,7 +401,6 @@ def retrieve_node(state: AgentState) -> dict:
         return {"context_documents": context_docs}
         
     except Exception as e:
-        print(f"❌ Erreur retrieval: {e}")
         return {"context_documents": []}
 
 
@@ -489,7 +479,6 @@ RÉPONSE:"""
         })
         answer = response.content.strip()
     except Exception as e:
-        print(f"❌ Erreur génération: {e}")
         answer = "Une erreur s'est produite lors de la génération de la réponse."
     
     messages.append(AIMessage(content=answer))
@@ -510,7 +499,6 @@ RÉPONSE:"""
     
     if has_no_info:
         # Le LLM indique qu'il n'a pas l'info → pas de sources
-        print("⚠️ Réponse 'pas d'info' détectée → sources vidées pour cohérence")
         return {
             "answer": answer,
             "sources": [],
