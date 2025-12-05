@@ -69,12 +69,12 @@ export default function AuthForm({ mode = 'login' }: AuthFormProps) {
       <div className="mb-8 text-center">
         {/* Logo */}
         <div className="mb-6 flex justify-center">
-          <div className="h-16 w-16 rounded-xl overflow-hidden bg-gradient-to-br from-[#0891B2] to-[#14B8A6] p-2">
+          <div className="h-28 w-28 rounded-2xl overflow-hidden bg-white p-3 shadow-lg border-2 border-slate-100">
             <Image
               src="/assets/logo.png"
               alt="YoonAssist"
-              width={64}
-              height={64}
+              width={112}
+              height={112}
               className="h-full w-full object-contain"
             />
           </div>
