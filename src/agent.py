@@ -10,6 +10,8 @@ import os
 import json
 import random
 import gc
+import functools
+import time
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -48,14 +50,19 @@ _reranker = None
 
 
 def get_embedding_function():
-    """Lazy loading du modèle d'embeddings."""
+    """Lazy loading du modèle d'embeddings (optimisé)."""
     global _embedding_function
     if _embedding_function is None:
         _embedding_function = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
             model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
+            encode_kwargs={
+                'normalize_embeddings': True,
+                'batch_size': 32,
+                'show_progress_bar': False  # Désactiver la barre de progression pour la performance
+            }
         )
+        # Forcer le garbage collection après chargement
         gc.collect()
     return _embedding_function
 

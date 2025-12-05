@@ -1,13 +1,17 @@
 """
 Middlewares de sécurité et de performance pour FastAPI.
+Optimisé pour la performance et la sécurité.
 """
 import time
 import asyncio
+import logging
 from fastapi import Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from src.security import rate_limit_check, get_client_id
+
+logger = logging.getLogger("api")
 
 # Timeout pour les requêtes (en secondes)
 REQUEST_TIMEOUT = 120  # 2 minutes
@@ -84,24 +88,30 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware pour logger les requêtes (sans informations sensibles)."""
+    """Middleware pour logger les requêtes (optimisé, sans informations sensibles)."""
     
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
         
-        # Logger la requête (sans le body pour éviter les logs de données sensibles)
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {request.method} {request.url.path}")
+        # Logger uniquement les requêtes non-OPTIONS (éviter le spam)
+        if request.method != "OPTIONS":
+            logger.info(f"{request.method} {request.url.path} - IP: {request.client.host if request.client else 'unknown'}")
         
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            process_time = time.time() - start_time
+            logger.error(f"{request.method} {request.url.path} - ERROR - {process_time:.3f}s - {type(e).__name__}")
+            raise
         
         process_time = time.time() - start_time
         
-        # Logger la réponse
-        print(
-            f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] "
-            f"{request.method} {request.url.path} - "
-            f"{response.status_code} - {process_time:.3f}s"
-        )
+        # Logger la réponse (uniquement si > 1s pour éviter le spam)
+        if process_time > 1.0 or response.status_code >= 400:
+            logger.info(
+                f"{request.method} {request.url.path} - "
+                f"{response.status_code} - {process_time:.3f}s"
+            )
         
         return response
 

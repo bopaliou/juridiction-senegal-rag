@@ -48,6 +48,7 @@ ALLOWED_ORIGINS = os.getenv(
 ).split(",")
 
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "120"))  # 2 minutes par défaut
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", "4"))  # Nombre de workers pour le thread pool
 
 
 # =============================================================================
@@ -201,17 +202,18 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+# Compression GZip optimisée (compresser à partir de 500 bytes)
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Configuration CORS sécurisée
+# Configuration CORS sécurisée et optimisée
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    expose_headers=["X-Process-Time"],
-    max_age=3600,
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    expose_headers=["X-Process-Time", "X-Rate-Limit-Remaining"],
+    max_age=3600,  # Cache preflight requests pendant 1 heure
 )
 
 
@@ -243,17 +245,28 @@ async def ask_question(request: SecureQueryRequest):
     logger.info(f"📥 Question reçue: {request.question[:50]}...")
     
     try:
-        # Invoke avec timeout
+        # Invoke avec timeout et gestion mémoire optimisée
         try:
+            # Utiliser un thread pool pour éviter de bloquer l'event loop
+            loop = asyncio.get_event_loop()
             final_state = await asyncio.wait_for(
-                asyncio.to_thread(
+                loop.run_in_executor(
+                    None,  # Utiliser le thread pool par défaut
                     agent_app.invoke,
                     {"question": request.question, "messages": []}
                 ),
                 timeout=REQUEST_TIMEOUT
             )
+            
+            # Forcer le garbage collection après traitement pour libérer la mémoire
+            import gc
+            gc.collect()
+            
         except asyncio.TimeoutError:
             logger.warning(f"⏱️ Timeout après {REQUEST_TIMEOUT}s")
+            # Nettoyer la mémoire en cas de timeout
+            import gc
+            gc.collect()
             raise HTTPException(
                 status_code=504,
                 detail=f"La requête a pris plus de {REQUEST_TIMEOUT} secondes. Veuillez reformuler votre question."
