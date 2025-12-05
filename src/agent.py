@@ -36,8 +36,8 @@ if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY non définie")
 
 # Seuil de pertinence minimum pour les documents (après reranking)
-# Abaissé à 0.2 pour éviter les faux négatifs (documents pertinents rejetés)
-RELEVANCE_THRESHOLD = 0.2
+# Note: FlashRank ne retourne pas toujours relevance_score, donc on utilise directement les top rerankés
+RELEVANCE_THRESHOLD = 0.0  # Désactivé car FlashRank gère déjà le tri par pertinence
 
 # =============================================================================
 # LAZY LOADING DES RESSOURCES
@@ -389,23 +389,17 @@ def retrieve_node(state: AgentState) -> dict:
             try:
                 reranked = reranker.compress_documents(docs, question)
                 
-                # Filtrage par score de pertinence
-                filtered = []
-                for doc in reranked:
-                    score = doc.metadata.get('relevance_score', 0)
-                    if score >= RELEVANCE_THRESHOLD:
-                        filtered.append(doc)
-                        print(f"   ✅ Score {score:.2f}: {doc.metadata.get('source_name', 'N/A')[:40]}")
-                    else:
-                        print(f"   ⚠️ Score {score:.2f} < {RELEVANCE_THRESHOLD}")
-                
-                if filtered:
-                    docs = filtered
-                    print(f"📊 Après reranking: {len(docs)} documents retenus")
+                # FlashRank ne retourne pas toujours relevance_score dans metadata
+                # Utiliser les documents rerankés directement (déjà triés par pertinence)
+                if reranked and len(reranked) > 0:
+                    # Prendre les top documents rerankés (déjà triés par pertinence)
+                    # Utiliser au moins 3 documents pour avoir du contexte
+                    docs = reranked[:max(3, len(reranked))]
+                    print(f"📊 Après reranking: {len(docs)} documents retenus (top rerankés)")
                 else:
-                    # FALLBACK: Si tout est filtré, utiliser les top 3 rerankés sans filtre de score
-                    docs = reranked[:3] if reranked else original_docs
-                    print(f"⚠️ Fallback: {len(docs)} documents (sans filtre de score)")
+                    # Fallback si reranking échoue
+                    docs = original_docs
+                    print(f"⚠️ Reranking vide, utilisation des originaux")
                 
             except Exception as e:
                 print(f"⚠️ Erreur reranking: {e}")
