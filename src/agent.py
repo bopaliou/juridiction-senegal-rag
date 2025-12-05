@@ -83,12 +83,12 @@ def get_db():
 
 
 def get_retriever():
-    """Lazy loading du retriever."""
+    """Lazy loading du retriever (optimisé pour récupérer plus de documents)."""
     global _retriever
     if _retriever is None:
         _retriever = get_db().as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 6}
+            search_kwargs={"k": 10}  # Augmenter à 10 pour avoir plus de choix après reranking
         )
     return _retriever
 
