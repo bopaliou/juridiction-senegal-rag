@@ -325,11 +325,9 @@ def classify_question(state: AgentState) -> dict:
     if any(kw in question for kw in JURIDIQUE_KEYWORDS):
         return {"category": "JURIDIQUE", "messages": messages}
     
-    # Classification LLM pour les cas ambigus
+    # Classification LLM pour les cas ambigus (optimisé)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Tu classifies les questions pour un assistant juridique sénégalais.
-Réponds UNIQUEMENT 'JURIDIQUE' ou 'AUTRE'.
-En cas de doute, réponds 'JURIDIQUE'."""),
+        ("system", "Réponds 'JURIDIQUE' ou 'AUTRE'. En cas de doute: 'JURIDIQUE'."),
         ("human", "{question}")
     ])
     
@@ -374,24 +372,23 @@ def retrieve_node(state: AgentState) -> dict:
         # Garder les documents originaux pour fallback
         original_docs = docs[:3]  # Top 3 originaux
         
-        # Reranking avec FlashRank si disponible
+        # Reranking avec FlashRank si disponible (optionnel pour performance)
         reranker = get_reranker()
-        if reranker:
+        if reranker and len(docs) > 3:  # Rerank seulement si on a plus de 3 docs
             try:
                 reranked = reranker.compress_documents(docs, question)
                 
-                # FlashRank ne retourne pas toujours relevance_score dans metadata
-                # Utiliser les documents rerankés directement (déjà triés par pertinence)
                 if reranked and len(reranked) > 0:
-                    # Prendre les top documents rerankés (déjà triés par pertinence)
-                    # Utiliser au moins 3 documents pour avoir du contexte
-                    docs = reranked[:max(3, len(reranked))]
+                    # Prendre les top 3 documents rerankés (optimisé)
+                    docs = reranked[:3]
                 else:
-                    # Fallback si reranking échoue
                     docs = original_docs
                 
-            except Exception as e:
+            except Exception:
                 docs = original_docs  # Utiliser les originaux en cas d'erreur
+        else:
+            # Si pas de reranker ou peu de docs, utiliser directement les top 3
+            docs = docs[:3]
         
         # Convertir en format sérialisable
         context_docs = [document_to_source(doc, i) for i, doc in enumerate(docs)]
