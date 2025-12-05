@@ -47,7 +47,7 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
 ).split(",")
 
-REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "120"))  # 2 minutes par défaut
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "90"))  # 90 secondes par défaut (optimisé)
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "4"))  # Nombre de workers pour le thread pool
 
 

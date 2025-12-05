@@ -82,29 +82,27 @@ def get_db():
 
 
 def get_retriever():
-    """Lazy loading du retriever (optimisé pour récupérer plus de documents)."""
+    """Lazy loading du retriever (optimisé pour performance)."""
     global _retriever
     if _retriever is None:
         _retriever = get_db().as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 10}  # Augmenter à 10 pour avoir plus de choix après reranking
+            search_kwargs={"k": 6}  # Optimisé : 6 documents suffisent pour le reranking
         )
     return _retriever
 
 
 def get_reranker():
-    """Lazy loading du reranker FlashRank (fallback silencieux si indisponible)."""
+    """Lazy loading du reranker FlashRank (optimisé pour performance)."""
     global _reranker
     if _reranker is None:
         try:
             from langchain_community.document_compressors import FlashrankRerank
             _reranker = FlashrankRerank(
-                top_n=4,
+                top_n=3,  # Réduit à 3 pour plus de rapidité
                 model="ms-marco-MiniLM-L-12-v2"
             )
-            pass  # Reranker chargé avec succès
         except Exception as e:
-            pass  # Reranker indisponible, utilisation sans reranking
             _reranker = False  # Marquer comme non disponible
     return _reranker if _reranker else None
 
@@ -118,20 +116,20 @@ except Exception as e:
     retriever = None
 
 # LLMs
-# Modèle pour le routage (rapide, peu de tokens)
+# Modèle pour le routage (rapide, peu de tokens) - utiliser modèle plus rapide
 router_llm = ChatGroq(
-    model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
+    model_name="llama-3.1-8b-instant",  # Modèle rapide pour classification
     temperature=0,
-    max_tokens=50,
-    timeout=30
+    max_tokens=20,  # Réduit pour plus de rapidité
+    timeout=15  # Timeout réduit
 )
 
-# Modèle pour la génération (plus capable)
+# Modèle pour la génération (optimisé pour vitesse)
 generation_llm = ChatGroq(
     model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
     temperature=0,
-    max_tokens=2000,
-    timeout=60
+    max_tokens=1500,  # Réduit pour des réponses plus rapides
+    timeout=45  # Timeout réduit
 )
 
 
@@ -422,15 +420,17 @@ def generate_node(state: AgentState) -> dict:
             "context_documents": []
         }
     
-    # CAS 2: Construire le contexte à partir des documents
+    # CAS 2: Construire le contexte à partir des documents (optimisé)
     context_parts = []
-    for doc in context_docs:
+    for doc in context_docs[:3]:  # Limiter à 3 documents max pour performance
         part = f"[{doc['title']}]"
         if doc.get('article'):
             part += f" {doc['article']}"
         if doc.get('breadcrumb'):
             part += f" ({doc['breadcrumb']})"
-        part += f"\n{doc['content']}"
+        # Limiter le contenu à 400 caractères par document pour réduire la taille du prompt
+        content = doc['content'][:400] + "..." if len(doc.get('content', '')) > 400 else doc.get('content', '')
+        part += f"\n{content}"
         context_parts.append(part)
     
     context = "\n\n---\n\n".join(context_parts)
@@ -447,21 +447,17 @@ def generate_node(state: AgentState) -> dict:
                 parts.append(f"Assistant: {msg.content}")
         history_str = "\n".join(parts)
     
-    # Prompt équilibré
-    template = """Tu es YoonAssist, assistant juridique spécialisé dans le droit sénégalais. Réponds UNIQUEMENT avec le CONTEXTE fourni.
+    # Prompt optimisé pour vitesse
+    template = """Tu es YoonAssist, assistant juridique sénégalais. Réponds UNIQUEMENT avec le CONTEXTE fourni.
 
-STYLE DE RÉPONSE:
-- Donne une réponse COMPLÈTE mais STRUCTURÉE (ni trop courte ni trop longue)
+RÈGLES:
+- Réponse COMPLÈTE mais CONCISE (2-4 phrases + liste si nécessaire)
 - Commence directement par l'information demandée
-- Explique les points importants avec des détails utiles (montants, délais, conditions)
-- Utilise des listes à puces pour les énumérations
-- Cite les articles de loi entre crochets à la fin de chaque point : [Article X du Code Y]
-- Termine par une note pratique si pertinent
-- Si l'information n'est pas dans le contexte : "Je ne dispose pas de cette information dans les textes fournis."
+- Détails utiles: montants, délais, conditions
+- Cite les articles: [Article X du Code Y]
+- Si info absente: "Je ne dispose pas de cette information dans les textes fournis."
 
-{history}
-
-CONTEXTE:
+{history}CONTEXTE:
 {context}
 
 QUESTION: {question}
