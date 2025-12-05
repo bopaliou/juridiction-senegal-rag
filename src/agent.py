@@ -58,8 +58,7 @@ def get_embedding_function():
             model_kwargs={'device': 'cpu'},
             encode_kwargs={
                 'normalize_embeddings': True,
-                'batch_size': 32,
-                'show_progress_bar': False  # Désactiver la barre de progression pour la performance
+                'batch_size': 32
             }
         )
         # Forcer le garbage collection après chargement
