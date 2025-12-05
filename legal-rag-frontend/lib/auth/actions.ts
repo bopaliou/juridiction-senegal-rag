@@ -4,6 +4,35 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 /**
+ * Traduit les messages d'erreur Supabase en français
+ */
+function translateError(errorMessage: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Email ou mot de passe incorrect. Veuillez vérifier vos identifiants.',
+    'Invalid credentials': 'Email ou mot de passe incorrect. Veuillez vérifier vos identifiants.',
+    'Email not confirmed': 'Votre email n\'a pas été confirmé. Veuillez vérifier votre boîte de réception.',
+    'User already registered': 'Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.',
+    'Email rate limit exceeded': 'Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.',
+    'Password should be at least 6 characters': 'Le mot de passe doit contenir au moins 6 caractères.',
+    'Unable to validate email address: invalid format': 'Format d\'email invalide. Veuillez entrer une adresse email valide.',
+    'User not found': 'Aucun compte trouvé avec cet email.',
+    'Forbidden': 'Accès refusé. Veuillez contacter le support si le problème persiste.',
+    'Email link is invalid or has expired': 'Le lien a expiré ou est invalide. Veuillez demander un nouveau lien.',
+    'Token has expired or is invalid': 'Le lien a expiré. Veuillez demander un nouveau lien.',
+  }
+
+  // Chercher une correspondance exacte ou partielle
+  for (const [key, value] of Object.entries(errorMap)) {
+    if (errorMessage.toLowerCase().includes(key.toLowerCase())) {
+      return value
+    }
+  }
+
+  // Message par défaut plus rassurant
+  return 'Une erreur est survenue. Veuillez réessayer ou contacter le support si le problème persiste.'
+}
+
+/**
  * Actions serveur pour l'authentification
  * Utilise 'use server' pour garantir l'exécution côté serveur
  */
@@ -23,7 +52,7 @@ export async function signUp(email: string, password: string, fullName?: string)
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: translateError(error.message) }
   }
 
   return { data, error: null }
@@ -38,7 +67,7 @@ export async function signIn(email: string, password: string) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: translateError(error.message) }
   }
 
   revalidatePath('/', 'layout')
@@ -51,7 +80,7 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut()
 
   if (error) {
-    return { error: error.message }
+    return { error: translateError(error.message) }
   }
 
   revalidatePath('/', 'layout')
@@ -66,7 +95,7 @@ export async function resetPassword(email: string) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: translateError(error.message) }
   }
 
   return { error: null }
@@ -80,7 +109,7 @@ export async function updatePassword(newPassword: string) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: translateError(error.message) }
   }
 
   return { error: null }
@@ -95,7 +124,7 @@ export async function getUser() {
   } = await supabase.auth.getUser()
 
   if (error) {
-    return { user: null, error: error.message }
+    return { user: null, error: translateError(error.message) }
   }
 
   return { user, error: null }
