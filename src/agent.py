@@ -551,4 +551,4 @@ workflow.add_edge("non_juridique", END)
 # Compilation (sans checkpointer pour éviter les erreurs de sérialisation)
 agent_app = workflow.compile()
 
-print("✅ Agent RAG initialisé")
+# Agent RAG initialisé

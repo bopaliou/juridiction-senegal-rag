@@ -72,8 +72,7 @@ export default function Home() {
         } catch (e) {
           // Gérer l'erreur QuotaExceededError silencieusement
           if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-            console.warn('LocalStorage quota dépassé, nettoyage des anciennes conversations');
-            // Nettoyer les anciennes conversations
+            // LocalStorage quota dépassé, nettoyage automatique des anciennes conversations
             try {
               const keys = Object.keys(localStorage);
               const conversationKeys = keys.filter((k) => k.startsWith('lexsenegal_conversation_'));
@@ -299,7 +298,7 @@ export default function Home() {
           });
         }
       } catch (error) {
-        console.warn('Erreur parsing source:', error);
+        // Erreur parsing source ignorée
       }
     });
     
