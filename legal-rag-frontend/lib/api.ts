@@ -61,11 +61,17 @@ export function sanitizeText(text: string): string {
  * Valide et nettoie la question avant l'envoi.
  */
 export function validateQuestion(question: string): { valid: boolean; error?: string } {
-  if (!question || !question.trim()) {
+  if (!question || typeof question !== 'string') {
     return { valid: false, error: 'La question ne peut pas être vide' };
   }
 
-  if (question.length > 5000) {
+  const trimmed = question.trim();
+  
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'La question ne peut pas être vide' };
+  }
+
+  if (trimmed.length > 5000) {
     return { valid: false, error: 'La question est trop longue (max 5000 caractères)' };
   }
 
@@ -74,12 +80,20 @@ export function validateQuestion(question: string): { valid: boolean; error?: st
     /<script/i,
     /javascript:/i,
     /on\w+\s*=/i, // onclick, onerror, etc.
+    /data:text\/html/i,
+    /vbscript:/i,
+    /<iframe/i,
   ];
 
   for (const pattern of dangerousPatterns) {
-    if (pattern.test(question)) {
+    if (pattern.test(trimmed)) {
       return { valid: false, error: 'La question contient des caractères non autorisés' };
     }
+  }
+
+  // Vérifier les caractères de contrôle
+  if (/[\x00-\x1F\x7F]/.test(trimmed)) {
+    return { valid: false, error: 'La question contient des caractères non autorisés' };
   }
 
   return { valid: true };
@@ -99,7 +113,11 @@ export async function askQuestion(
   }
 
   // Valider le threadId
-  if (threadId && threadId.length > 100) {
+  if (!threadId || typeof threadId !== 'string') {
+    throw new Error('Thread ID invalide');
+  }
+  
+  if (threadId.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(threadId)) {
     throw new Error('Thread ID invalide');
   }
 

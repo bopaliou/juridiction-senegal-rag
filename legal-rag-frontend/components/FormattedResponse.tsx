@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 
 interface FormattedResponseProps {
   content: string;
   onArticleClick?: (articleText: string) => void;
 }
 
-export default function FormattedResponse({ content, onArticleClick }: FormattedResponseProps) {
+function FormattedResponse({ content, onArticleClick }: FormattedResponseProps) {
   const formattedContent = useMemo(() => {
     if (!content) return '';
 
@@ -279,3 +279,6 @@ export default function FormattedResponse({ content, onArticleClick }: Formatted
     </div>
   );
 }
+
+// Memoize le composant pour éviter les re-renders inutiles
+export default memo(FormattedResponse);

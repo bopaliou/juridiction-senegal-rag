@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send, Loader2, FileText } from 'lucide-react';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ import FormattedResponse from '@/components/FormattedResponse';
 import Header from '@/components/Header';
 import { askQuestion, ApiError } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
+import { debounce } from '@/lib/utils/debounce';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -60,17 +61,39 @@ export default function Home() {
   // Clé localStorage pour les messages d'une conversation
   const getConversationKey = (id: string) => `lexsenegal_conversation_${id}`;
 
-  // Sauvegarder les messages d'une conversation
-  const saveConversation = useCallback((conversationId: string, msgs: Message[]) => {
-    if (typeof window === 'undefined' || !conversationId || msgs.length === 0) return;
-    try {
-      const key = getConversationKey(conversationId);
-      localStorage.setItem(key, JSON.stringify(msgs));
-      console.log(`💾 Conversation sauvegardée: ${key} (${msgs.length} messages)`);
-    } catch (e) {
-      console.error('Erreur sauvegarde conversation:', e);
-    }
-  }, []);
+  // Sauvegarder les messages d'une conversation avec debouncing pour optimiser les écritures localStorage
+  const saveConversationDebounced = useMemo(
+    () =>
+      debounce((conversationId: string, msgs: Message[]) => {
+        if (typeof window === 'undefined' || !conversationId || msgs.length === 0) return;
+        try {
+          const key = getConversationKey(conversationId);
+          localStorage.setItem(key, JSON.stringify(msgs));
+        } catch (e) {
+          // Gérer l'erreur QuotaExceededError silencieusement
+          if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            console.warn('LocalStorage quota dépassé, nettoyage des anciennes conversations');
+            // Nettoyer les anciennes conversations
+            try {
+              const keys = Object.keys(localStorage);
+              const conversationKeys = keys.filter((k) => k.startsWith('lexsenegal_conversation_'));
+              // Supprimer les 10 plus anciennes
+              conversationKeys.slice(-10).forEach((k) => localStorage.removeItem(k));
+            } catch {}
+          } else {
+            console.error('Erreur sauvegarde conversation:', e);
+          }
+        }
+      }, 500), // Debounce de 500ms
+    []
+  );
+
+  const saveConversation = useCallback(
+    (conversationId: string, msgs: Message[]) => {
+      saveConversationDebounced(conversationId, msgs);
+    },
+    [saveConversationDebounced]
+  );
 
   // Charger les messages d'une conversation
   const loadConversation = useCallback((conversationId: string): Message[] => {

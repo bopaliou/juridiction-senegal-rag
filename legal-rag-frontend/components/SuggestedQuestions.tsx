@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo, useCallback } from 'react';
 
 interface SuggestedQuestionsProps {
   questions: string[];
@@ -9,7 +9,7 @@ interface SuggestedQuestionsProps {
   isLoading?: boolean;
 }
 
-export default function SuggestedQuestions({
+function SuggestedQuestions({
   questions,
   onQuestionClick,
   isLoading = false,
@@ -32,7 +32,7 @@ export default function SuggestedQuestions({
     return () => window.removeEventListener('resize', checkScrollability);
   }, [questions]);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const scrollAmount = 280;
       const newScrollLeft =
@@ -45,7 +45,15 @@ export default function SuggestedQuestions({
         behavior: 'smooth',
       });
     }
-  };
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  }, []);
 
   if (!questions || questions.length === 0) return null;
 
@@ -74,13 +82,7 @@ export default function SuggestedQuestions({
         <div
           ref={scrollContainerRef}
           className="flex gap-2.5 overflow-x-auto px-1 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-          onScroll={() => {
-            if (scrollContainerRef.current) {
-              const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-              setCanScrollLeft(scrollLeft > 0);
-              setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-            }
-          }}
+          onScroll={handleScroll}
         >
           {questions.map((question, index) => (
             <button
@@ -112,3 +114,6 @@ export default function SuggestedQuestions({
     </div>
   );
 }
+
+// Memoize le composant pour éviter les re-renders inutiles
+export default memo(SuggestedQuestions);
