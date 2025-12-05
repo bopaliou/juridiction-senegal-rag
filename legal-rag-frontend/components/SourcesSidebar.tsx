@@ -96,17 +96,8 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
       return;
     }
 
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      if (currentIndex < sources.length) {
-        setVisibleSources((prev) => [...prev, sources[currentIndex]]);
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 150);
-
-    return () => clearInterval(interval);
+    // Afficher toutes les sources immédiatement pour éviter les incohérences de comptage
+    setVisibleSources(sources);
   }, [isOpen, sources]);
 
   return (
@@ -369,8 +360,8 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                     );
                   })}
 
-                  {/* Indicateur de chargement progressif */}
-                  {isLoading && visibleSources.length < sources.length && (
+                  {/* Indicateur de chargement - affiché uniquement si isLoading est vrai et qu'il n'y a pas encore de sources */}
+                  {isLoading && visibleSources.length === 0 && (
                     <div className="flex items-center justify-center py-6">
                       <div className="flex items-center gap-3 text-sm text-[#64748B]">
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#0891B2] border-t-transparent"></div>

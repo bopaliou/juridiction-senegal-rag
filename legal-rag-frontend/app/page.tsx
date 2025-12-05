@@ -234,6 +234,8 @@ export default function Home() {
     if (!sources || !Array.isArray(sources)) return [];
     
     const result: SourceItem[] = [];
+    const seenIds = new Set<string>();
+    const seenContent = new Set<string>();
     
     sources.forEach((source, index) => {
       try {
@@ -241,18 +243,33 @@ export default function Home() {
         if (typeof source === 'object' && source !== null) {
           const obj = source as Record<string, unknown>;
           const content = (obj.content as string) || '';
-          if (content.length > 0) {
-            result.push({
-              id: (obj.id as string) || `source_${index}`,
-              title: (obj.title as string) || 'Document Juridique',
-              url: obj.url as string | undefined,
-              content,
-              page: obj.page as number | undefined,
-              domain: obj.domain as string | undefined,
-              article: obj.article as string | undefined,
-              breadcrumb: obj.breadcrumb as string | undefined,
-            });
+          
+          // Ignorer les sources sans contenu
+          if (content.trim().length === 0) {
+            return;
           }
+          
+          const id = (obj.id as string) || `source_${index}`;
+          const contentHash = content.substring(0, 100); // Hash basique pour détecter les doublons
+          
+          // Ignorer les doublons (même ID ou même contenu)
+          if (seenIds.has(id) || seenContent.has(contentHash)) {
+            return;
+          }
+          
+          seenIds.add(id);
+          seenContent.add(contentHash);
+          
+          result.push({
+            id,
+            title: (obj.title as string) || 'Document Juridique',
+            url: obj.url as string | undefined,
+            content: content.trim(),
+            page: obj.page as number | undefined,
+            domain: obj.domain as string | undefined,
+            article: obj.article as string | undefined,
+            breadcrumb: obj.breadcrumb as string | undefined,
+          });
           return;
         }
         
@@ -271,19 +288,34 @@ export default function Home() {
           if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
             try {
               const parsed = JSON.parse(trimmed);
-              const content = parsed.content || '';
-              if (content.length > 0) {
-                result.push({
-                  id: parsed.id || `source_${index}`,
-                  title: parsed.title || 'Source',
-                  url: parsed.url,
-                  content,
-                  page: parsed.page,
-                  domain: parsed.domain,
-                  article: parsed.article,
-                  breadcrumb: parsed.breadcrumb,
-                });
+              const content = (parsed.content as string) || '';
+              
+              // Ignorer les sources sans contenu
+              if (content.trim().length === 0) {
+                return;
               }
+              
+              const id = parsed.id || `source_${index}`;
+              const contentHash = content.substring(0, 100);
+              
+              // Ignorer les doublons
+              if (seenIds.has(id) || seenContent.has(contentHash)) {
+                return;
+              }
+              
+              seenIds.add(id);
+              seenContent.add(contentHash);
+              
+              result.push({
+                id,
+                title: parsed.title || 'Source',
+                url: parsed.url,
+                content: content.trim(),
+                page: parsed.page,
+                domain: parsed.domain,
+                article: parsed.article,
+                breadcrumb: parsed.breadcrumb,
+              });
               return;
             } catch {
               // Continuer au fallback
@@ -291,6 +323,12 @@ export default function Home() {
           }
           
           // Fallback: texte brut
+          const contentHash = trimmed.substring(0, 100);
+          if (seenContent.has(contentHash)) {
+            return; // Ignorer les doublons de contenu
+          }
+          seenContent.add(contentHash);
+          
           result.push({
             id: `source_${index}`,
             title: 'Information',
