@@ -68,8 +68,7 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
   },
   
-  // Optimisation de la compilation
-  swcMinify: true,
+  // Note: swcMinify est activé par défaut dans Next.js 16+, pas besoin de le spécifier
   
   // Optimisation des exports
   output: 'standalone',
