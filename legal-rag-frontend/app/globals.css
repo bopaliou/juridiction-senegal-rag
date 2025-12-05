@@ -297,6 +297,58 @@ html {
 }
 
 /* ==========================================
+   SOURCE CARDS TYPOGRAPHY
+   ========================================== */
+.source-content {
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.source-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.source-content p:last-child {
+  margin-bottom: 0;
+}
+
+.source-content h4 {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: #0F2942;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.source-content ul,
+.source-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.source-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.source-content strong {
+  font-weight: 600;
+  color: #0F2942;
+}
+
+.source-content em {
+  font-style: italic;
+  color: #475569;
+}
+
+/* ==========================================
    CUSTOM COMPONENTS
    ========================================== */
 

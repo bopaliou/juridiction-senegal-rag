@@ -240,43 +240,51 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                     return (
                       <div
                         key={uniqueKey}
-                        className="group animate-slide-in-right rounded-2xl border-2 border-[#E2E8F0] bg-white p-5 shadow-sm transition-all duration-300 hover:border-[#0891B2]/30 hover:shadow-lg hover:-translate-y-1"
+                        className="group animate-slide-in-right rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-md transition-all duration-300 hover:border-[#0891B2]/40 hover:shadow-xl hover:-translate-y-1 hover:ring-2 hover:ring-[#0891B2]/10"
                         style={{ animationDelay: `${index * 80}ms` }}
                       >
                         {/* Header */}
                         <div className="mb-4 flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="mb-3 flex items-center gap-3">
-                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${styles.icon} text-white shadow-md`}>
+                            <div className="mb-3 flex items-start gap-3">
+                              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${styles.icon} text-white shadow-lg ring-2 ring-white/50`}>
                                 {getDomainIcon(source?.domain)}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-[#0F2942] line-clamp-2 text-base">
+                              <div className="flex-1 min-w-0 pt-0.5">
+                                <h3 className="font-bold text-[#0F2942] line-clamp-2 text-base leading-snug mb-1.5">
                                   {source?.title || 'Source'}
                                 </h3>
                                 {source?.article && (
-                                  <p className="text-sm font-semibold text-[#0891B2] mt-0.5">
-                                    {source.article}
-                                  </p>
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0891B2]/10 to-[#14B8A6]/10 border border-[#0891B2]/20 mb-2">
+                                    <Scale className="h-3.5 w-3.5 text-[#0891B2]" />
+                                    <span className="text-xs font-bold text-[#0891B2] tracking-wide uppercase">
+                                      {source.article}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
                             
                             {source?.breadcrumb && (
-                              <p className="text-xs text-[#64748B] mb-2 italic">
-                                📍 {source.breadcrumb}
-                              </p>
+                              <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]/50">
+                                <span className="text-[#0891B2] mt-0.5">📍</span>
+                                <p className="text-xs text-[#64748B] leading-relaxed font-medium">
+                                  {source.breadcrumb}
+                                </p>
+                              </div>
                             )}
                             
                             <div className="flex flex-wrap items-center gap-2">
                               {source?.domain && (
-                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${styles.badge}`}>
-                                  {source.domain}
+                                <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm ${styles.badge}`}>
+                                  {getDomainIcon(source.domain)}
+                                  <span>{source.domain}</span>
                                 </span>
                               )}
                               {source?.page && (
-                                <span className="inline-flex items-center rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-medium text-[#64748B]">
-                                  Page {source.page}
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#F1F5F9] to-[#E2E8F0] px-3 py-1.5 text-xs font-semibold text-[#475569] shadow-sm border border-[#CBD5E1]/50">
+                                  <FileText className="h-3 w-3" />
+                                  <span>Page {source.page}</span>
                                 </span>
                               )}
                             </div>
@@ -287,19 +295,75 @@ export default function SourcesSidebar({ isOpen, onClose, sources, isLoading = f
                               href={source.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#94A3B8] transition-all hover:bg-[#0891B2]/10 hover:text-[#0891B2] hover:scale-110"
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#64748B] transition-all hover:bg-gradient-to-br hover:from-[#0891B2] hover:to-[#14B8A6] hover:text-white hover:shadow-lg hover:scale-110 border border-[#E2E8F0]"
                               title="Ouvrir dans un nouvel onglet"
                             >
-                              <ExternalLink className="h-5 w-5" />
+                              <ExternalLink className="h-4 w-4" />
                             </a>
                           )}
                         </div>
 
                         {/* Contenu */}
-                        <div className="max-h-48 overflow-y-auto rounded-xl bg-[#F8FAFC] p-4">
-                          <p className="text-sm leading-relaxed text-[#475569] whitespace-pre-wrap">
-                            {source?.content || 'Aucun contenu disponible'}
-                          </p>
+                        <div className="relative max-h-64 overflow-y-auto rounded-xl bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-5 border border-[#E2E8F0]/50 shadow-inner">
+                          {/* Gradient overlay en bas pour indiquer qu'il y a plus de contenu */}
+                          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#F8FAFC] to-transparent pointer-events-none rounded-b-xl"></div>
+                          
+                          <div className="prose prose-sm max-w-none">
+                            <div className="source-content text-sm leading-relaxed text-[#334155] whitespace-pre-wrap font-normal">
+                              {source?.content ? (
+                                <div className="space-y-2.5">
+                                  {source.content.split('\n').map((paragraph, idx) => {
+                                    // Ignorer les paragraphes vides
+                                    if (!paragraph.trim()) return null;
+                                    
+                                    // Détecter les listes numérotées (1., 2., etc.)
+                                    const numberedMatch = paragraph.trim().match(/^(\d+)[\.\)]\s(.+)$/);
+                                    if (numberedMatch) {
+                                      return (
+                                        <div key={idx} className="flex items-start gap-3 pl-1">
+                                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0891B2] to-[#14B8A6] text-white text-xs font-bold mt-0.5">
+                                            {numberedMatch[1]}
+                                          </span>
+                                          <span className="flex-1 pt-0.5">{numberedMatch[2]}</span>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Détecter les listes à puces (commençant par -, •)
+                                    if (/^[-•]\s/.test(paragraph.trim())) {
+                                      return (
+                                        <div key={idx} className="flex items-start gap-2.5 pl-1">
+                                          <span className="text-[#0891B2] font-bold mt-1.5 shrink-0 text-lg leading-none">•</span>
+                                          <span className="flex-1">{paragraph.trim().replace(/^[-•]\s/, '')}</span>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Détecter les titres (lignes courtes en majuscules ou avec des caractères spéciaux)
+                                    if (paragraph.trim().length < 80 && (
+                                      /^[A-ZÉÈÊÀÂÔÙÛÇ\s]+$/.test(paragraph.trim()) ||
+                                      paragraph.trim().includes(':') && paragraph.trim().length < 60
+                                    )) {
+                                      return (
+                                        <h4 key={idx} className="font-bold text-[#0F2942] text-base mt-3 mb-1.5 first:mt-0">
+                                          {paragraph.trim()}
+                                        </h4>
+                                      );
+                                    }
+                                    
+                                    // Paragraphe normal
+                                    return (
+                                      <p key={idx} className="text-[#334155] leading-7 first:mt-0">
+                                        {paragraph.trim()}
+                                      </p>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-[#94A3B8] italic">Aucun contenu disponible</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
