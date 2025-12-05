@@ -65,26 +65,27 @@ export default function AuthForm({ mode = 'login' }: AuthFormProps) {
   }
 
   return (
-    <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+    <div className="w-full max-w-md rounded-3xl bg-white/95 backdrop-blur-sm p-8 sm:p-10 shadow-2xl border border-white/20">
       <div className="mb-8 text-center">
-        {/* Logo */}
+        {/* Logo avec meilleure visibilité */}
         <div className="mb-6 flex justify-center">
-          <div className="h-28 w-28 rounded-2xl overflow-hidden bg-white p-3 shadow-lg border-2 border-slate-100">
+          <div className="relative h-32 w-32 sm:h-36 sm:w-36 rounded-3xl overflow-hidden bg-gradient-to-br from-white to-slate-50 p-4 shadow-2xl border-4 border-white ring-4 ring-[#0891B2]/20">
             <Image
               src="/assets/logo.png"
               alt="YoonAssist"
-              width={112}
-              height={112}
-              className="h-full w-full object-contain"
+              width={144}
+              height={144}
+              className="h-full w-full object-contain drop-shadow-lg"
+              priority
             />
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-[#0F2942]">
+        <h2 className="text-3xl sm:text-4xl font-bold text-[#0F2942] mb-2">
           {currentMode === 'signup' && 'Créer un compte'}
           {currentMode === 'login' && 'Connexion'}
           {currentMode === 'forgot-password' && 'Mot de passe oublié'}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm sm:text-base text-slate-600">
           {currentMode === 'signup' && 'Rejoignez YoonAssist AI'}
           {currentMode === 'login' && 'Accédez à votre assistant juridique'}
           {currentMode === 'forgot-password' && 'Réinitialisez votre mot de passe'}
@@ -119,7 +120,7 @@ export default function AuthForm({ mode = 'login' }: AuthFormProps) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Votre nom"
-                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-0 transition-colors"
+                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 transition-all duration-200"
                 required={currentMode === 'signup'}
               />
             </div>
@@ -157,7 +158,7 @@ export default function AuthForm({ mode = 'login' }: AuthFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-0 transition-colors"
+                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 transition-all duration-200"
                 required
                 minLength={6}
               />
