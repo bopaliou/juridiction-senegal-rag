@@ -435,17 +435,17 @@ def generate_node(state: AgentState) -> dict:
     
     context = "\n\n---\n\n".join(context_parts)
     
-    # Construire l'historique de conversation
+    # Construire l'historique de conversation (optimisé - seulement 4 derniers messages)
     history_str = ""
     if len(messages) > 1:
-        recent = messages[-8:]
+        recent = messages[-4:]  # Réduit de 8 à 4 pour performance
         parts = []
         for msg in recent:
             if isinstance(msg, HumanMessage):
-                parts.append(f"Utilisateur: {msg.content}")
+                parts.append(f"U: {msg.content[:100]}")  # Limiter la longueur
             elif isinstance(msg, AIMessage):
-                parts.append(f"Assistant: {msg.content}")
-        history_str = "\n".join(parts)
+                parts.append(f"A: {msg.content[:150]}")  # Limiter la longueur
+        history_str = "\n".join(parts) + "\n\n"
     
     # Prompt optimisé pour vitesse
     template = """Tu es YoonAssist, assistant juridique sénégalais. Réponds UNIQUEMENT avec le CONTEXTE fourni.
