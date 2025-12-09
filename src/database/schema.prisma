@@ -1,0 +1,91 @@
+// Schéma Prisma pour le système de crédits YoonAssist AI
+// Compatible avec Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  plan          PlanType @default(FREE)
+  credits       Int      @default(30) // Crédits disponibles
+  monthlyQuota  Int      @default(30) // Quota mensuel total
+  resetDate     DateTime @default(now()) @db.Date // Date de reset mensuel
+  createdAt     DateTime @default(now())
+  lastTopupAt   DateTime?
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  usageLogs          UsageLog[]
+  creditTransactions  CreditTransaction[]
+  abuseLimits         AbuseLimit[]
+
+  @@map("users")
+}
+
+model UsageLog {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  tokensIn     Int      @default(0)
+  tokensOut    Int      @default(0)
+  totalTokens  Int      @default(0)
+  creditsSpent Int      @default(0)
+  requestType  String
+  clientIp     String?  @db.Inet
+  userAgent    String?
+  timestamp    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("usage_logs")
+}
+
+model CreditTransaction {
+  id        Int           @id @default(autoincrement())
+  userId    String
+  amount    Int // Positif pour ajout, négatif pour débit
+  reason    String
+  packType  TopUpPack?
+  paymentId String?
+  timestamp DateTime      @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_transactions")
+}
+
+model AbuseLimit {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  requestCount Int     @default(0)
+  windowStart DateTime
+  windowType  String   @default("hour")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, windowStart, windowType])
+  @@map("abuse_limits")
+}
+
+// Enums
+enum PlanType {
+  FREE         @map("free")
+  PREMIUM      @map("premium")
+  PREMIUM_PLUS @map("premium_plus")
+  PRO          @map("pro")
+}
+
+enum TopUpPack {
+  PACK_SMALL  @map("pack_small")
+  PACK_MEDIUM @map("pack_medium")
+  PACK_LARGE  @map("pack_large")
+}
