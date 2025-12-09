@@ -185,6 +185,15 @@ def parse_sources(raw_sources: List) -> List[SourceModel]:
 async def lifespan(_app: FastAPI):
     """Gestion du cycle de vie de l'application."""
     logger.info("🚀 Démarrage de l'API Agent Juridique Sénégalais RAG...")
+
+    # Initialiser la base de données de crédits
+    try:
+        from src.database.connection import init_database
+        init_database()
+        logger.info("✅ Base de données de crédits initialisée")
+    except Exception as e:
+        logger.warning(f"⚠️ Erreur initialisation base de données crédits: {e} - poursuite sans base de données")
+
     yield
     logger.info("🛑 Arrêt de l'API...")
 
@@ -215,6 +224,22 @@ app.add_middleware(
     expose_headers=["X-Process-Time", "X-Rate-Limit-Remaining"],
     max_age=3600,  # Cache preflight requests pendant 1 heure
 )
+
+# Routes de crédits temporaires (solution de contournement)
+@app.get("/credits/balance")
+async def get_credit_balance():
+    """Endpoint temporaire pour les crédits - retourne des données fictives"""
+    return {
+        "credits": 30,
+        "plan": "free",
+        "monthlyQuota": 30,
+        "resetDate": "2025-12-09T00:00:00",
+        "usagePercentage": 0
+    }
+
+# TODO: Réactiver les vraies routes de crédits quand le débogage sera terminé
+# from src.credits.credit_api import router as credits_router
+# app.include_router(credits_router)
 
 
 # =============================================================================
