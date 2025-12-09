@@ -1,7 +1,8 @@
 'use client';
 
-import { Menu, Sparkles } from 'lucide-react';
+import { Menu, Sparkles, CreditCard } from 'lucide-react';
 import Image from 'next/image';
+import { useCredits } from '@/lib/hooks/useCredits';
 
 interface HeaderProps {
   onMenuClick: () => void;
