@@ -345,11 +345,11 @@ def handle_non_juridique(state: AgentState) -> dict:
     messages = state.get("messages", [])
     answer = "Je suis un assistant spécialisé dans le droit sénégalais. Je ne peux répondre qu'aux questions juridiques concernant le Sénégal (Code du Travail, Code Pénal, Constitution, etc.)."
     messages.append(AIMessage(content=answer))
-    
-        return {
+
+    return {
         "answer": answer,
         "sources": [],
-            "messages": messages,
+        "messages": messages,
         "suggested_questions": [],
         "context_documents": []
     }
@@ -386,7 +386,7 @@ def retrieve_node(state: AgentState) -> dict:
                 
             except Exception:
                 docs = original_docs  # Utiliser les originaux en cas d'erreur
-                    else:
+
             # Si pas de reranker ou peu de docs, utiliser directement les top 3
             docs = docs[:3]
         
@@ -471,7 +471,7 @@ RÉPONSE:"""
             "history": history_block
         })
         answer = response.content.strip()
-        except Exception as e:
+    except Exception as e:
         answer = "Une erreur s'est produite lors de la génération de la réponse."
     
     messages.append(AIMessage(content=answer))
