@@ -308,20 +308,20 @@ export default function Home() {
               
               result.push({
                 id,
-                title: parsed.title || 'Source',
-                url: parsed.url,
+            title: parsed.title || 'Source',
+            url: parsed.url,
                 content: content.trim(),
-                page: parsed.page,
-                domain: parsed.domain,
+            page: parsed.page,
+            domain: parsed.domain,
                 article: parsed.article,
                 breadcrumb: parsed.breadcrumb,
               });
               return;
-            } catch {
+        } catch {
               // Continuer au fallback
             }
           }
-          
+
           // Fallback: texte brut
           const contentHash = trimmed.substring(0, 100);
           if (seenContent.has(contentHash)) {
@@ -763,13 +763,13 @@ export default function Home() {
                     <div className="shrink-0">
                       <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-[#0891B2] to-[#14b8a6] p-0.5 shadow-lg">
                         <div className="h-full w-full rounded-[10px] bg-white overflow-hidden">
-                          <Image
-                            src="/assets/logo.png"
-                            alt="YoonAssist AI"
+                        <Image
+                          src="/assets/logo.png"
+                          alt="YoonAssist AI"
                             width={44}
                             height={44}
-                            className="h-full w-full object-contain"
-                          />
+                          className="h-full w-full object-contain"
+                        />
                         </div>
                       </div>
                     </div>
@@ -798,17 +798,17 @@ export default function Home() {
                           if (parsedSources.length === 0) return null;
                           
                           return (
-                            <button
-                              onClick={() => {
-                                setCurrentMessageSources(parsedSources);
-                                setSourcesSidebarOpen(true);
-                              }}
+                          <button
+                            onClick={() => {
+                              setCurrentMessageSources(parsedSources);
+                              setSourcesSidebarOpen(true);
+                            }}
                               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-[1.03] active:scale-[0.98]"
                               style={{ boxShadow: '0 3px 12px rgba(8, 145, 178, 0.3)' }}
-                            >
+                          >
                               <FileText className="h-4 w-4" />
                               <span>{parsedSources.length} source{parsedSources.length > 1 ? 's' : ''}</span>
-                            </button>
+                          </button>
                           );
                         })()}
 

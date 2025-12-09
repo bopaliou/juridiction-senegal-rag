@@ -1,14 +1,14 @@
 # YoonAssist AI - Assistant Juridique Sénégalais RAG
 
-Assistant juridique intelligent basé sur RAG (Retrieval-Augmented Generation) pour le droit sénégalais. Application complète avec authentification, interface moderne et API sécurisée.
+Assistant juridique intelligent basé sur RAG (Retrieval-Augmented Generation) pour le droit sénégalais. Application complète avec authentification Supabase (email/mot de passe), interface moderne et API sécurisée/optimisée.
 
 ## 🎯 Fonctionnalités
 
 - **Recherche intelligente** : Recherche sémantique dans les documents juridiques sénégalais
 - **RAG avancé** : ChromaDB pour le stockage vectoriel et FlashRank pour le reranking
-- **Interface moderne** : Frontend Next.js 16 avec design responsive
-- **Authentification** : Système d'authentification complet avec Supabase (email/password)
-- **Historique de conversation** : Gestion de l'historique avec localStorage
+- **Interface moderne** : Next.js 16 (App Router) + Tailwind, logo mis en avant, fond contextualisé
+- **Authentification** : Supabase (email/mot de passe), redirections protégées, erreurs traduites en français (Google OAuth retiré)
+- **Historique de conversation** : Gestion de l'historique avec localStorage (écritures débouncées)
 - **Questions suggérées** : Suggestions de questions de suivi basées sur le contexte
 - **Sources citées** : Affichage des sources juridiques utilisées pour chaque réponse
 - **Sécurité** : Headers de sécurité, rate limiting, validation des entrées
@@ -21,15 +21,14 @@ Assistant juridique intelligent basé sur RAG (Retrieval-Augmented Generation) p
 - **ChromaDB** : Base de données vectorielle persistante
 - **HuggingFace Embeddings** : Modèle `paraphrase-multilingual-MiniLM-L12-v2`
 - **FlashRank** : Reranking des documents pour améliorer la pertinence
-- **Groq** : LLM pour la génération (llama-3.3-70b-versatile)
+- **Groq** : LLM génération (llama-3.3-70b-versatile) + routeur rapide (llama-3.1-8b-instant)
 - **Sécurité** : Rate limiting, validation, sanitization, headers HTTP
 
 ### Frontend (Next.js 16)
-- **Next.js 16** : Framework React avec App Router
-- **TypeScript** : Typage statique complet
-- **Tailwind CSS** : Styling utilitaire moderne
-- **Supabase** : Authentification et gestion des sessions
-- **Optimisations** : React.memo, debouncing, compression
+- **Next.js 16** : App Router, compression activée, headers de sécurité
+- **TypeScript / Tailwind** : Typage statique et UI utilitaire
+- **Supabase SSR** : Sessions côté serveur, middleware de protection, reset password corrigé
+- **Optimisations** : React.memo, debouncing localStorage, design des cartes sources (typo, listes, overlay, hover)
 
 ## 📚 Domaines juridiques couverts
 
@@ -131,7 +130,9 @@ juridiction-senegal-rag/
 ```env
 GROQ_API_KEY=votre_cle_api_groq
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-REQUEST_TIMEOUT=120
+REQUEST_TIMEOUT=90
+# Optionnel : nombre de workers threadpool
+MAX_WORKERS=4
 ```
 
 ### Variables d'environnement Frontend
@@ -151,7 +152,18 @@ Voir `legal-rag-frontend/CONFIGURATION_SUPABASE.md` pour la configuration compl�
 
 ### Déploiement sur Linode
 
-Voir `DEPLOIEMENT_LINODE.md` pour les instructions complètes de déploiement.
+Résumé rapide (voir `DEPLOIEMENT_LINODE.md` / `DEPLOIEMENT_LINODE_FIX.md` pour le détail) :
+```bash
+ssh root@<ip_linode>
+cd /opt/yoonassist
+sudo -u yoonassist git pull origin main
+cd legal-rag-frontend
+sudo -u yoonassist npm run build
+sudo systemctl restart yoonassist-frontend
+# backend si nécessaire :
+# sudo systemctl restart yoonassist-backend
+sudo systemctl status yoonassist-frontend
+```
 
 ### Services systemd
 
@@ -172,28 +184,38 @@ Configuration Nginx disponible dans `deploy/nginx-yoonassist.conf`
 - **HuggingFace** : Modèles d'embeddings et reranking
 
 ### Frontend
-- **Next.js 16** : Framework React avec App Router
-- **TypeScript** : Typage statique
-- **Tailwind CSS** : Framework CSS utilitaire
-- **Supabase** : Authentification et backend
-- **Lucide React** : Icônes modernes
+- **Next.js 16** : App Router, compression, headers sécurité
+- **TypeScript / Tailwind** : UI moderne
+- **Supabase** : Auth email/mot de passe (Google retiré), messages d’erreur traduits
+- **Lucide React** : Icônes
+
+### Points UX récents
+- Logo plus lisible (fond blanc, bordure, ombre)
+- Pages auth centrées sur fond `senegal_droit.jpg` avec overlay discret
+- Cartes de sources retravaillées (listes, titres, gradient, hover), comptage fiable (doublons filtrés)
 
 ## 🔒 Sécurité
 
-- **Headers HTTP** : Security headers complets (CSP, HSTS, X-Frame-Options, etc.)
-- **Rate Limiting** : Protection contre les abus (100 req/min par IP)
-- **Validation** : Validation stricte des entrées utilisateur
-- **Sanitization** : Protection contre XSS et injections
-- **Authentification** : Système d'authentification sécurisé avec Supabase
+- **Headers HTTP** : CSP, HSTS, X-Frame-Options, Referrer-Policy, etc.
+- **Rate Limiting** : LRU cache thread-safe (100 req/min/IP) + cleanup
+- **Validation/Sanitization** : Entrées nettoyées côté front & back
+- **Authentification** : Supabase SSR, routes protégées, reset password vérifié
 
 ## 📊 Optimisations
 
-- **Performance** : React.memo, debouncing, compression GZip
-- **Mémoire** : Garbage collection optimisé, lazy loading
-- **Cache** : LRU cache pour rate limiting
-- **Logging** : Logging optimisé (uniquement requêtes lentes/erreurs)
+- **Frontend** : Debounce localStorage, compression, images optimisées, typographie des sources
+- **Backend** : Moins de docs (k=6, top 3 rerank), contexte 400 chars, historique réduit, timeouts abaissés
+- **Cache/CPU** : LRU rate limiting mémoire bornée, MAX_WORKERS configurable
+- **Logging** : Uniquement requêtes lentes (>1s) ou erreurs, ignore OPTIONS
 
 Voir `legal-rag-frontend/OPTIMISATIONS.md` et `src/OPTIMISATIONS.md` pour plus de détails.
+
+## 📚 Documentation utile
+
+- `legal-rag-frontend/CONFIGURATION_SUPABASE.md` : setup Supabase (URLs, callbacks, variables)
+- `legal-rag-frontend/OPTIMISATIONS.md` : perf/sécurité frontend
+- `src/OPTIMISATIONS.md` : perf/sécurité backend
+- `DEPLOIEMENT_LINODE.md` / `DEPLOIEMENT_LINODE_FIX.md` : procédures de déploiement Linode
 
 ## 📝 Utilisation
 
