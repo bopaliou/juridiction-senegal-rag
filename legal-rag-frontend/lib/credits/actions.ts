@@ -6,22 +6,23 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { PlanType } from '@/lib/credits/client'
+
+type PlanType = 'free' | 'premium' | 'premium_plus' | 'pro';
 
 /**
  * Crée un utilisateur dans le système de crédits
  * Appelé automatiquement lors de l'inscription
  */
-export async function createCreditUser(userId: string, email: string, plan: PlanType = PlanType.FREE) {
+export async function createCreditUser(userId: string, email: string, plan: PlanType = 'free') {
   try {
     const supabase = await createClient()
 
     // Calculer les crédits selon le plan
     const planCredits = {
-      [PlanType.FREE]: 30,
-      [PlanType.PREMIUM]: 500,
-      [PlanType.PREMIUM_PLUS]: 1500,
-      [PlanType.PRO]: 10000,
+      'free': 30,
+      'premium': 500,
+      'premium_plus': 1500,
+      'pro': 10000,
     }
 
     const monthlyQuota = planCredits[plan]
@@ -63,11 +64,11 @@ export async function updateUserPlan(userId: string, newPlan: PlanType) {
     const supabase = await createClient()
 
     // Calculer les nouveaux crédits selon le plan
-    const planCredits = {
-      [PlanType.FREE]: 30,
-      [PlanType.PREMIUM]: 500,
-      [PlanType.PREMIUM_PLUS]: 1500,
-      [PlanType.PRO]: 10000,
+    const planCredits: Record<PlanType, number> = {
+      'free': 30,
+      'premium': 500,
+      'premium_plus': 1500,
+      'pro': 10000,
     }
 
     const newMonthlyQuota = planCredits[newPlan]

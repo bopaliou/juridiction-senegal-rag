@@ -5,6 +5,8 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+export type PlanType = 'free' | 'premium' | 'premium_plus' | 'pro';
+
 export interface CreditBalance {
   credits: number;
   plan: string;
