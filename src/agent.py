@@ -117,17 +117,17 @@ except Exception as e:
 
 # LLMs
 # Modèle pour le routage (rapide, peu de tokens) - utiliser modèle plus rapide
-router_llm = ChatGroq(
+    router_llm = ChatGroq(
     model_name="llama-3.1-8b-instant",  # Modèle rapide pour classification
-    temperature=0,
+        temperature=0,
     max_tokens=20,  # Réduit pour plus de rapidité
     timeout=15  # Timeout réduit
-)
+    )
 
 # Modèle pour la génération (optimisé pour vitesse)
-generation_llm = ChatGroq(
+    generation_llm = ChatGroq(
     model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
-    temperature=0,
+        temperature=0,
     max_tokens=1500,  # Réduit pour des réponses plus rapides
     timeout=45  # Timeout réduit
 )
@@ -346,10 +346,10 @@ def handle_non_juridique(state: AgentState) -> dict:
     answer = "Je suis un assistant spécialisé dans le droit sénégalais. Je ne peux répondre qu'aux questions juridiques concernant le Sénégal (Code du Travail, Code Pénal, Constitution, etc.)."
     messages.append(AIMessage(content=answer))
     
-    return {
+        return {
         "answer": answer,
         "sources": [],
-        "messages": messages,
+            "messages": messages,
         "suggested_questions": [],
         "context_documents": []
     }
@@ -386,7 +386,7 @@ def retrieve_node(state: AgentState) -> dict:
                 
             except Exception:
                 docs = original_docs  # Utiliser les originaux en cas d'erreur
-        else:
+                    else:
             # Si pas de reranker ou peu de docs, utiliser directement les top 3
             docs = docs[:3]
         
@@ -455,10 +455,10 @@ RÈGLES:
 - Si info absente: "Je ne dispose pas de cette information dans les textes fournis."
 
 {history}CONTEXTE:
-{context}
+    {context}
 
-QUESTION: {question}
-
+    QUESTION: {question}
+    
 RÉPONSE:"""
     
     prompt = ChatPromptTemplate.from_template(template)
@@ -471,7 +471,7 @@ RÉPONSE:"""
             "history": history_block
         })
         answer = response.content.strip()
-    except Exception as e:
+        except Exception as e:
         answer = "Une erreur s'est produite lors de la génération de la réponse."
     
     messages.append(AIMessage(content=answer))
