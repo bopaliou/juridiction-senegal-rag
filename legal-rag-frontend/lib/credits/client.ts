@@ -3,7 +3,7 @@
  * Utilise l'API backend pour gérer les crédits
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export type PlanType = 'free' | 'premium' | 'premium_plus' | 'pro';
 
