@@ -13,6 +13,8 @@ import Header from '@/components/Header';
 import { askQuestion, ApiError } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { debounce } from '@/lib/utils/debounce';
+import { CreditGauge } from '@/components/credits/CreditGauge';
+import { useCredits } from '@/lib/hooks/useCredits';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +42,9 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Hook pour les crédits
+  const { isLowBalance, isExhausted } = useCredits();
 
   // Vérifier l'authentification au chargement
   useEffect(() => {
@@ -718,6 +723,15 @@ export default function Home() {
       <div className={`flex flex-1 flex-col transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'} ${sourcesSidebarOpen && !sourcesSidebarCollapsed ? 'lg:mr-[420px]' : sourcesSidebarOpen && sourcesSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-0'}`}>
         {/* Header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
+
+        {/* Crédits - Affiché seulement si crédits faibles ou épuisés */}
+        {(isLowBalance || isExhausted) && (
+          <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
+            <div className="max-w-5xl mx-auto">
+              <CreditGauge showRefresh={true} />
+            </div>
+          </div>
+        )}
 
         {/* Zone de chat scrollable */}
         <div

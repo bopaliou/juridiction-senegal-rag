@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createCreditUser } from '@/lib/credits/actions'
 
 /**
  * Traduit les messages d'erreur Supabase en français
@@ -59,6 +60,17 @@ export async function signUp(email: string, password: string, fullName?: string)
 
   if (error) {
     return { error: translateError(error.message) }
+  }
+
+  // Créer automatiquement l'utilisateur dans le système de crédits
+  if (data.user?.id) {
+    try {
+      await createCreditUser(data.user.id, email)
+      console.log('Utilisateur crédits créé lors de l\'inscription:', data.user.id)
+    } catch (creditError) {
+      console.error('Erreur création utilisateur crédits:', creditError)
+      // Ne pas échouer l'inscription pour autant
+    }
   }
 
   return { data, error: null }
