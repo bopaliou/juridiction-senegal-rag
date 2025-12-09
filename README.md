@@ -38,7 +38,7 @@ Assistant juridique intelligent basé sur RAG (Retrieval-Augmented Generation) p
 - **Collectivités Locales** : Code des collectivités locales
 - **Aviation Civile** : Code de l'aviation civile
 
-## 🚀 Installation
+## 🚀 Installation et Configuration
 
 ### Prérequis
 
@@ -46,6 +46,36 @@ Assistant juridique intelligent basé sur RAG (Retrieval-Augmented Generation) p
 - Node.js 18+
 - UV (gestionnaire de paquets Python)
 - Compte Supabase (pour l'authentification)
+
+### ⚙️ Configuration rapide
+
+#### Pour le développement local
+
+1. **Configuration automatique** :
+```bash
+cd legal-rag-frontend
+npm run setup:local
+```
+
+2. **Configuration manuelle** :
+```bash
+# Copier le fichier d'exemple
+cp env.example .env.local
+
+# Éditer avec vos vraies valeurs
+nano .env.local
+```
+
+**Variables requises pour .env.local** :
+```env
+# Supabase (obligatoire)
+NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anon
+
+# URLs locales (par défaut)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
 ### Backend
 
@@ -150,19 +180,56 @@ Voir `legal-rag-frontend/CONFIGURATION_SUPABASE.md` pour la configuration compl�
 
 ## 🚀 Déploiement
 
-### Déploiement sur Linode
+### 🔄 Déploiement automatique sur Linode
 
-Résumé rapide (voir `DEPLOIEMENT_LINODE.md` / `DEPLOIEMENT_LINODE_FIX.md` pour le détail) :
+#### Depuis votre poste de développement
+
+1. **Push des changements** :
 ```bash
-ssh root@<ip_linode>
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
+git push origin main
+```
+
+2. **Déploiement sur Linode** :
+```bash
+# Se connecter à Linode
+ssh root@172.233.114.185
+
+# Mise à jour automatique
 cd /opt/yoonassist
 sudo -u yoonassist git pull origin main
+
+# Configuration production (si nécessaire)
 cd legal-rag-frontend
-sudo -u yoonassist npm run build
+sudo -u yoonassist npm run setup:production
+
+# Redémarrage des services
+sudo systemctl restart yoonassist-backend
 sudo systemctl restart yoonassist-frontend
-# backend si nécessaire :
-# sudo systemctl restart yoonassist-backend
+
+# Vérification
 sudo systemctl status yoonassist-frontend
+sudo systemctl status yoonassist-backend
+```
+
+#### Configuration production automatique
+
+Le script `setup:production` configure automatiquement :
+- Variables d'environnement pour Linode
+- URLs de production (`http://172.233.114.185`)
+- Build optimisé pour la production
+
+#### Variables d'environnement production
+
+```env
+# Configuration Supabase (inchangée)
+NEXT_PUBLIC_SUPABASE_URL=https://uaordlnuhjowjtdiknfh.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+
+# URLs de production
+NEXT_PUBLIC_SITE_URL=http://172.233.114.185
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
 ### Services systemd
@@ -173,6 +240,14 @@ sudo systemctl status yoonassist-frontend
 ### Nginx
 
 Configuration Nginx disponible dans `deploy/nginx-yoonassist.conf`
+
+### 🔍 Vérification du déploiement
+
+Après déploiement, vérifiez :
+- ✅ `http://172.233.114.185` - Page d'accueil
+- ✅ `http://172.233.114.185/login` - Authentification
+- ✅ `http://172.233.114.185/pricing` - Page tarification
+- ✅ API backend : `curl http://127.0.0.1:8000/docs`
 
 ## 🛠️ Technologies utilisées
 

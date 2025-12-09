@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:local": "./scripts/setup-local.sh",
+    "setup:production": "./scripts/setup-production.sh",
+    "deploy:check": "npm run lint && npm run build",
+    "clean": "rm -rf .next node_modules/.cache"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
