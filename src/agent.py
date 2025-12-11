@@ -71,7 +71,8 @@ def get_db():
     global _db
     if _db is None:
         if not CHROMA_DB_PATH.exists():
-            raise FileNotFoundError(f"Base Chroma introuvable: {CHROMA_DB_PATH}")
+            print(f"⚠️ Base Chroma introuvable: {CHROMA_DB_PATH}")
+            return None
         
         _db = Chroma(
             persist_directory=str(CHROMA_DB_PATH),
@@ -85,9 +86,12 @@ def get_retriever():
     """Lazy loading du retriever (optimisé pour performance)."""
     global _retriever
     if _retriever is None:
-        _retriever = get_db().as_retriever(
+        db = get_db()
+        if db is None:
+            return None
+        _retriever = db.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 6}  # Optimisé : 6 documents suffisent pour le reranking
+            search_kwargs={"k": 6}
         )
     return _retriever
 
@@ -117,17 +121,17 @@ except Exception as e:
 
 # LLMs
 # Modèle pour le routage (rapide, peu de tokens) - utiliser modèle plus rapide
-    router_llm = ChatGroq(
+router_llm = ChatGroq(
     model_name="llama-3.1-8b-instant",  # Modèle rapide pour classification
-        temperature=0,
+    temperature=0,
     max_tokens=20,  # Réduit pour plus de rapidité
     timeout=15  # Timeout réduit
-    )
+)
 
 # Modèle pour la génération (optimisé pour vitesse)
-    generation_llm = ChatGroq(
+generation_llm = ChatGroq(
     model_name="llama-3.3-70b-versatile",  # Modèle actuel Groq
-        temperature=0,
+    temperature=0,
     max_tokens=1500,  # Réduit pour des réponses plus rapides
     timeout=45  # Timeout réduit
 )

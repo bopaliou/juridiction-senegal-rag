@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co",
+              "connect-src 'self' https://*.supabase.co http://localhost:8000 http://127.0.0.1:8000",
               "frame-ancestors 'self'",
             ].join('; ')
           },

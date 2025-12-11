@@ -1,30 +1,37 @@
-import AuthForm from '@/components/auth/AuthForm'
+import { AuthForm } from '@/components/auth/AuthForm'
+import Link from 'next/link'
 import Image from 'next/image'
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden">
-      {/* Image de fond avec blur */}
-      <div className="absolute inset-0">
+    <div className="min-h-screen relative flex flex-col">
+      <div className="absolute inset-0 z-0">
         <Image
           src="/assets/senegal_droit.jpg"
-          alt=""
+          alt="Background"
           fill
           className="object-cover"
           priority
-          quality={85}
         />
-        {/* Overlay sombre pour améliorer le contraste */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0F2942]/85 via-[#0F2942]/75 to-[#0891B2]/80" />
-        {/* Effet de blur subtil pour réduire la distraction */}
-        <div className="absolute inset-0 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       </div>
       
-      {/* Contenu centré */}
-      <div className="relative z-10 w-full max-w-md mx-auto">
+      <header className="relative z-10 p-6">
+        <Link href="/" className="flex items-center gap-3 w-fit">
+          <Image
+            src="/assets/logo.png"
+            alt="YoonAssist"
+            width={48}
+            height={48}
+            className="rounded-lg"
+          />
+          <span className="text-2xl font-bold text-white drop-shadow-lg">YoonAssist</span>
+        </Link>
+      </header>
+      
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
         <AuthForm mode="login" />
-      </div>
+      </main>
     </div>
   )
 }
-

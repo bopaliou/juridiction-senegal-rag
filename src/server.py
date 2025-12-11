@@ -19,9 +19,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage, AIMessage
 
-from src.agent import agent_app
-from src.security import SecureQueryRequest
-from src.middleware import (
+from .agent import agent_app
+from .security import SecureQueryRequest
+from .middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
     RequestLoggingMiddleware,

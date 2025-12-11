@@ -1,267 +1,201 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { signIn, signUp, resetPassword } from '@/lib/auth/actions'
-import { Mail, Lock, User, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-
-type AuthMode = 'login' | 'signup' | 'forgot-password'
+import { createClient } from '@/lib/supabase/client'
+import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react'
 
 interface AuthFormProps {
-  mode?: AuthMode
+  mode: 'login' | 'signup'
 }
 
-export default function AuthForm({ mode = 'login' }: AuthFormProps) {
+export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter()
-  const [currentMode, setCurrentMode] = useState<AuthMode>(mode)
+  const supabase = createClient()
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    setSuccess(null)
+    setMessage(null)
 
     try {
-      if (currentMode === 'signup') {
-        const result = await signUp(email, password, fullName)
-        if (result.error) {
-          setError(result.error)
-        } else {
-          setSuccess('Compte créé ! Vérifiez votre email pour confirmer votre compte.')
-          setTimeout(() => {
-            router.push('/verify-email?email=' + encodeURIComponent(email))
-          }, 2000)
-        }
-      } else if (currentMode === 'forgot-password') {
-        const result = await resetPassword(email)
-        if (result.error) {
-          setError(result.error)
-        } else {
-          setSuccess('Un email de réinitialisation a été envoyé à ' + email)
-        }
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (error) throw error
+        router.push('/')
+        router.refresh()
       } else {
-        // Login
-        const result = await signIn(email, password)
-        if (result.error) {
-          setError(result.error)
-        } else {
-          router.push('/')
-          router.refresh()
-        }
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+        if (error) throw error
+        setMessage('Vérifiez votre email pour confirmer votre inscription.')
       }
-    } catch (err) {
-      setError('Une erreur est survenue. Veuillez réessayer.')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="w-full max-w-md rounded-3xl bg-white/95 backdrop-blur-sm p-8 sm:p-10 shadow-2xl border border-white/20">
-      <div className="mb-8 text-center">
-        {/* Logo avec meilleure visibilité */}
-        <div className="mb-6 flex justify-center">
-          <div className="relative h-32 w-32 sm:h-36 sm:w-36 rounded-3xl overflow-hidden bg-gradient-to-br from-white to-slate-50 p-4 shadow-2xl border-4 border-white ring-4 ring-[#0891B2]/20">
-            <Image
-              src="/assets/logo.png"
-              alt="YoonAssist"
-              width={144}
-              height={144}
-              className="h-full w-full object-contain drop-shadow-lg"
-              priority
-            />
-          </div>
+    <div className="w-full max-w-md mx-auto">
+      <div className="bg-white/95 backdrop-blur-xl border border-[#00853F]/20 rounded-2xl p-8 shadow-2xl">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {mode === 'login' ? 'Connexion' : 'Créer un compte'}
+          </h1>
+          <p className="text-gray-600 text-sm">
+            {mode === 'login' 
+              ? 'Accédez à votre assistant juridique' 
+              : 'Rejoignez YoonAssist dès maintenant'}
+          </p>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold text-[#0F2942] mb-2">
-          {currentMode === 'signup' && 'Créer un compte'}
-          {currentMode === 'login' && 'Connexion'}
-          {currentMode === 'forgot-password' && 'Mot de passe oublié'}
-        </h2>
-        <p className="mt-2 text-sm sm:text-base text-slate-600">
-          {currentMode === 'signup' && 'Rejoignez YoonAssist AI'}
-          {currentMode === 'login' && 'Accédez à votre assistant juridique'}
-          {currentMode === 'forgot-password' && 'Réinitialisez votre mot de passe'}
-        </p>
-      </div>
 
-      {error && (
-        <div className="mb-6 animate-fade-in">
-          <div className="flex items-start gap-3 rounded-xl bg-amber-50/90 border border-amber-200/60 p-4 backdrop-blur-sm shadow-sm">
-            <div className="mt-0.5 shrink-0">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom complet
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Votre nom"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00853F]/50 focus:border-[#00853F] transition-all"
+                  required
+                />
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-900 mb-1">
-                Oups, quelque chose ne va pas
-              </p>
-              <p className="text-sm text-amber-700 leading-relaxed">
-                {error}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {success && (
-        <div className="mb-6 animate-fade-in">
-          <div className="flex items-start gap-3 rounded-xl bg-emerald-50/90 border border-emerald-200/60 p-4 backdrop-blur-sm shadow-sm">
-            <div className="mt-0.5 shrink-0">
-              <AlertCircle className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-emerald-900">
-                {success}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {currentMode === 'signup' && (
           <div>
-            <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Nom complet
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Adresse email
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Votre nom"
-                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 transition-all duration-200"
-                required={currentMode === 'signup'}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="vous@exemple.com"
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00853F]/50 focus:border-[#00853F] transition-all"
+                required
               />
             </div>
           </div>
-        )}
 
-        <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-0 transition-colors"
-              required
-            />
-          </div>
-        </div>
-
-        {currentMode !== 'forgot-password' && (
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Mot de passe
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-2 focus:ring-[#0891B2]/20 transition-all duration-200"
+                className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00853F]/50 focus:border-[#00853F] transition-all"
                 required
                 minLength={6}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
-        )}
 
-        {currentMode === 'login' && (
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setCurrentMode('forgot-password')}
-              className="text-sm font-semibold text-[#0891B2] hover:underline"
-            >
-              Mot de passe oublié ?
-            </button>
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Chargement...
-            </span>
-          ) : (
-            <>
-              {currentMode === 'signup' && 'Créer un compte'}
-              {currentMode === 'login' && 'Se connecter'}
-              {currentMode === 'forgot-password' && 'Envoyer le lien'}
-            </>
+          {mode === 'login' && (
+            <div className="flex justify-end">
+              <Link 
+                href="/forgot-password" 
+                className="text-sm text-[#00853F] hover:text-[#006B32] transition-colors font-medium"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
           )}
-        </button>
-      </form>
 
-      <div className="mt-6 text-center text-sm text-slate-600">
-        {currentMode === 'login' && (
-          <>
-            Pas encore de compte ?{' '}
-            <button
-              type="button"
-              onClick={() => setCurrentMode('signup')}
-              className="font-semibold text-[#0891B2] hover:underline"
-            >
-              S'inscrire
-            </button>
-          </>
-        )}
-        {currentMode === 'signup' && (
-          <>
-            Déjà un compte ?{' '}
-            <button
-              type="button"
-              onClick={() => setCurrentMode('login')}
-              className="font-semibold text-[#0891B2] hover:underline"
-            >
-              Se connecter
-            </button>
-          </>
-        )}
-        {currentMode === 'forgot-password' && (
-          <>
-            <button
-              type="button"
-              onClick={() => setCurrentMode('login')}
-              className="font-semibold text-[#0891B2] hover:underline"
-            >
-              Retour à la connexion
-            </button>
-          </>
-        )}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-600 text-sm">
+              {message}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-[#00853F] to-[#006B32] hover:from-[#006B32] hover:to-[#005528] text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#00853F]/25"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Chargement...
+              </>
+            ) : mode === 'login' ? (
+              'Se connecter'
+            ) : (
+              'Créer mon compte'
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-gray-600 text-sm">
+            {mode === 'login' ? (
+              <>
+                Pas encore de compte ?{' '}
+                <Link href="/signup" className="text-[#00853F] hover:text-[#006B32] font-medium transition-colors">
+                  S'inscrire
+                </Link>
+              </>
+            ) : (
+              <>
+                Déjà un compte ?{' '}
+                <Link href="/login" className="text-[#00853F] hover:text-[#006B32] font-medium transition-colors">
+                  Se connecter
+                </Link>
+              </>
+            )}
+          </p>
+        </div>
       </div>
-
-      <p className="mt-6 text-center text-xs text-slate-500">
-        En continuant, vous acceptez nos{' '}
-        <Link href="/terms" className="text-[#0891B2] hover:underline">
-          conditions d'utilisation
-        </Link>
-      </p>
     </div>
   )
 }
-

@@ -1,191 +1,172 @@
 'use client'
 
-import { useState, FormEvent, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updatePassword } from '@/lib/auth/actions'
-import { createClient } from '@/lib/supabase/client'
-import { Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
+import { Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [isCheckingSession, setIsCheckingSession] = useState(true)
 
-  // Vérifier qu'il y a une session valide de réinitialisation
   useEffect(() => {
-    const checkSession = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      // Si pas de session, rediriger vers login
-      if (!session) {
-        router.push('/login?error=reset_link_expired')
-        return
-      }
-      
-      setIsCheckingSession(false)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+    
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+    }
+  }, [supabase.auth])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas')
+      return
     }
 
-    checkSession()
-  }, [router])
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
     setLoading(true)
     setError(null)
 
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.')
-      setLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
-      setLoading(false)
-      return
-    }
-
     try {
-      const result = await updatePassword(password)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setSuccess(true)
-        setTimeout(() => {
-          router.push('/login')
-        }, 3000)
-      }
-    } catch (err) {
-      setError('Une erreur est survenue. Veuillez réessayer.')
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+      setSuccess(true)
+      setTimeout(() => router.push('/login'), 2000)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
     } finally {
       setLoading(false)
     }
   }
 
-  // Afficher un loader pendant la vérification de la session
-  if (isCheckingSession) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2] p-4">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-[#0891B2]" />
-          <p className="mt-4 text-sm text-slate-600">Vérification de la session...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#E0F7FA] to-[#B2EBF2] p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        <h2 className="mb-6 text-center text-3xl font-bold text-[#0F2942]">Nouveau mot de passe</h2>
-        <p className="mb-8 text-center text-slate-600">
-          Entrez votre nouveau mot de passe.
-        </p>
-
-        {success ? (
-          <div className="text-center text-green-600 font-medium">
-            Votre mot de passe a été réinitialisé avec succès ! Vous allez être redirigé vers la page de connexion.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="mb-6 animate-fade-in">
-                <div className="flex items-start gap-3 rounded-xl bg-amber-50/90 border border-amber-200/60 p-4 backdrop-blur-sm shadow-sm">
-                  <div className="mt-0.5 shrink-0">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-amber-900 mb-1">
-                      {error.includes('différent') ? 'Mot de passe identique' : 'Oups, quelque chose ne va pas'}
-                    </p>
-                    <p className="text-sm text-amber-700 leading-relaxed">
-                      {error}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-                Nouveau mot de passe
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-12 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-0 transition-colors"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700">
-                Confirmer le mot de passe
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl border-2 border-slate-200 bg-white py-3 pl-10 pr-12 text-slate-900 placeholder:text-slate-400 focus:border-[#0891B2] focus:outline-none focus:ring-0 transition-colors"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0891B2] to-[#14B8A6] px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                'Réinitialiser le mot de passe'
-              )}
-            </button>
-          </form>
-        )}
-
-        <p className="mt-8 text-center text-sm text-slate-500">
-          <Link href="/login" className="font-semibold text-[#0891B2] hover:underline">
-            Retour à la connexion
-          </Link>
-        </p>
+    <div className="min-h-screen relative flex flex-col">
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/senegal_droit.jpg"
+          alt="Background"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       </div>
+
+      <header className="relative z-10 p-6">
+        <Link href="/" className="flex items-center gap-3 w-fit">
+          <Image
+            src="/assets/logo.png"
+            alt="YoonAssist"
+            width={48}
+            height={48}
+            className="rounded-lg"
+          />
+          <span className="text-2xl font-bold text-white drop-shadow-lg">YoonAssist</span>
+        </Link>
+      </header>
+
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-white/95 backdrop-blur-xl border border-[#00853F]/20 rounded-2xl p-8 shadow-2xl">
+            {success ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-[#00853F]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-8 h-8 text-[#00853F]" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Mot de passe mis à jour</h1>
+                <p className="text-gray-600">Redirection vers la connexion...</p>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Nouveau mot de passe</h1>
+                  <p className="text-gray-600 text-sm">Choisissez un nouveau mot de passe sécurisé</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nouveau mot de passe
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00853F]/50 focus:border-[#00853F] transition-all"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirmer le mot de passe
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00853F]/50 focus:border-[#00853F] transition-all"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-[#00853F] to-[#006B32] hover:from-[#006B32] hover:to-[#005528] text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#00853F]/25"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      'Mettre à jour le mot de passe'
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
-

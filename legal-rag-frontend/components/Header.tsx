@@ -1,14 +1,24 @@
 'use client';
 
-import { Menu, Sparkles, CreditCard } from 'lucide-react';
+import { Menu, Sparkles, LogOut } from 'lucide-react';
 import Image from 'next/image';
-import { useCredits } from '@/lib/hooks/useCredits';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-30 w-full glass border-b border-[#0891B2]/10">
       <div className="mx-auto flex items-center justify-between gap-2 sm:gap-4 px-3 py-2 sm:px-4 sm:py-3 lg:px-8">
@@ -53,7 +63,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
 
-        {/* Section droite : Badge de statut */}
+        {/* Section droite : Badge de statut et déconnexion */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Indicateur de connexion - version compacte sur mobile */}
           <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#059669]/10 border border-[#059669]/20">
@@ -63,6 +73,16 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </span>
             <span className="text-[10px] sm:text-xs font-semibold text-[#059669] hidden xs:inline">En ligne</span>
           </div>
+
+          {/* Bouton déconnexion */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-all"
+            aria-label="Se déconnecter"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs font-semibold hidden sm:inline">Déconnexion</span>
+          </button>
         </div>
       </div>
     </header>

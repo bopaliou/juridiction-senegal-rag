@@ -9,7 +9,7 @@ from fastapi import Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from src.security import rate_limit_check, get_client_id
+from .security import rate_limit_check, get_client_id
 
 logger = logging.getLogger("api")
 
@@ -114,6 +114,3 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             )
         
         return response
-
-
-
