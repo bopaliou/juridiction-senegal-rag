@@ -3,10 +3,20 @@ API FastAPI pour l'Agent Juridique Sénégalais RAG.
 Gère le parsing des sources JSON et la validation Pydantic.
 """
 
+# ⚠️ IMPORTANT: Optimisations mémoire AVANT tous les imports lourds
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/transformers_cache"
+os.environ["SENTENCE_TRANSFORMERS_CACHE_FOLDER"] = "/tmp/st_cache"
+os.environ["WEB_CONCURRENCY"] = "1"
+
 import asyncio
 import json
 import logging
-import os
 import traceback
 import sys
 from contextlib import asynccontextmanager

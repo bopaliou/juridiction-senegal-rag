@@ -3,7 +3,7 @@
 
 services:
   # ============================================================================
-  # BACKEND - API FastAPI Python
+  # BACKEND - API FastAPI Python (Optimisé pour 512MB Render free tier)
   # ============================================================================
   - type: web
     name: yoonassist-backend
@@ -12,11 +12,17 @@ services:
     plan: free
     branch: main
     buildCommand: |
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
-      python src/ingestion.py || echo "Ingestion failed, using existing data"
-    startCommand: uvicorn src.server:app --host 0.0.0.0 --port $PORT
+      pip install --upgrade pip wheel
+      pip install -r requirements.txt --no-cache-dir
+      echo "✅ Build complet"
+    startCommand: |
+      python -c "import gc; gc.collect()" && \
+      exec uvicorn src.server:app \
+        --host 0.0.0.0 \
+        --port $PORT \
+        --workers 1 \
+        --loop uvloop \
+        --timeout-keep-alive 60
     healthCheckPath: /health
     envVars:
       - key: GROQ_API_KEY
@@ -28,21 +34,36 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: REQUEST_TIMEOUT
-        value: "90"
+        value: "60"
       - key: MAX_WORKERS
-        value: "4"
+        value: "1"
       - key: ALLOWED_ORIGINS
-        value: "https://yoonassist.vercel.app,https://yoonassist-frontend.onrender.com"
+        value: "https://yoonassist-frontend.onrender.com"
       - key: PYTHON_VERSION
         value: "3.11.0"
       - key: DATA_PATH
         value: "./data"
       - key: DATA_DB_PATH
         value: "./data/chroma_db"
-    
-    # NOTE: Disques persistants disponibles uniquement sur plan payant ($7/mois)
-    # Pour plan gratuit: commitez data/chroma_db dans git temporairement
-    # Ou réingérez les documents après chaque déploiement
+      # Optimisations mémoire pour 512MB free tier
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: NUMEXPR_NUM_THREADS
+        value: "1"
+      - key: TF_CPP_MIN_LOG_LEVEL
+        value: "3"
+      - key: TRANSFORMERS_CACHE
+        value: "/tmp/transformers_cache"
+      - key: SENTENCE_TRANSFORMERS_CACHE_FOLDER
+        value: "/tmp/st_cache"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
   # ============================================================================
   # FRONTEND - Next.js 16
