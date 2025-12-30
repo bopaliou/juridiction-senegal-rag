@@ -46,8 +46,8 @@ juridiction-senegal-rag/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Chroma DB
-data/chroma_db/*
+# Chroma DB - Commenté pour déploiement Render
+# data/chroma_db/*
 !data/chroma_db/.gitkeep
 
 # Next.js

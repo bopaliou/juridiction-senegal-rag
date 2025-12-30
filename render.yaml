@@ -15,6 +15,7 @@ services:
       pip install --upgrade pip
       pip install -r requirements.txt
       python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
+      python src/ingestion.py || echo "Ingestion failed, using existing data"
     startCommand: uvicorn src.server:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
@@ -39,11 +40,9 @@ services:
       - key: DATA_DB_PATH
         value: "./data/chroma_db"
     
-    # Disques persistants pour ChromaDB
-    disk:
-      name: chroma-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+    # NOTE: Disques persistants disponibles uniquement sur plan payant ($7/mois)
+    # Pour plan gratuit: commitez data/chroma_db dans git temporairement
+    # Ou réingérez les documents après chaque déploiement
 
   # ============================================================================
   # FRONTEND - Next.js 16
