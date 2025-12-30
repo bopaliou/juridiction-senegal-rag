@@ -1,8 +1,0 @@
-{
-  "projectId": "392a76dc-07fb-4e00-baa4-5757e8dad911",
-  "createdAt": 1765387810757,
-  "startupCommands": [
-    ".\\.\\\\.venv\\\\Scripts\\\\Activate.ps1; uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
-    "cd legal-rag-frontend; npm run dev"
-  ]
-}
