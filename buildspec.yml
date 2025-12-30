@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing dependencies..."
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+  
+  build:
+    commands:
+      - echo "Build phase completed"
+
+artifacts:
+  files:
+    - '**/*'
+  exclude:
+    - .git
+    - .gitignore
+    - __pycache__
+    - '*.pyc'
+    - .pytest_cache
+    - .venv
+    - venv
+    - node_modules
