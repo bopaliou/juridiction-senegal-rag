@@ -1,0 +1,15 @@
+# Configuration Railway pour déploiement automatique
+# https://docs.railway.app/guides/railway-json
+
+{
+  "build": {
+    "builder": "dockerfile"
+  },
+  "deploy": {
+    "startCommand": "uvicorn src.server:app --host 0.0.0.0 --port $PORT",
+    "restartPolicyType": "always",
+    "restartPolicyMaxRetries": 5,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30
+  }
+}
