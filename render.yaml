@@ -1,0 +1,71 @@
+# Configuration Render.com pour YoonAssist
+# Déploiement automatique du backend et frontend
+
+services:
+  # ============================================================================
+  # BACKEND - API FastAPI Python
+  # ============================================================================
+  - type: web
+    name: yoonassist-backend
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
+    startCommand: uvicorn src.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: REQUEST_TIMEOUT
+        value: "90"
+      - key: MAX_WORKERS
+        value: "4"
+      - key: ALLOWED_ORIGINS
+        value: "https://yoonassist.vercel.app,https://yoonassist-frontend.onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: DATA_PATH
+        value: "./data"
+      - key: DATA_DB_PATH
+        value: "./data/chroma_db"
+    
+    # Disques persistants pour ChromaDB
+    disk:
+      name: chroma-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+
+  # ============================================================================
+  # FRONTEND - Next.js 16
+  # ============================================================================
+  - type: web
+    name: yoonassist-frontend
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: legal-rag-frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: yoonassist-backend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production

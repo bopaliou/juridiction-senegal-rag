@@ -144,57 +144,75 @@ export default function Home() {
 
     // Générer des questions suggérées initiales au démarrage si aucune n'existe
     if (globalSuggestedQuestions.length === 0) {
-      // Questions citoyennes - accessibles et pratiques
-      const CITIZEN_QUESTIONS = [
-        // Travail - Questions pratiques du quotidien
-        "Combien de jours de congé ai-je droit par an ?",
-        "Mon employeur peut-il me licencier sans préavis ?",
-        "Que faire si mon employeur ne me paie pas mon salaire ?",
-        "Comment démissionner de mon travail ?",
-        "Quels sont mes droits si je suis licencié ?",
-        "Peut-on m'obliger à faire des heures supplémentaires ?",
-        "Est-ce que j'ai droit à un contrat de travail écrit ?",
-        "Comment contester un licenciement abusif ?",
-        "Quelle est la durée légale du travail au Sénégal ?",
-        "Ai-je droit à une pause pendant ma journée de travail ?",
-        "Mon employeur peut-il réduire mon salaire ?",
-        "Quels sont mes droits en cas d'accident de travail ?",
-        "Peut-on me forcer à travailler le dimanche ?",
-        "Ai-je droit à un congé de maternité ?",
-        "Comment calculer mes indemnités de licenciement ?",
+      // Appeler l'endpoint backend pour récupérer des questions basées sur les documents
+      const loadInitialQuestions = async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/suggested-questions/initial`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.suggested_questions && data.suggested_questions.length > 0) {
+              setGlobalSuggestedQuestions(data.suggested_questions);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des questions suggérées:', error);
+        }
         
-        // Retraite - Questions pratiques
-        "À quel âge puis-je partir à la retraite au Sénégal ?",
-        "Comment calculer ma pension de retraite ?",
-        "Combien d'années faut-il cotiser pour la retraite ?",
-        "Peut-on continuer à travailler après l'âge de la retraite ?",
-        "Comment faire une demande de retraite ?",
-        "Quels sont mes droits en tant que retraité ?",
-        
-        // Droits fondamentaux
-        "Le travail forcé est-il interdit au Sénégal ?",
-        "Ai-je le droit de m'exprimer librement au travail ?",
-        "Peut-on me discriminer à l'embauche ?",
-        "Quels sont mes droits fondamentaux en tant que travailleur ?",
-        "Mon employeur peut-il lire mes messages privés ?",
-        
-        // Syndicats
-        "Ai-je le droit de créer ou rejoindre un syndicat ?",
-        "Comment créer un syndicat dans mon entreprise ?",
-        "Mon employeur peut-il m'interdire d'adhérer à un syndicat ?",
-        "Quels sont les avantages d'être membre d'un syndicat ?",
-        
-        // Justice et protection
-        "Quelles sont les sanctions en cas de harcèlement au travail ?",
-        "Comment porter plainte contre mon employeur ?",
-        "Que faire en cas de harcèlement sexuel au travail ?",
-        "Quelles sont les peines pour violences au Sénégal ?",
-        "Comment saisir l'inspection du travail ?",
-      ];
-      // Sélectionner aléatoirement 3 à 5 questions
-      const numQuestions = Math.floor(Math.random() * 3) + 3; // Entre 3 et 5
-      const shuffled = [...CITIZEN_QUESTIONS].sort(() => Math.random() - 0.5);
-      setGlobalSuggestedQuestions(shuffled.slice(0, numQuestions));
+        // Fallback: Si l'endpoint échoue, utiliser les questions statiques
+        const CITIZEN_QUESTIONS = [
+          // Travail - Questions pratiques du quotidien
+          "Combien de jours de congé ai-je droit par an ?",
+          "Mon employeur peut-il me licencier sans préavis ?",
+          "Que faire si mon employeur ne me paie pas mon salaire ?",
+          "Comment démissionner de mon travail ?",
+          "Quels sont mes droits si je suis licencié ?",
+          "Peut-on m'obliger à faire des heures supplémentaires ?",
+          "Est-ce que j'ai droit à un contrat de travail écrit ?",
+          "Comment contester un licenciement abusif ?",
+          "Quelle est la durée légale du travail au Sénégal ?",
+          "Ai-je droit à une pause pendant ma journée de travail ?",
+          "Mon employeur peut-il réduire mon salaire ?",
+          "Quels sont mes droits en cas d'accident de travail ?",
+          "Peut-on me forcer à travailler le dimanche ?",
+          "Ai-je droit à un congé de maternité ?",
+          "Comment calculer mes indemnités de licenciement ?",
+          
+          // Retraite - Questions pratiques
+          "À quel âge puis-je partir à la retraite au Sénégal ?",
+          "Comment calculer ma pension de retraite ?",
+          "Combien d'années faut-il cotiser pour la retraite ?",
+          "Peut-on continuer à travailler après l'âge de la retraite ?",
+          "Comment faire une demande de retraite ?",
+          "Quels sont mes droits en tant que retraité ?",
+          
+          // Droits fondamentaux
+          "Le travail forcé est-il interdit au Sénégal ?",
+          "Ai-je le droit de m'exprimer librement au travail ?",
+          "Peut-on me discriminer à l'embauche ?",
+          "Quels sont mes droits fondamentaux en tant que travailleur ?",
+          "Mon employeur peut-il lire mes messages privés ?",
+          
+          // Syndicats
+          "Ai-je le droit de créer ou rejoindre un syndicat ?",
+          "Comment créer un syndicat dans mon entreprise ?",
+          "Mon employeur peut-il m'interdire d'adhérer à un syndicat ?",
+          "Quels sont les avantages d'être membre d'un syndicat ?",
+          
+          // Justice et protection
+          "Quelles sont les sanctions en cas de harcèlement au travail ?",
+          "Comment porter plainte contre mon employeur ?",
+          "Que faire en cas de harcèlement sexuel au travail ?",
+          "Quelles sont les peines pour violences au Sénégal ?",
+          "Comment saisir l'inspection du travail ?",
+        ];
+        // Sélectionner aléatoirement 3 à 5 questions
+        const numQuestions = Math.floor(Math.random() * 3) + 3; // Entre 3 et 5
+        const shuffled = [...CITIZEN_QUESTIONS].sort(() => Math.random() - 0.5);
+        setGlobalSuggestedQuestions(shuffled.slice(0, numQuestions));
+      };
+      
+      loadInitialQuestions();
     }
   }, [globalSuggestedQuestions.length]);
 

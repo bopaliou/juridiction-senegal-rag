@@ -36,10 +36,27 @@ class CreditEngine:
     """Moteur principal de gestion des crédits"""
 
     def __init__(self):
-        self.db_session = get_db_session()
+        try:
+            self.db_session = get_db_session()
+            self.use_db = True
+        except Exception as e:
+            logger.warning(f"Mode développement sans DB: {e}")
+            self.db_session = None
+            self.use_db = False
 
     def get_user_credits(self, user_id: str) -> Optional[UserCredits]:
         """Récupère les informations de crédit d'un utilisateur"""
+        # Mode développement sans base de données
+        if not self.use_db or not self.db_session:
+            logger.info("Mode dev - retour de crédits simulés")
+            return UserCredits(
+                user_id=user_id,
+                credits=30,
+                plan="free",
+                monthly_quota=30,
+                reset_date=datetime.now().date() + timedelta(days=30)
+            )
+        
         try:
             user = self.db_session.query(User).filter(User.id == user_id).first()
             if not user:

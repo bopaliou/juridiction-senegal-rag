@@ -19,9 +19,13 @@ from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage, AIMessage
 
-from .agent import agent_app
-from .security import SecureQueryRequest
-from .middleware import (
+# Ajouter le répertoire parent au chemin pour les imports relatifs
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.agent import agent_app
+from src.security import SecureQueryRequest
+from src.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
     RequestLoggingMiddleware,
@@ -185,16 +189,12 @@ def parse_sources(raw_sources: List) -> List[SourceModel]:
 async def lifespan(_app: FastAPI):
     """Gestion du cycle de vie de l'application."""
     logger.info("🚀 Démarrage de l'API Agent Juridique Sénégalais RAG...")
-
-    # Initialiser la base de données de crédits
-    try:
-        from src.database.connection import init_database
-        init_database()
-        logger.info("✅ Base de données de crédits initialisée")
-    except Exception as e:
-        logger.warning(f"⚠️ Erreur initialisation base de données crédits: {e} - poursuite sans base de données")
-
+    
+    # Pas d'initialisation de DB pour le moment - mode développement
+    # La DB est initialisée à la demande dans get_db()
+    
     yield
+    
     logger.info("🛑 Arrêt de l'API...")
 
 
@@ -225,21 +225,25 @@ app.add_middleware(
     max_age=3600,  # Cache preflight requests pendant 1 heure
 )
 
-# Routes de crédits temporaires (solution de contournement)
-@app.get("/credits/balance")
-async def get_credit_balance():
-    """Endpoint temporaire pour les crédits - retourne des données fictives"""
-    return {
-        "credits": 30,
-        "plan": "free",
-        "monthlyQuota": 30,
-        "resetDate": "2025-12-09T00:00:00",
-        "usagePercentage": 0
-    }
-
-# TODO: Réactiver les vraies routes de crédits quand le débogage sera terminé
-# from src.credits.credit_api import router as credits_router
-# app.include_router(credits_router)
+# Routes de crédits - Mode développement avec données simulées
+try:
+    from src.credits.credit_api import router as credits_router
+    app.include_router(credits_router)
+    logger.info("✅ Routes de crédits activées")
+except Exception as e:
+    logger.warning(f"⚠️ Système de crédits non disponible (mode dégradé): {e}")
+    
+    # Fallback : endpoint temporaire avec données simulées
+    @app.get("/credits/balance")
+    async def get_credit_balance():
+        """Endpoint temporaire pour les crédits - retourne des données fictives"""
+        return {
+            "credits": 30,
+            "plan": "free",
+            "monthlyQuota": 30,
+            "resetDate": "2025-12-09T00:00:00",
+            "usagePercentage": 0
+        }
 
 
 # =============================================================================
@@ -363,3 +367,53 @@ async def ask_question(request: SecureQueryRequest):
             status_code=500,
             detail="Une erreur interne est survenue. Veuillez réessayer plus tard."
         ) from e
+
+
+@app.get("/suggested-questions/initial")
+async def get_initial_questions():
+    """
+    Endpoint pour récupérer 4-5 questions suggérées à l'accueil.
+    Les questions sont générées dynamiquement basées sur le contenu réel de la base de données.
+    """
+    logger.info("📋 Récupération des questions suggérées initiales")
+    
+    try:
+        from src.agent import generate_initial_questions
+        
+        # Utiliser un thread pool pour éviter de bloquer l'event loop
+        loop = asyncio.get_event_loop()
+        suggested_questions = await asyncio.wait_for(
+            loop.run_in_executor(None, generate_initial_questions),
+            timeout=30  # Timeout de 30 secondes
+        )
+        
+        logger.info(f"✅ {len(suggested_questions)} questions générées")
+        
+        return {
+            "suggested_questions": suggested_questions,
+            "count": len(suggested_questions)
+        }
+        
+    except asyncio.TimeoutError:
+        logger.warning("⏱️ Timeout lors de la génération des questions")
+        # Fallback: retourner les questions statiques
+        from src.agent import CITIZEN_QUESTIONS
+        import random
+        fallback = CITIZEN_QUESTIONS.copy() if CITIZEN_QUESTIONS else []
+        random.shuffle(fallback)
+        return {
+            "suggested_questions": fallback[:5],
+            "count": len(fallback[:5])
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Erreur génération questions initiales: {str(e)}")
+        # Fallback: retourner les questions statiques
+        from src.agent import CITIZEN_QUESTIONS
+        import random
+        fallback = CITIZEN_QUESTIONS.copy() if CITIZEN_QUESTIONS else []
+        random.shuffle(fallback)
+        return {
+            "suggested_questions": fallback[:5],
+            "count": len(fallback[:5])
+        }

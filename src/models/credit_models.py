@@ -24,17 +24,18 @@ class TopUpPack(str, Enum):
 
 class UserCredits(BaseModel):
     """Modèle utilisateur avec informations de crédits"""
-    id: str
-    email: str
-    plan: PlanType
-    credits: int = Field(..., ge=0, description="Crédits disponibles")
-    monthly_quota: int = Field(..., ge=0, description="Quota mensuel total")
-    reset_date: date = Field(..., description="Date de reset mensuel")
-    created_at: datetime
+    user_id: str = Field(default="", alias="id")  # Support pour id et user_id
+    email: str = Field(default="dev@yoonassist.ai")
+    plan: PlanType = Field(default=PlanType.FREE)
+    credits: int = Field(default=30, ge=0, description="Crédits disponibles")
+    monthly_quota: int = Field(default=30, ge=0, description="Quota mensuel total")
+    reset_date: date = Field(default_factory=lambda: date.today(), description="Date de reset mensuel")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     last_topup_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class UsageLog(BaseModel):

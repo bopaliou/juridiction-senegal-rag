@@ -28,6 +28,23 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+  // #region agent log
+  if (typeof fetch !== 'undefined' && window) {
+    fetch('http://127.0.0.1:7242/ingest/aeafe908-2a76-4e19-a34a-716691bcfecd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'legal-rag-frontend/lib/api.ts:32',
+        message: 'Attempting fetchWithTimeout',
+        data: { url, options },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'ASK_FETCH',
+      })
+    }).catch(() => {});
+  }
+  // #endregion
+
   try {
     const response = await fetch(url, {
       ...options,

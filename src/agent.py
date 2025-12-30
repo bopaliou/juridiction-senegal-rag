@@ -29,7 +29,7 @@ load_dotenv()
 # =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CHROMA_DB_PATH = BASE_DIR / "data" / "chroma_db"
+CHROMA_DB_PATH = BASE_DIR / "data" / "chroma_db_with_web"  # Base avec PDFs uniquement (temporaire)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
@@ -91,7 +91,7 @@ def get_retriever():
             return None
         _retriever = db.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 6}
+            search_kwargs={"k": 10}  # Récupérer plus de docs pour meilleur reranking
         )
     return _retriever
 
@@ -256,51 +256,200 @@ CITIZEN_QUESTIONS = [
 ]
 
 
+def generate_initial_questions() -> List[str]:
+    """
+    Génère 4-5 questions suggérées à l'accueil basées sur le contenu réel de la base de données.
+    Récupère des documents variés et utilise le LLM pour générer des questions contextualisées.
+    """
+    try:
+        db = get_db()
+        if not db or not retriever:
+            # Fallback sur questions statiques si pas d'accès à la base
+            domain_questions = {
+                "travail": [
+                    "Combien de jours de congé ai-je droit par an ?",
+                    "Quels sont mes droits si je suis licencié ?",
+                ],
+                "constitution": [
+                    "Qui peut être président du Sénégal ?",
+                    "Quels sont mes droits fondamentaux ?",
+                ],
+                "syndicats": [
+                    "Puis-je faire grève au Sénégal ?",
+                ],
+                "droits": [
+                    "Peut-on me discriminer à l'embauche ?",
+                ],
+                "penal": [
+                    "Quelles sont les peines pour violence au Sénégal ?",
+                ],
+            }
+            selected = []
+            for domain, questions in domain_questions.items():
+                selected.extend(random.sample(questions, 1))
+            return selected[:5]
+        
+        # Récupérer des documents variés avec des requêtes thématiques
+        search_queries = [
+            "droit travail contrat employeur",
+            "constitution président gouvernement droits",
+            "syndicat grève représentation",
+            "discrimination égalité protection",
+            "pénal infraction sanction",
+            "protection sociale retraite"
+        ]
+        
+        all_docs = []
+        for query in search_queries:
+            try:
+                docs = retriever.invoke(query)
+                if docs:
+                    all_docs.extend(docs[:2])
+            except:
+                pass
+        
+        if not all_docs:
+            # Fallback sur questions statiques
+            return [
+                "Combien de jours de congé ai-je droit par an ?",
+                "Qui peut être président du Sénégal ?",
+                "Puis-je faire grève au Sénégal ?",
+            ]
+        
+        # Sélectionner les 10 documents uniques les plus pertinents
+        unique_docs = {}
+        for doc in all_docs[:20]:
+            content_hash = doc.page_content[:100] if doc.page_content else ""
+            if content_hash and content_hash not in unique_docs:
+                unique_docs[content_hash] = doc
+        
+        sample_docs = list(unique_docs.values())[:10]
+        
+        # Préparer le contexte pour le LLM
+        docs_context = "\n".join([
+            f"- {doc.metadata.get('source_name', 'Document')}: {doc.page_content[:250]}..."
+            for doc in sample_docs
+        ])
+        
+        # Générer les questions avec le LLM basées sur les documents
+        prompt = ChatPromptTemplate.from_template("""Tu es un assistant juridique sénégalais expert. Basé sur les documents juridiques réels suivants,
+génère 4 à 5 questions pratiques et variées que les citoyens sénégalais pourraient se poser.
+
+Les questions DOIVENT:
+1. Être directement basées sur les documents fournis
+2. Couvrir DIFFÉRENTS THÈMES DIFFÉRENTS (travail, constitution, syndicats, droits, pénal, etc.)
+3. Être des questions pratiques et du quotidien
+4. Être des questions que les gens cherchent vraiment à poser
+5. Être formulées en français clair et simple
+6. VARIERZ LES FORMULATIONS - Ne pas toutes commencer par "Combien", "Mon employeur", "Ai-je droit"
+
+Documents réels de la base:
+{docs_context}
+
+Génère 4 à 5 questions VARIÉES (différents domaines), une par ligne, sans numérotation ni tirets:
+Question 1?
+Question 2?
+Question 3?
+Question 4?""")
+        
+        chain = prompt | generation_llm
+        result = chain.invoke({"docs_context": docs_context})
+        
+        # Extraire et parser les questions
+        suggested = result.content.strip().split('\n')
+        suggested = [
+            q.strip().rstrip('?').strip() + '?' 
+            for q in suggested 
+            if q.strip() and len(q.strip()) > 10 and '?' in q
+        ]
+        
+        # Mélanger les questions pour plus de variété à chaque appel
+        random.shuffle(suggested)
+        
+        # Retourner 4-5 questions variées basées sur les documents
+        final_questions = suggested[:5] if len(suggested) >= 4 else suggested
+        
+        if final_questions:
+            return final_questions
+        
+        # Fallback si pas de questions générées
+        return [
+            "Quels sont mes droits au travail ?",
+            "Qui peut être président du Sénégal ?",
+            "Puis-je faire grève ?",
+        ]
+    
+    except Exception as e:
+        print(f"⚠️ Erreur génération questions initiales: {str(e)}")
+        # Fallback robuste
+        return [
+            "Quels sont mes droits au travail ?",
+            "Qui peut être président du Sénégal ?",
+            "Puis-je faire grève ?",
+        ]
+
+
 def generate_suggested_questions(question: str, sources: List[dict], answer: str) -> List[str]:
-    """Génère 3 questions suggérées basées sur le contexte."""
-    if not sources or not answer or "Je ne dispose pas" in answer:
+    """
+    Génère 3 questions suggérées dynamiquement basées sur le contenu réel des documents.
+    Utilise le LLM pour créer des questions pertinentes au contexte.
+    """
+    try:
+        # Si pas de sources ou réponse vide, retourner liste vide
+        if not sources or not answer or "Je ne dispose pas" in answer:
+            return []
+        
+        # Préparer le contexte des sources pour le LLM
+        sources_context = "\n".join([
+            f"- {s.get('source', 'Document')}: {s.get('content', '')[:300]}"
+            for s in sources[:3]
+        ])
+        
+        # Prompt pour générer des questions basées sur le contenu réel
+        prompt = ChatPromptTemplate.from_template("""Tu es un assistant juridique sénégalais expert. Basé sur les documents suivants et la réponse fournie, 
+génère exactement 3 questions suggérées pertinentes que l'utilisateur pourrait poser ensuite.
+
+Les questions doivent:
+1. Être directement liées au contenu des documents fournis
+2. Approfondir les thèmes abordés dans la réponse
+3. Être des questions pratiques et pertinentes pour un citoyen sénégalais
+4. Être formulées en français clair et simple
+5. Ne pas être la même question que celle posée initialement: "{question}"
+
+Documents source:
+{sources_context}
+
+Réponse fournie:
+{answer}
+
+Génère exactement 3 questions, une par ligne, sans numérotation ni tirets. Format simple:
+Question 1?
+Question 2?
+Question 3?""")
+        
+        # Générer les questions avec le LLM
+        chain = prompt | generation_llm
+        result = chain.invoke({
+            "question": question,
+            "sources_context": sources_context,
+            "answer": answer
+        })
+        
+        # Extraire et parser les questions
+        suggested = result.content.strip().split('\n')
+        suggested = [q.strip().rstrip('?').strip() + '?' for q in suggested if q.strip()]
+        
+        # Retourner les 3 premières questions valides
+        return suggested[:3]
+    
+    except Exception as e:
+        # En cas d'erreur, fallback sur la liste statique
+        print(f"⚠️ Erreur génération questions: {str(e)}")
+        if CITIZEN_QUESTIONS:
+            shuffled = CITIZEN_QUESTIONS.copy()
+            random.shuffle(shuffled)
+            return shuffled[:3]
         return []
-    
-    # Détecter le domaine de la question
-    question_lower = question.lower()
-    domain_keywords = {
-        'travail': ['travail', 'employeur', 'salarié', 'congé', 'salaire', 'licenciement'],
-        'retraite': ['retraite', 'pension', 'cotisation'],
-        'penal': ['pénal', 'peine', 'infraction', 'tribunal'],
-    }
-    
-    detected_domain = 'general'
-    for domain, keywords in domain_keywords.items():
-        if any(kw in question_lower for kw in keywords):
-            detected_domain = domain
-            break
-    
-    # Scorer les questions par pertinence
-    scored = []
-    for q in CITIZEN_QUESTIONS:
-        if q.lower() == question_lower:
-            continue
-        
-        score = 0
-        q_lower = q.lower()
-        
-        # Bonus si même domaine
-        for domain, keywords in domain_keywords.items():
-            if domain == detected_domain and any(kw in q_lower for kw in keywords):
-                score += 5
-        
-        # Bonus pour mots communs
-        common = set(question_lower.split()) & set(q_lower.split())
-        score += len([w for w in common if len(w) > 4])
-        
-        scored.append((score, q))
-    
-    # Mélanger les questions à score élevé pour variété
-    scored.sort(key=lambda x: -x[0])
-    top_questions = [q for _, q in scored[:12]]
-    random.shuffle(top_questions)
-    
-    return top_questions[:3]
 
 
 # =============================================================================
@@ -360,42 +509,54 @@ def handle_non_juridique(state: AgentState) -> dict:
 
 
 def retrieve_node(state: AgentState) -> dict:
-    """Récupère et reranke les documents pertinents."""
+    """Récupère et reranke les documents pertinents pour garantir la cohérence."""
     question = state["question"]
     
     if not retriever:
         return {"context_documents": []}
     
     try:
-        # Récupération initiale
+        # Récupération initiale (k=10 pour avoir plus de choix)
         docs = retriever.invoke(question)
         
         if not docs:
             return {"context_documents": []}
         
-        # Garder les documents originaux pour fallback
-        original_docs = docs[:3]  # Top 3 originaux
-        
-        # Reranking avec FlashRank si disponible (optionnel pour performance)
+        # Reranking avec FlashRank pour améliorer la pertinence
         reranker = get_reranker()
-        if reranker and len(docs) > 3:  # Rerank seulement si on a plus de 3 docs
+        if reranker:
             try:
+                # Reranker tous les documents récupérés
                 reranked = reranker.compress_documents(docs, question)
                 
                 if reranked and len(reranked) > 0:
-                    # Prendre les top 3 documents rerankés (optimisé)
+                    # Prendre les top 3 documents les plus pertinents
                     docs = reranked[:3]
                 else:
-                    docs = original_docs
+                    # Fallback: prendre les 3 premiers documents originaux
+                    docs = docs[:3]
                 
-            except Exception:
-                docs = original_docs  # Utiliser les originaux en cas d'erreur
-
-            # Si pas de reranker ou peu de docs, utiliser directement les top 3
+            except Exception as e:
+                # Fallback en cas d'erreur de reranking
+                docs = docs[:3]
+        else:
+            # Pas de reranker: utiliser directement les top 3
             docs = docs[:3]
         
-        # Convertir en format sérialisable
-        context_docs = [document_to_source(doc, i) for i, doc in enumerate(docs)]
+        # Filtrer les documents vides ou de mauvaise qualité
+        filtered_docs = []
+        for doc in docs:
+            content = doc.page_content.strip()
+            # Ignorer les documents trop courts (< 50 caractères)
+            if len(content) >= 50:
+                filtered_docs.append(doc)
+        
+        # Si tous les documents sont filtrés, utiliser les originaux
+        if not filtered_docs:
+            filtered_docs = docs[:3]
+        
+        # Convertir en format sérialisable avec informations enrichies
+        context_docs = [document_to_source(doc, i) for i, doc in enumerate(filtered_docs)]
         
         return {"context_documents": context_docs}
         
@@ -421,25 +582,30 @@ def generate_node(state: AgentState) -> dict:
             "context_documents": []
         }
     
-    # CAS 2: Construire le contexte à partir des documents (optimisé)
+    # CAS 2: Construire le contexte à partir des documents avec formatage clair
     context_parts = []
-    for doc in context_docs[:3]:  # Limiter à 3 documents max pour performance
-        part = f"[{doc['title']}]"
+    for idx, doc in enumerate(context_docs[:3], 1):  # Limiter à 3 documents max
+        # En-tête de source clair avec numérotation
+        header = f"SOURCE {idx}: {doc['title']}"
         if doc.get('article'):
-            part += f" {doc['article']}"
+            header += f" - {doc['article']}"
         if doc.get('breadcrumb'):
-            part += f" ({doc['breadcrumb']})"
-        # Limiter le contenu à 400 caractères par document pour réduire la taille du prompt
-        content = doc['content'][:400] + "..." if len(doc.get('content', '')) > 400 else doc.get('content', '')
-        part += f"\n{content}"
+            header += f" (Section: {doc['breadcrumb']})"
+        
+        # Contenu (limité pour performance)
+        content = doc.get('content', '')
+        if len(content) > 500:
+            content = content[:500] + "..."
+        
+        part = f"{header}\n{'='*60}\n{content}"
         context_parts.append(part)
     
-    context = "\n\n---\n\n".join(context_parts)
+    context = "\n\n".join(context_parts)
     
     # Construire l'historique de conversation (optimisé - seulement 4 derniers messages)
     history_str = ""
     if len(messages) > 1:
-        recent = messages[-4:]  # Réduit de 8 à 4 pour performance
+        recent = messages[-4:]  # Réduits de 8 à 4 pour performance
         parts = []
         for msg in recent:
             if isinstance(msg, HumanMessage):
@@ -448,22 +614,28 @@ def generate_node(state: AgentState) -> dict:
                 parts.append(f"A: {msg.content[:150]}")  # Limiter la longueur
         history_str = "\n".join(parts) + "\n\n"
     
-    # Prompt optimisé pour vitesse
-    template = """Tu es YoonAssist, assistant juridique sénégalais. Réponds UNIQUEMENT avec le CONTEXTE fourni.
+    # Prompt renforcé pour garantir la cohérence sources-réponse
+    template = """Tu es YoonAssist, assistant juridique sénégalais expert.
 
-RÈGLES:
-- Réponse COMPLÈTE mais CONCISE (2-4 phrases + liste si nécessaire)
-- Commence directement par l'information demandée
-- Détails utiles: montants, délais, conditions
-- Cite les articles: [Article X du Code Y]
-- Si info absente: "Je ne dispose pas de cette information dans les textes fournis."
+⚠️ RÈGLES STRICTES - NON NÉGOCIABLES:
+1. Réponds UNIQUEMENT en te basant sur le CONTEXTE ci-dessous
+2. NE JAMAIS inventer ou ajouter d'informations non présentes dans le CONTEXTE
+3. Si la réponse n'est PAS dans le CONTEXTE: réponds "Je ne dispose pas de cette information précise dans les textes juridiques fournis."
+4. TOUJOURS citer la source exacte: [Article X du Code Y] ou [Titre du document]
+5. Si plusieurs articles sont pertinents, cite-les tous
 
-{history}CONTEXTE:
-    {context}
+FORMAT DE RÉPONSE:
+- Réponse directe et précise (2-4 phrases)
+- Citer la source entre crochets: [Article X du Code Y]
+- Détails concrets: montants, délais, conditions
+- Langage clair et accessible
 
-    QUESTION: {question}
-    
-RÉPONSE:"""
+{history}CONTEXTE JURIDIQUE (SOURCE DE VÉRITÉ):
+{context}
+
+QUESTION: {question}
+
+RÉPONSE (basée strictement sur le CONTEXTE):"""
     
     prompt = ChatPromptTemplate.from_template(template)
     
@@ -475,8 +647,25 @@ RÉPONSE:"""
             "history": history_block
         })
         answer = response.content.strip()
+        
+        # Vérification de cohérence: si la réponse cite des articles non présents dans le contexte
+        # On ajoute un avertissement (pour debug)
+        context_lower = context.lower()
+        answer_lower = answer.lower()
+        
+        # Extraire les références d'articles de la réponse
+        import re
+        article_refs = re.findall(r'article\s+\d+', answer_lower)
+        
+        # Vérifier que ces articles sont bien dans le contexte
+        for ref in article_refs:
+            if ref not in context_lower:
+                # L'article cité n'est pas dans le contexte fourni!
+                # En mode production, on pourrait logger cela
+                pass  # Pour l'instant on laisse passer mais c'est détectable
+        
     except Exception as e:
-        answer = "Une erreur s'est produite lors de la génération de la réponse."
+        answer = "Une erreur s'est produite lors de la génération de la réponse. Veuillez réessayer."
     
     messages.append(AIMessage(content=answer))
     

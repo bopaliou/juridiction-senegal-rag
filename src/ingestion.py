@@ -796,13 +796,15 @@ def ingest_documents():
     # =================================================================
     # 4. PRÉPARATION DE LA BASE DE DONNÉES
     # =================================================================
-    if DATA_DB_PATH.exists():
-        logger.warning(f"⚠️ Suppression de l'ancienne base: {DATA_DB_PATH}")
-        if not safe_rmtree(DATA_DB_PATH):
-            logger.error("❌ Impossible de supprimer l'ancienne base. Abandon.")
-            return
+    # Utiliser un nouveau dossier avec les sources web
+    new_db_path = BASE_DIR / "data" / "chroma_db_with_web"
     
-    DATA_DB_PATH.mkdir(parents=True, exist_ok=True)
+    if new_db_path.exists():
+        logger.warning(f"⚠️ Suppression de l'ancienne base: {new_db_path}")
+        safe_rmtree(new_db_path)
+    
+    new_db_path.mkdir(parents=True, exist_ok=True)
+    logger.info(f"✅ Nouvelle base avec sources web: {new_db_path}")
     
     # =================================================================
     # 5. CRÉATION DES EMBEDDINGS (Modèle multilingue optimisé)
@@ -819,7 +821,7 @@ def ingest_documents():
     # 6. INSERTION PAR LOTS DANS CHROMADB
     # =================================================================
     logger.info("🔄 Création de la base de données Chroma...")
-    logger.info(f"   📁 Répertoire: {DATA_DB_PATH}")
+    logger.info(f"   📁 Répertoire: {new_db_path}")
     logger.info(f"   📦 Nombre de chunks: {len(valid_chunks)}")
     
     BATCH_SIZE = 500
@@ -833,7 +835,7 @@ def ingest_documents():
         db = Chroma.from_documents(
             documents=first_batch,
             embedding=embedding_model,
-            persist_directory=str(DATA_DB_PATH),
+            persist_directory=str(new_db_path),
             collection_name="juridiction_senegal",
         )
         

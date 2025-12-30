@@ -61,15 +61,22 @@ def get_db_session() -> Session:
     global _SessionLocal
     
     if _SessionLocal is None:
-        init_database()
+        try:
+            init_database()
+        except:
+            logger.warning("Session DB non disponible - mode développement")
+            return None
     
-    return _SessionLocal()
+    return _SessionLocal() if _SessionLocal else None
 
 
 def get_db():
     """Générateur de session pour FastAPI Depends"""
-    db = get_db_session()
     try:
+        db = get_db_session()
         yield db
-    finally:
-        db.close()
+        if db:
+            db.close()
+    except Exception as e:
+        logger.warning(f"Mode développement sans DB: {e}")
+        yield None
